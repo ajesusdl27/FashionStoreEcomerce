@@ -1,0 +1,450 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { supabase } from "@/lib/supabase";
+
+// Fetch categories for dropdown
+const { data: categories } = await supabase
+  .from("categories")
+  .select("id, name")
+  .order("name");
+
+const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
+---
+
+<AdminLayout title="Nuevo Producto">
+  <div class="max-w-4xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex items-center gap-4">
+      <a
+        href="/admin/productos"
+        class="p-2 hover:bg-muted rounded-lg transition-colors"
+      >
+        <svg
+          class="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M15 19l-7-7 7-7"></path>
+        </svg>
+      </a>
+      <div>
+        <h1 class="font-display text-3xl text-primary">Nuevo Producto</h1>
+        <p class="text-muted-foreground mt-1">
+          Añade un nuevo producto a tu catálogo
+        </p>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <form id="product-form" class="space-y-6">
+      <!-- Basic Info -->
+      <div class="glass border border-border rounded-xl p-6 space-y-4">
+        <h2 class="font-heading text-lg">Información Básica</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              for="name"
+              class="block text-sm font-medium text-muted-foreground mb-2"
+            >
+              Nombre <span class="text-accent">*</span>
+            </label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              required
+              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              placeholder="Ej: Camiseta Urban Supreme"
+            />
+          </div>
+          <div>
+            <label
+              for="slug"
+              class="block text-sm font-medium text-muted-foreground mb-2"
+            >
+              Slug (URL) <span class="text-accent">*</span>
+            </label>
+            <input
+              type="text"
+              id="slug"
+              name="slug"
+              required
+              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              placeholder="camiseta-urban-supreme"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label
+            for="description"
+            class="block text-sm font-medium text-muted-foreground mb-2"
+          >
+            Descripción
+          </label>
+          <textarea
+            id="description"
+            name="description"
+            rows="4"
+            class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary resize-none"
+            placeholder="Descripción del producto..."></textarea>
+        </div>
+
+        <div>
+          <label
+            for="category_id"
+            class="block text-sm font-medium text-muted-foreground mb-2"
+          >
+            Categoría
+          </label>
+          <select
+            id="category_id"
+            name="category_id"
+            class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+          >
+            <option value="">Sin categoría</option>
+            {
+              categories?.map((cat) => (
+                <option value={cat.id}>{cat.name}</option>
+              ))
+            }
+          </select>
+        </div>
+      </div>
+
+      <!-- Pricing -->
+      <div class="glass border border-border rounded-xl p-6 space-y-4">
+        <h2 class="font-heading text-lg">Precios</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label
+              for="price"
+              class="block text-sm font-medium text-muted-foreground mb-2"
+            >
+              Precio <span class="text-accent">*</span>
+            </label>
+            <div class="relative">
+              <input
+                type="number"
+                id="price"
+                name="price"
+                required
+                min="0"
+                step="0.01"
+                class="w-full px-4 py-3 pr-12 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                placeholder="29.99"
+              />
+              <span
+                class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
+                >€</span
+              >
+            </div>
+          </div>
+          <div>
+            <label
+              for="offer_price"
+              class="block text-sm font-medium text-muted-foreground mb-2"
+            >
+              Precio Oferta
+            </label>
+            <div class="relative">
+              <input
+                type="number"
+                id="offer_price"
+                name="offer_price"
+                min="0"
+                step="0.01"
+                class="w-full px-4 py-3 pr-12 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                placeholder="19.99"
+              />
+              <span
+                class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
+                >€</span
+              >
+            </div>
+          </div>
+          <div class="flex items-end">
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                id="is_offer"
+                name="is_offer"
+                class="w-5 h-5 rounded border-border bg-card text-primary focus:ring-primary"
+              />
+              <span class="text-sm">Es oferta</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stock by Size -->
+      <div class="glass border border-border rounded-xl p-6 space-y-4">
+        <h2 class="font-heading text-lg">Stock por Talla</h2>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+          {
+            sizes.map((size) => (
+              <div>
+                <label
+                  for={`stock-${size}`}
+                  class="block text-sm font-medium text-muted-foreground mb-2 text-center"
+                >
+                  {size}
+                </label>
+                <input
+                  type="number"
+                  id={`stock-${size}`}
+                  name={`stock-${size}`}
+                  min="0"
+                  value="0"
+                  class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground text-center transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                />
+              </div>
+            ))
+          }
+        </div>
+      </div>
+
+      <!-- Images -->
+      <div class="glass border border-border rounded-xl p-6 space-y-4">
+        <h2 class="font-heading text-lg">Imágenes</h2>
+
+        <div id="images-container" class="space-y-2">
+          <div class="flex gap-2 image-input">
+            <input
+              type="url"
+              name="images[]"
+              class="flex-1 px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              placeholder="https://ejemplo.com/imagen.jpg"
+            />
+            <button
+              type="button"
+              class="remove-image p-3 bg-accent/20 text-accent rounded-lg hover:bg-accent/30 transition-colors hidden"
+            >
+              <svg
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          id="add-image"
+          class="inline-flex items-center gap-2 px-4 py-2 text-sm border border-border rounded-lg hover:bg-muted transition-colors"
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4v16m8-8H4"></path>
+          </svg>
+          Añadir imagen
+        </button>
+      </div>
+
+      <!-- Status -->
+      <div class="glass border border-border rounded-xl p-6">
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            id="active"
+            name="active"
+            checked
+            class="w-5 h-5 rounded border-border bg-card text-primary focus:ring-primary"
+          />
+          <div>
+            <span class="font-medium">Producto Activo</span>
+            <p class="text-sm text-muted-foreground">
+              El producto será visible en la tienda
+            </p>
+          </div>
+        </label>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center justify-end gap-4">
+        <a
+          href="/admin/productos"
+          class="px-6 py-3 border border-border rounded-lg hover:bg-muted transition-colors"
+        >
+          Cancelar
+        </a>
+        <button
+          type="submit"
+          id="submit-btn"
+          class="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:shadow-[0_0_20px_rgba(204,255,0,0.4)] transition-all disabled:opacity-50"
+        >
+          Crear Producto
+        </button>
+      </div>
+
+      <!-- Error/Success messages -->
+      <div id="form-message" class="hidden p-4 rounded-lg"></div>
+    </form>
+  </div>
+
+  <script>
+    // Auto-generate slug from name
+    const nameInput = document.getElementById("name") as HTMLInputElement;
+    const slugInput = document.getElementById("slug") as HTMLInputElement;
+
+    nameInput?.addEventListener("input", () => {
+      const slug = nameInput.value
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+      slugInput.value = slug;
+    });
+
+    // Add image input
+    const addImageBtn = document.getElementById("add-image");
+    const imagesContainer = document.getElementById("images-container");
+
+    addImageBtn?.addEventListener("click", () => {
+      const newInput = document.createElement("div");
+      newInput.className = "flex gap-2 image-input";
+      newInput.innerHTML = `
+        <input
+          type="url"
+          name="images[]"
+          class="flex-1 px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+          placeholder="https://ejemplo.com/imagen.jpg"
+        />
+        <button type="button" class="remove-image p-3 bg-accent/20 text-accent rounded-lg hover:bg-accent/30 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      `;
+      imagesContainer?.appendChild(newInput);
+      updateRemoveButtons();
+    });
+
+    // Remove image input
+    imagesContainer?.addEventListener("click", (e) => {
+      const target = e.target as HTMLElement;
+      const removeBtn = target.closest(".remove-image");
+      if (removeBtn) {
+        removeBtn.closest(".image-input")?.remove();
+        updateRemoveButtons();
+      }
+    });
+
+    function updateRemoveButtons() {
+      const inputs = imagesContainer?.querySelectorAll(".image-input");
+      inputs?.forEach((input, index) => {
+        const btn = input.querySelector(".remove-image");
+        if (inputs.length > 1) {
+          btn?.classList.remove("hidden");
+        } else {
+          btn?.classList.add("hidden");
+        }
+      });
+    }
+
+    // Form submission
+    const form = document.getElementById("product-form") as HTMLFormElement;
+    const submitBtn = document.getElementById(
+      "submit-btn"
+    ) as HTMLButtonElement;
+    const messageDiv = document.getElementById(
+      "form-message"
+    ) as HTMLDivElement;
+
+    form?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Creando...";
+      messageDiv.className = "hidden";
+
+      try {
+        const formData = new FormData(form);
+
+        const productData = {
+          name: formData.get("name"),
+          slug: formData.get("slug"),
+          description: formData.get("description") || null,
+          category_id: formData.get("category_id") || null,
+          price: parseFloat(formData.get("price") as string),
+          offer_price: formData.get("offer_price")
+            ? parseFloat(formData.get("offer_price") as string)
+            : null,
+          is_offer: formData.get("is_offer") === "on",
+          active: formData.get("active") === "on",
+        };
+
+        // Get stock values
+        const variants: { size: string; stock: number }[] = [];
+        ["XS", "S", "M", "L", "XL", "XXL"].forEach((size) => {
+          const stock = parseInt(formData.get(`stock-${size}`) as string) || 0;
+          if (stock > 0) {
+            variants.push({ size, stock });
+          }
+        });
+
+        // Get images
+        const imageInputs = form.querySelectorAll(
+          'input[name="images[]"]'
+        ) as NodeListOf<HTMLInputElement>;
+        const images: string[] = [];
+        imageInputs.forEach((input) => {
+          if (input.value.trim()) {
+            images.push(input.value.trim());
+          }
+        });
+
+        // Call API
+        const response = await fetch("/api/admin/productos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ product: productData, variants, images }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || "Error al crear el producto");
+        }
+
+        messageDiv.className = "p-4 rounded-lg bg-primary/20 text-primary";
+        messageDiv.textContent =
+          "✅ Producto creado correctamente. Redirigiendo...";
+
+        setTimeout(() => {
+          window.location.href = "/admin/productos";
+        }, 1500);
+      } catch (error: any) {
+        messageDiv.className = "p-4 rounded-lg bg-accent/20 text-accent";
+        messageDiv.textContent = error.message;
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Crear Producto";
+      }
+    });
+  </script>
+</AdminLayout>

@@ -1,0 +1,419 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { supabase } from "@/lib/supabase";
+
+// Fetch categories with product count
+const { data: categories, error } = await supabase
+  .from("categories")
+  .select(
+    `
+    *,
+    products:products(count)
+  `
+  )
+  .order("name");
+
+const categoriesWithCount = categories?.map((cat: any) => ({
+  ...cat,
+  productCount: cat.products?.[0]?.count || 0,
+}));
+---
+
+<AdminLayout title="Categorías">
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="font-display text-3xl text-primary">Categorías</h1>
+        <p class="text-muted-foreground mt-1">
+          {categories?.length || 0} categorías
+        </p>
+      </div>
+      <button
+        id="new-category-btn"
+        class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:shadow-[0_0_20px_rgba(204,255,0,0.4)] transition-all"
+      >
+        <svg
+          class="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 4v16m8-8H4"></path>
+        </svg>
+        Nueva Categoría
+      </button>
+    </div>
+
+    {
+      error && (
+        <div class="p-4 bg-accent/20 border border-accent rounded-lg text-accent">
+          Error: {error.message}
+        </div>
+      )
+    }
+
+    <!-- Categories List -->
+    <div class="glass border border-border rounded-xl overflow-hidden">
+      <table class="w-full">
+        <thead class="bg-muted/50 border-b border-border">
+          <tr>
+            <th
+              class="text-left px-6 py-4 text-sm font-medium text-muted-foreground"
+              >Nombre</th
+            >
+            <th
+              class="text-left px-6 py-4 text-sm font-medium text-muted-foreground"
+              >Slug</th
+            >
+            <th
+              class="text-left px-6 py-4 text-sm font-medium text-muted-foreground"
+              >Productos</th
+            >
+            <th
+              class="text-right px-6 py-4 text-sm font-medium text-muted-foreground"
+              >Acciones</th
+            >
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border">
+          {
+            categoriesWithCount && categoriesWithCount.length > 0 ? (
+              categoriesWithCount.map((cat: any) => (
+                <tr
+                  class="hover:bg-muted/30 transition-colors"
+                  data-id={cat.id}
+                >
+                  <td class="px-6 py-4 font-medium">{cat.name}</td>
+                  <td class="px-6 py-4 text-muted-foreground">{cat.slug}</td>
+                  <td class="px-6 py-4">
+                    <span class="px-2 py-1 bg-muted rounded text-sm">
+                      {cat.productCount}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    <div class="flex items-center justify-end gap-2">
+                      <button
+                        class="edit-category p-2 hover:bg-muted rounded-lg transition-colors"
+                        title="Editar"
+                        data-id={cat.id}
+                        data-name={cat.name}
+                        data-slug={cat.slug}
+                      >
+                        <svg
+                          class="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        class="delete-category p-2 hover:bg-accent/20 text-accent rounded-lg transition-colors"
+                        title="Eliminar"
+                        data-id={cat.id}
+                        data-name={cat.name}
+                      >
+                        <svg
+                          class="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                      <a
+                        href={`/categoria/${cat.slug}`}
+                        target="_blank"
+                        class="p-2 hover:bg-muted rounded-lg transition-colors"
+                        title="Ver en tienda"
+                      >
+                        <svg
+                          class="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          />
+                        </svg>
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colspan="4"
+                  class="px-6 py-12 text-center text-muted-foreground"
+                >
+                  No hay categorías todavía
+                </td>
+              </tr>
+            )
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Category Modal -->
+  <div id="category-modal" class="fixed inset-0 z-50 hidden">
+    <div
+      class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+      id="modal-backdrop"
+    >
+    </div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+      <div class="bg-card border border-border rounded-xl p-6 max-w-md w-full">
+        <h3 id="modal-title" class="font-heading text-xl mb-4">
+          Nueva Categoría
+        </h3>
+        <form id="category-form" class="space-y-4">
+          <input type="hidden" id="category-id" value="" />
+          <div>
+            <label
+              for="category-name"
+              class="block text-sm font-medium text-muted-foreground mb-2"
+            >
+              Nombre <span class="text-accent">*</span>
+            </label>
+            <input
+              type="text"
+              id="category-name"
+              required
+              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              placeholder="Ej: Camisetas"
+            />
+          </div>
+          <div>
+            <label
+              for="category-slug"
+              class="block text-sm font-medium text-muted-foreground mb-2"
+            >
+              Slug <span class="text-accent">*</span>
+            </label>
+            <input
+              type="text"
+              id="category-slug"
+              required
+              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              placeholder="camisetas"
+            />
+          </div>
+          <div
+            id="form-error"
+            class="hidden p-3 bg-accent/20 text-accent rounded-lg text-sm"
+          >
+          </div>
+          <div class="flex justify-end gap-3">
+            <button
+              type="button"
+              id="cancel-modal"
+              class="px-4 py-2 border border-border rounded-lg hover:bg-muted"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              id="save-category"
+              class="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/80"
+            >
+              Guardar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="delete-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+      <div class="bg-card border border-border rounded-xl p-6 max-w-md w-full">
+        <h3 class="font-heading text-xl mb-4">¿Eliminar categoría?</h3>
+        <p class="text-muted-foreground mb-2">
+          Vas a eliminar: <strong id="delete-name"></strong>
+        </p>
+        <p class="text-sm text-muted-foreground mb-6">
+          Los productos asociados se quedarán sin categoría.
+        </p>
+        <input type="hidden" id="delete-id" />
+        <div class="flex justify-end gap-3">
+          <button
+            id="cancel-delete"
+            class="px-4 py-2 border border-border rounded-lg hover:bg-muted"
+          >
+            Cancelar
+          </button>
+          <button
+            id="confirm-delete"
+            class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/80"
+          >
+            Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const modal = document.getElementById("category-modal");
+    const deleteModal = document.getElementById("delete-modal");
+    const modalTitle = document.getElementById("modal-title");
+    const categoryIdInput = document.getElementById(
+      "category-id"
+    ) as HTMLInputElement;
+    const categoryNameInput = document.getElementById(
+      "category-name"
+    ) as HTMLInputElement;
+    const categorySlugInput = document.getElementById(
+      "category-slug"
+    ) as HTMLInputElement;
+    const formError = document.getElementById("form-error");
+
+    // Auto-generate slug
+    categoryNameInput?.addEventListener("input", () => {
+      if (!categoryIdInput?.value) {
+        // Only auto-generate for new categories
+        const slug = categoryNameInput.value
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "");
+        categorySlugInput.value = slug;
+      }
+    });
+
+    // Open new category modal
+    document
+      .getElementById("new-category-btn")
+      ?.addEventListener("click", () => {
+        if (modalTitle) modalTitle.textContent = "Nueva Categoría";
+        categoryIdInput.value = "";
+        categoryNameInput.value = "";
+        categorySlugInput.value = "";
+        formError?.classList.add("hidden");
+        modal?.classList.remove("hidden");
+      });
+
+    // Open edit modal
+    document.querySelectorAll(".edit-category").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const { id, name, slug } = (btn as HTMLElement).dataset;
+        if (modalTitle) modalTitle.textContent = "Editar Categoría";
+        categoryIdInput.value = id || "";
+        categoryNameInput.value = name || "";
+        categorySlugInput.value = slug || "";
+        formError?.classList.add("hidden");
+        modal?.classList.remove("hidden");
+      });
+    });
+
+    // Close modal
+    document.getElementById("cancel-modal")?.addEventListener("click", () => {
+      modal?.classList.add("hidden");
+    });
+    document.getElementById("modal-backdrop")?.addEventListener("click", () => {
+      modal?.classList.add("hidden");
+    });
+
+    // Save category
+    document
+      .getElementById("category-form")
+      ?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        formError?.classList.add("hidden");
+
+        const id = categoryIdInput.value;
+        const data = {
+          name: categoryNameInput.value,
+          slug: categorySlugInput.value,
+        };
+
+        try {
+          const response = await fetch("/api/admin/categorias", {
+            method: id ? "PUT" : "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(id ? { id, ...data } : data),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.error || "Error al guardar");
+          }
+
+          window.location.reload();
+        } catch (error: any) {
+          if (formError) {
+            formError.textContent = error.message;
+            formError.classList.remove("hidden");
+          }
+        }
+      });
+
+    // Delete modal
+    document.querySelectorAll(".delete-category").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const { id, name } = (btn as HTMLElement).dataset;
+        (document.getElementById("delete-id") as HTMLInputElement).value =
+          id || "";
+        (document.getElementById("delete-name") as HTMLElement).textContent =
+          name || "";
+        deleteModal?.classList.remove("hidden");
+      });
+    });
+
+    document.getElementById("cancel-delete")?.addEventListener("click", () => {
+      deleteModal?.classList.add("hidden");
+    });
+
+    document
+      .getElementById("confirm-delete")
+      ?.addEventListener("click", async () => {
+        const id = (document.getElementById("delete-id") as HTMLInputElement)
+          .value;
+
+        try {
+          const response = await fetch("/api/admin/categorias", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id }),
+          });
+
+          if (response.ok) {
+            window.location.reload();
+          } else {
+            const result = await response.json();
+            alert("Error: " + result.error);
+          }
+        } catch (error: any) {
+          alert("Error: " + error.message);
+        }
+      });
+  </script>
+</AdminLayout>
