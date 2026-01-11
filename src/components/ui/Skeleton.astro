@@ -1,0 +1,45 @@
+---
+interface Props {
+  variant?: "text" | "circle" | "card" | "image";
+  width?: string;
+  height?: string;
+  class?: string;
+}
+
+const { variant = "text", width, height, class: className = "" } = Astro.props;
+
+const variants = {
+  text: "h-4 w-3/4 rounded",
+  circle: "h-10 w-10 rounded-full",
+  card: "h-48 w-full rounded-lg",
+  image: "aspect-square w-full rounded-lg",
+};
+---
+
+<div
+  class:list={["skeleton bg-muted", variants[variant], className]}
+  style={`${width ? `width: ${width};` : ""} ${height ? `height: ${height};` : ""}`}
+>
+</div>
+
+<style>
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 25%,
+      hsl(var(--card)) 50%,
+      hsl(var(--muted)) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+</style>

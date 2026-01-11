@@ -1,0 +1,151 @@
+---
+interface Props {
+  open?: boolean;
+  title?: string;
+  size?: "sm" | "md" | "lg";
+  class?: string;
+}
+
+const { open = false, title, size = "md", class: className = "" } = Astro.props;
+
+const sizes = {
+  sm: "max-w-sm",
+  md: "max-w-lg",
+  lg: "max-w-2xl",
+};
+---
+
+<div
+  class="modal-overlay fixed inset-0 z-50 hidden items-center justify-center p-4"
+  data-modal
+>
+  <!-- Backdrop -->
+  <div
+    class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+    data-modal-backdrop
+  >
+  </div>
+
+  <!-- Modal Content -->
+  <div
+    class:list={[
+      "relative w-full bg-card border border-border rounded-lg shadow-xl",
+      "transform transition-all duration-300",
+      "scale-95 opacity-0",
+      sizes[size],
+      className,
+    ]}
+    data-modal-content
+  >
+    <!-- Header -->
+    {
+      title && (
+        <div class="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h2 class="font-heading text-lg font-semibold">{title}</h2>
+          <button
+            class="touch-target flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            data-modal-close
+            aria-label="Cerrar modal"
+          >
+            <svg
+              class="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+      )
+    }
+
+    <!-- Body -->
+    <div class="px-6 py-4">
+      <slot />
+    </div>
+
+    <!-- Footer (optional) -->
+    <slot name="footer" />
+  </div>
+</div>
+
+<script>
+  class Modal {
+    private overlay: HTMLElement;
+    private content: HTMLElement;
+    private backdrop: HTMLElement;
+
+    constructor(overlay: HTMLElement) {
+      this.overlay = overlay;
+      this.content = overlay.querySelector("[data-modal-content]")!;
+      this.backdrop = overlay.querySelector("[data-modal-backdrop]")!;
+
+      this.setupListeners();
+    }
+
+    setupListeners() {
+      // Close on backdrop click
+      this.backdrop.addEventListener("click", () => this.close());
+
+      // Close on close button
+      const closeBtn = this.overlay.querySelector("[data-modal-close]");
+      closeBtn?.addEventListener("click", () => this.close());
+
+      // Close on ESC
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !this.overlay.classList.contains("hidden")) {
+          this.close();
+        }
+      });
+    }
+
+    open() {
+      this.overlay.classList.remove("hidden");
+      this.overlay.classList.add("flex");
+
+      requestAnimationFrame(() => {
+        this.content.classList.remove("scale-95", "opacity-0");
+        this.content.classList.add("scale-100", "opacity-100");
+      });
+
+      document.body.style.overflow = "hidden";
+    }
+
+    close() {
+      this.content.classList.remove("scale-100", "opacity-100");
+      this.content.classList.add("scale-95", "opacity-0");
+
+      setTimeout(() => {
+        this.overlay.classList.add("hidden");
+        this.overlay.classList.remove("flex");
+        document.body.style.overflow = "";
+      }, 300);
+    }
+  }
+
+  // Initialize all modals
+  document.querySelectorAll("[data-modal]").forEach((overlay) => {
+    new Modal(overlay as HTMLElement);
+  });
+
+  // Global function to open modal by ID
+  (window as any).openModal = (id: string) => {
+    const modal = document.getElementById(id);
+    if (modal) {
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+      const content = modal.querySelector("[data-modal-content]");
+      requestAnimationFrame(() => {
+        content?.classList.remove("scale-95", "opacity-0");
+        content?.classList.add("scale-100", "opacity-100");
+      });
+      document.body.style.overflow = "hidden";
+    }
+  };
+</script>

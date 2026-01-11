@@ -1,0 +1,328 @@
+---
+import PublicLayout from "@/layouts/PublicLayout.astro";
+import Badge from "@/components/ui/Badge.astro";
+import AddToCartButton from "@/components/islands/AddToCartButton";
+import { supabase } from "@/lib/supabase";
+
+const { slug } = Astro.params;
+
+// Fetch product with relations
+const { data: product, error } = await supabase
+  .from("products")
+  .select(
+    `
+    *,
+    category:categories(id, name, slug),
+    images:product_images(id, image_url, order),
+    variants:product_variants(id, size, stock)
+  `
+  )
+  .eq("slug", slug)
+  .eq("active", true)
+  .single();
+
+if (error || !product) {
+  return Astro.redirect("/productos");
+}
+
+// Sort images by order
+const sortedImages = product.images?.sort((a, b) => a.order - b.order) || [];
+const mainImage =
+  sortedImages[0]?.image_url ||
+  "https://placehold.co/600x600/1a1a1a/ccff00?text=No+Image";
+
+// Sort variants by size order
+const sizeOrder = [
+  "XS",
+  "S",
+  "M",
+  "L",
+  "XL",
+  "XXL",
+  "36",
+  "37",
+  "38",
+  "39",
+  "40",
+  "41",
+  "42",
+  "43",
+  "44",
+  "45",
+  "46",
+];
+const sortedVariants =
+  product.variants?.sort((a, b) => {
+    return sizeOrder.indexOf(a.size) - sizeOrder.indexOf(b.size);
+  }) || [];
+
+const hasOffer = product.is_offer && product.offer_price;
+const displayPrice = hasOffer ? product.offer_price : product.price;
+
+function formatPrice(price: number): string {
+  return new Intl.NumberFormat("es-ES", {
+    style: "currency",
+    currency: "EUR",
+  }).format(price);
+}
+
+function calculateDiscount(original: number, offer: number): number {
+  return Math.round(((original - offer) / original) * 100);
+}
+---
+
+<PublicLayout
+  title={product.name}
+  description={product.description || undefined}
+>
+  <div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumbs -->
+    <nav class="mb-6 text-sm text-muted-foreground">
+      <ol class="flex items-center gap-2">
+        <li>
+          <a href="/" class="hover:text-primary transition-colors">Inicio</a>
+        </li>
+        <li>/</li>
+        <li>
+          <a href="/productos" class="hover:text-primary transition-colors"
+            >Productos</a>
+        </li>
+        {
+          product.category && (
+            <>
+              <li>/</li>
+              <li>
+                <a
+                  href={`/categoria/${product.category.slug}`}
+                  class="hover:text-primary transition-colors"
+                >
+                  {product.category.name}
+                </a>
+              </li>
+            </>
+          )
+        }
+        <li>/</li>
+        <li class="text-foreground">{product.name}</li>
+      </ol>
+    </nav>
+
+    <div class="lg:grid lg:grid-cols-2 lg:gap-12">
+      <!-- Gallery -->
+      <div class="mb-8 lg:mb-0">
+        <!-- Main Image -->
+        <div
+          class="relative aspect-square rounded-lg overflow-hidden bg-muted mb-4"
+        >
+          <img
+            id="main-image"
+            src={mainImage}
+            alt={product.name}
+            class="w-full h-full object-cover"
+          />
+
+          {
+            hasOffer && (
+              <Badge
+                variant="error"
+                class="absolute top-4 left-4 text-lg font-bold"
+              >
+                -{calculateDiscount(product.price, product.offer_price!)}%
+              </Badge>
+            )
+          }
+        </div>
+
+        <!-- Thumbnails -->
+        {
+          sortedImages.length > 1 && (
+            <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+              {sortedImages.map((img, index) => (
+                <button
+                  class="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-muted border-2 border-transparent hover:border-primary transition-colors thumbnail-btn"
+                  data-image={img.image_url}
+                >
+                  <img
+                    src={img.image_url}
+                    alt={`${product.name} - imagen ${index + 1}`}
+                    class="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          )
+        }
+      </div>
+
+      <!-- Product Info -->
+      <div>
+        <h1 class="font-display text-3xl md:text-4xl lg:text-5xl mb-4">
+          {product.name}
+        </h1>
+
+        <!-- Price -->
+        <div class="flex items-center gap-3 mb-6">
+          <span
+            class:list={[
+              "text-3xl font-bold",
+              hasOffer ? "text-accent" : "text-foreground",
+            ]}
+          >
+            {formatPrice(displayPrice!)}
+          </span>
+
+          {
+            hasOffer && (
+              <span class="text-xl text-muted-foreground line-through">
+                {formatPrice(product.price)}
+              </span>
+            )
+          }
+        </div>
+
+        <!-- Description -->
+        {
+          product.description && (
+            <p class="text-muted-foreground mb-8 leading-relaxed">
+              {product.description}
+            </p>
+          )
+        }
+
+        <!-- Size Selector -->
+        <div class="mb-8">
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-heading text-sm uppercase tracking-wider"
+              >Talla</span
+            >
+            <button class="text-sm text-primary hover:underline"
+              >Guía de tallas</button
+            >
+          </div>
+
+          <div class="flex flex-wrap gap-2" id="size-selector">
+            {
+              sortedVariants.map((variant) => (
+                <button
+                  class:list={[
+                    "size-btn px-4 py-3 min-w-[60px] border rounded-lg font-medium transition-all touch-target",
+                    variant.stock <= 0
+                      ? "bg-muted text-muted-foreground cursor-not-allowed opacity-50 border-border"
+                      : "bg-card border-border hover:border-primary",
+                  ]}
+                  data-variant-id={variant.id}
+                  data-size={variant.size}
+                  data-stock={variant.stock}
+                  data-price={displayPrice}
+                  disabled={variant.stock <= 0}
+                >
+                  {variant.size}
+                  {variant.stock > 0 && variant.stock <= 5 && (
+                    <span class="ml-1 text-yellow-400">⚡</span>
+                  )}
+                </button>
+              ))
+            }
+          </div>
+
+          <!-- Stock warning -->
+          <p id="stock-warning" class="mt-3 text-sm text-yellow-400 hidden">
+            ⚡ <span id="stock-count"></span> unidades disponibles
+          </p>
+        </div>
+
+        <!-- Add to Cart -->
+        <div id="add-to-cart-container" class="hidden">
+          <AddToCartButton
+            client:load
+            productId={product.id}
+            productName={product.name}
+            productSlug={product.slug}
+            variantId=""
+            size=""
+            price={displayPrice!}
+            imageUrl={mainImage}
+            stock={0}
+          />
+        </div>
+
+        <div
+          id="select-size-message"
+          class="py-4 text-center text-muted-foreground border border-dashed border-border rounded-lg"
+        >
+          Selecciona una talla para añadir al carrito
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Thumbnail click
+    document.querySelectorAll(".thumbnail-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const mainImg = document.getElementById(
+          "main-image"
+        ) as HTMLImageElement;
+        const newSrc = (btn as HTMLElement).dataset.image;
+        if (mainImg && newSrc) {
+          mainImg.src = newSrc;
+        }
+
+        // Update active state
+        document
+          .querySelectorAll(".thumbnail-btn")
+          .forEach((b) => b.classList.remove("border-primary"));
+        btn.classList.add("border-primary");
+      });
+    });
+
+    // Size selector
+    let selectedVariant: { id: string; size: string; stock: number } | null =
+      null;
+
+    document.querySelectorAll(".size-btn:not([disabled])").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const el = btn as HTMLElement;
+
+        // Update visual state
+        document.querySelectorAll(".size-btn").forEach((b) => {
+          b.classList.remove("border-primary", "bg-primary/10");
+        });
+        el.classList.add("border-primary", "bg-primary/10");
+
+        // Store selection
+        selectedVariant = {
+          id: el.dataset.variantId!,
+          size: el.dataset.size!,
+          stock: parseInt(el.dataset.stock || "0"),
+        };
+
+        // Show stock warning if low
+        const stockWarning = document.getElementById("stock-warning");
+        const stockCount = document.getElementById("stock-count");
+        if (selectedVariant.stock <= 5 && stockWarning && stockCount) {
+          stockCount.textContent = selectedVariant.stock.toString();
+          stockWarning.classList.remove("hidden");
+        } else {
+          stockWarning?.classList.add("hidden");
+        }
+
+        // Show add to cart button
+        document.getElementById("select-size-message")?.classList.add("hidden");
+
+        // Update add to cart button with new variant info
+        const container = document.getElementById("add-to-cart-container");
+        if (container) {
+          container.classList.remove("hidden");
+          // The React component will be re-rendered with proper props
+          // For now, we use a workaround with dispatch event
+          window.dispatchEvent(
+            new CustomEvent("variant-selected", {
+              detail: selectedVariant,
+            })
+          );
+        }
+      });
+    });
+  </script>
+</PublicLayout>

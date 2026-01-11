@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "./BaseLayout.astro";
+import CartIcon from "@/components/islands/CartIcon";
 
 interface Props {
   title: string;
@@ -84,9 +85,7 @@ const { title, description } = Astro.props;
           </button>
 
           <!-- Cart (React Island) -->
-          <div id="cart-icon-container">
-            <!-- CartIcon island will be mounted here -->
-          </div>
+          <CartIcon client:load />
         </div>
       </div>
     </div>
@@ -185,22 +184,26 @@ const { title, description } = Astro.props;
           <ul class="space-y-2 text-sm text-muted-foreground">
             <li>
               <a href="/productos" class="hover:text-primary transition-colors"
-                >Todos los productos</a>
+                >Todos los productos</a
+              >
             </li>
             <li>
               <a
                 href="/productos?ofertas=true"
-                class="hover:text-primary transition-colors">Ofertas</a>
+                class="hover:text-primary transition-colors">Ofertas</a
+              >
             </li>
             <li>
               <a
                 href="/categoria/zapatillas"
-                class="hover:text-primary transition-colors">Zapatillas</a>
+                class="hover:text-primary transition-colors">Zapatillas</a
+              >
             </li>
             <li>
               <a
                 href="/categoria/camisetas"
-                class="hover:text-primary transition-colors">Camisetas</a>
+                class="hover:text-primary transition-colors">Camisetas</a
+              >
             </li>
           </ul>
         </div>
@@ -215,19 +218,23 @@ const { title, description } = Astro.props;
           <ul class="space-y-2 text-sm text-muted-foreground">
             <li>
               <a href="/contacto" class="hover:text-primary transition-colors"
-                >Contacto</a>
+                >Contacto</a
+              >
             </li>
             <li>
               <a href="/envios" class="hover:text-primary transition-colors"
-                >Envíos y devoluciones</a>
+                >Envíos y devoluciones</a
+              >
             </li>
             <li>
               <a href="/privacidad" class="hover:text-primary transition-colors"
-                >Política de privacidad</a>
+                >Política de privacidad</a
+              >
             </li>
             <li>
               <a href="/terminos" class="hover:text-primary transition-colors"
-                >Términos y condiciones</a>
+                >Términos y condiciones</a
+              >
             </li>
           </ul>
         </div>

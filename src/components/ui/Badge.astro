@@ -1,0 +1,40 @@
+---
+interface Props {
+  variant?: "default" | "success" | "warning" | "error" | "info";
+  size?: "sm" | "md";
+  pulse?: boolean;
+  class?: string;
+}
+
+const {
+  variant = "default",
+  size = "md",
+  pulse = false,
+  class: className = "",
+} = Astro.props;
+
+const variants = {
+  default: "bg-muted text-muted-foreground",
+  success: "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30",
+  warning: "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30",
+  error: "bg-accent/20 text-accent border border-accent/30",
+  info: "bg-electric/20 text-electric border border-electric/30",
+};
+
+const sizes = {
+  sm: "px-2 py-0.5 text-xs",
+  md: "px-2.5 py-1 text-sm",
+};
+---
+
+<span
+  class:list={[
+    "inline-flex items-center font-medium rounded-full",
+    variants[variant],
+    sizes[size],
+    pulse && "animate-pulse",
+    className,
+  ]}
+>
+  <slot />
+</span>

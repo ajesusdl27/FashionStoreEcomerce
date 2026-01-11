@@ -1,0 +1,82 @@
+---
+interface Props {
+  type?: "text" | "email" | "password" | "number" | "tel" | "search";
+  name: string;
+  label?: string;
+  placeholder?: string;
+  value?: string;
+  error?: string;
+  required?: boolean;
+  disabled?: boolean;
+  class?: string;
+}
+
+const {
+  type = "text",
+  name,
+  label,
+  placeholder,
+  value = "",
+  error,
+  required = false,
+  disabled = false,
+  class: className = "",
+} = Astro.props;
+
+const inputId = `input-${name}`;
+const hasError = !!error;
+---
+
+<div class={`relative ${className}`}>
+  {
+    label && (
+      <label
+        for={inputId}
+        class="block text-sm font-medium text-muted-foreground mb-2"
+      >
+        {label}
+        {required && <span class="text-accent ml-1">*</span>}
+      </label>
+    )
+  }
+
+  <input
+    type={type}
+    id={inputId}
+    name={name}
+    value={value}
+    placeholder={placeholder}
+    required={required}
+    disabled={disabled}
+    class:list={[
+      "w-full px-4 py-3 bg-card border rounded-lg text-foreground transition-all duration-base",
+      "placeholder:text-muted-foreground",
+      "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary",
+      "disabled:opacity-50 disabled:cursor-not-allowed",
+      hasError
+        ? "border-accent animate-shake"
+        : "border-border hover:border-muted-foreground",
+    ]}
+  />
+
+  {error && <p class="mt-2 text-sm text-accent animate-fade-in">{error}</p>}
+</div>
+
+<style>
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-4px);
+    }
+    75% {
+      transform: translateX(4px);
+    }
+  }
+
+  .animate-shake {
+    animation: shake 0.4s ease-in-out;
+  }
+</style>

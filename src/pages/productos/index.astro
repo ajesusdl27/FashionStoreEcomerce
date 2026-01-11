@@ -1,0 +1,226 @@
+---
+import PublicLayout from "@/layouts/PublicLayout.astro";
+import ProductCard from "@/components/product/ProductCard.astro";
+import Skeleton from "@/components/ui/Skeleton.astro";
+import { supabase } from "@/lib/supabase";
+
+// Get query params
+const url = new URL(Astro.request.url);
+const categoryFilter = url.searchParams.get("categoria");
+const ofertasFilter = url.searchParams.get("ofertas") === "true";
+const sortBy = url.searchParams.get("orden") || "created_at";
+const sortOrder = url.searchParams.get("dir") === "asc" ? true : false;
+
+// Build query
+let query = supabase
+  .from("products")
+  .select(
+    `
+    *,
+    category:categories(name, slug),
+    images:product_images(image_url, order),
+    variants:product_variants(id, size, stock)
+  `
+  )
+  .eq("active", true);
+
+// Apply filters
+if (categoryFilter) {
+  const { data: cat } = await supabase
+    .from("categories")
+    .select("id")
+    .eq("slug", categoryFilter)
+    .single();
+
+  if (cat) {
+    query = query.eq("category_id", cat.id);
+  }
+}
+
+if (ofertasFilter) {
+  query = query.eq("is_offer", true);
+}
+
+// Apply sorting
+query = query.order(sortBy, { ascending: sortOrder });
+
+const { data: products, error } = await query;
+
+// Get categories for filter
+const { data: categories } = await supabase
+  .from("categories")
+  .select("*")
+  .order("name");
+
+const pageTitle = ofertasFilter
+  ? "Ofertas"
+  : categoryFilter
+    ? categories?.find((c) => c.slug === categoryFilter)?.name || "Productos"
+    : "Todos los Productos";
+---
+
+<PublicLayout title={pageTitle}>
+  <div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="font-display text-4xl md:text-5xl mb-2">{pageTitle}</h1>
+      <p class="text-muted-foreground">
+        {products?.length || 0} productos encontrados
+      </p>
+    </div>
+
+    <div class="lg:flex lg:gap-8">
+      <!-- Filters Sidebar (Desktop) -->
+      <aside class="hidden lg:block w-64 flex-shrink-0">
+        <div class="sticky top-24 space-y-6">
+          <!-- Categories -->
+          <div>
+            <h3
+              class="font-heading text-sm font-semibold uppercase tracking-wider mb-3"
+            >
+              Categorías
+            </h3>
+            <ul class="space-y-2">
+              <li>
+                <a
+                  href="/productos"
+                  class:list={[
+                    "block py-1.5 text-sm transition-colors",
+                    !categoryFilter
+                      ? "text-primary font-medium"
+                      : "text-muted-foreground hover:text-foreground",
+                  ]}
+                >
+                  Todas
+                </a>
+              </li>
+              {
+                categories?.map((cat) => (
+                  <li>
+                    <a
+                      href={`/productos?categoria=${cat.slug}`}
+                      class:list={[
+                        "block py-1.5 text-sm transition-colors",
+                        categoryFilter === cat.slug
+                          ? "text-primary font-medium"
+                          : "text-muted-foreground hover:text-foreground",
+                      ]}
+                    >
+                      {cat.name}
+                    </a>
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
+
+          <!-- Offers Filter -->
+          <div>
+            <h3
+              class="font-heading text-sm font-semibold uppercase tracking-wider mb-3"
+            >
+              Ofertas
+            </h3>
+            <a
+              href={ofertasFilter ? "/productos" : "/productos?ofertas=true"}
+              class:list={[
+                "flex items-center gap-2 py-1.5 text-sm transition-colors",
+                ofertasFilter
+                  ? "text-accent font-medium"
+                  : "text-muted-foreground hover:text-foreground",
+              ]}
+            >
+              <span class={ofertasFilter ? "text-accent" : ""}>🔥</span>
+              Solo ofertas
+            </a>
+          </div>
+
+          <!-- Sort -->
+          <div>
+            <h3
+              class="font-heading text-sm font-semibold uppercase tracking-wider mb-3"
+            >
+              Ordenar por
+            </h3>
+            <select
+              id="sort-select"
+              class="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="created_at" selected={sortBy === "created_at"}
+                >Más recientes</option
+              >
+              <option
+                value="price-asc"
+                selected={sortBy === "price" && sortOrder}
+                >Precio: menor a mayor</option
+              >
+              <option
+                value="price-desc"
+                selected={sortBy === "price" && !sortOrder}
+                >Precio: mayor a menor</option
+              >
+              <option value="name" selected={sortBy === "name"}
+                >Nombre A-Z</option
+              >
+            </select>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Products Grid -->
+      <div class="flex-1">
+        {
+          error ? (
+            <div class="text-center py-12">
+              <p class="text-muted-foreground">
+                Error al cargar productos. Por favor, intenta de nuevo.
+              </p>
+            </div>
+          ) : products && products.length > 0 ? (
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+              {products.map((product) => (
+                <ProductCard product={product} />
+              ))}
+            </div>
+          ) : (
+            <div class="text-center py-12">
+              <p class="text-muted-foreground mb-4">
+                No se encontraron productos.
+              </p>
+              <a href="/productos" class="text-primary hover:underline">
+                Ver todos los productos
+              </a>
+            </div>
+          )
+        }
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Sort select handler
+    const sortSelect = document.getElementById(
+      "sort-select"
+    ) as HTMLSelectElement;
+    sortSelect?.addEventListener("change", () => {
+      const value = sortSelect.value;
+      const url = new URL(window.location.href);
+
+      if (value === "created_at") {
+        url.searchParams.delete("orden");
+        url.searchParams.delete("dir");
+      } else if (value === "price-asc") {
+        url.searchParams.set("orden", "price");
+        url.searchParams.set("dir", "asc");
+      } else if (value === "price-desc") {
+        url.searchParams.set("orden", "price");
+        url.searchParams.delete("dir");
+      } else if (value === "name") {
+        url.searchParams.set("orden", "name");
+        url.searchParams.set("dir", "asc");
+      }
+
+      window.location.href = url.toString();
+    });
+  </script>
+</PublicLayout>

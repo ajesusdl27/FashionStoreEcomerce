@@ -1,0 +1,122 @@
+---
+import Badge from "@/components/ui/Badge.astro";
+
+interface Props {
+  product: {
+    id: string;
+    name: string;
+    slug: string;
+    price: number;
+    offer_price?: number | null;
+    is_offer?: boolean;
+    category?: { name: string; slug: string } | null;
+    images?: { image_url: string; order: number }[] | null;
+    variants?: { id: string; size: string; stock: number }[] | null;
+  };
+  class?: string;
+}
+
+const { product, class: className = "" } = Astro.props;
+
+const imageUrl =
+  product.images?.[0]?.image_url ||
+  "https://placehold.co/400x400/1a1a1a/ccff00?text=No+Image";
+const hasOffer = product.is_offer && product.offer_price;
+const displayPrice = hasOffer ? product.offer_price : product.price;
+const totalStock = product.variants?.reduce((sum, v) => sum + v.stock, 0) || 0;
+const isLowStock = totalStock > 0 && totalStock <= 5;
+
+function formatPrice(price: number): string {
+  return new Intl.NumberFormat("es-ES", {
+    style: "currency",
+    currency: "EUR",
+  }).format(price);
+}
+
+function calculateDiscount(original: number, offer: number): number {
+  return Math.round(((original - offer) / original) * 100);
+}
+---
+
+<a href={`/productos/${product.slug}`} class:list={["group block", className]}>
+  <div class="relative aspect-square rounded-lg overflow-hidden bg-muted mb-3">
+    <!-- Image -->
+    <img
+      src={imageUrl}
+      alt={product.name}
+      class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+      loading="lazy"
+      decoding="async"
+    />
+
+    <!-- Overlay on hover -->
+    <div
+      class="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+    >
+    </div>
+
+    <!-- Badges -->
+    <div class="absolute top-2 left-2 flex flex-col gap-1">
+      {
+        hasOffer && (
+          <Badge variant="error" class="font-bold">
+            -{calculateDiscount(product.price, product.offer_price!)}%
+          </Badge>
+        )
+      }
+
+      {
+        product.category && (
+          <Badge variant="default" size="sm">
+            {product.category.name}
+          </Badge>
+        )
+      }
+    </div>
+
+    <!-- Low stock indicator -->
+    {
+      isLowStock && (
+        <div class="absolute bottom-2 left-2 right-2">
+          <Badge variant="warning" class="w-full justify-center">
+            ⚡ Últimas {totalStock} unidades
+          </Badge>
+        </div>
+      )
+    }
+
+    <!-- Out of stock -->
+    {
+      totalStock === 0 && (
+        <div class="absolute inset-0 bg-background/80 flex items-center justify-center">
+          <Badge variant="error" size="md">
+            AGOTADO
+          </Badge>
+        </div>
+      )
+    }
+  </div>
+
+  <!-- Product Info -->
+  <h3
+    class="font-medium text-sm mb-1 group-hover:text-primary transition-colors line-clamp-2"
+  >
+    {product.name}
+  </h3>
+
+  <div class="flex items-center gap-2">
+    <span
+      class:list={["font-bold", hasOffer ? "text-accent" : "text-foreground"]}
+    >
+      {formatPrice(displayPrice!)}
+    </span>
+
+    {
+      hasOffer && (
+        <span class="text-sm text-muted-foreground line-through">
+          {formatPrice(product.price)}
+        </span>
+      )
+    }
+  </div>
+</a>
