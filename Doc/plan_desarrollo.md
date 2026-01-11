@@ -20,9 +20,9 @@ Este plan divide el desarrollo en **11 fases progresivas**, cada una construyend
 | Fase                | Estado        | Descripción                                    |
 | ------------------- | ------------- | ---------------------------------------------- |
 | 1. Setup & Database | ✅ Completada | Astro 5, React, Tailwind, Nanostores, Supabase |
-| 2. Design System    | 🔲 Pendiente  | Componentes UI, layouts, header/footer         |
-| 3. Catálogo         | 🔲 Pendiente  | Homepage, productos, categorías                |
-| 4. Carrito          | 🔲 Pendiente  | Store, slide-over, persistencia                |
+| 2. Design System    | ✅ Completada | Componentes UI, layouts, header/footer         |
+| 3. Catálogo         | ✅ Completada | Homepage, productos, categorías                |
+| 4. Carrito          | � En curso    | Store, slide-over, persistencia                |
 | 5. Autenticación    | 🔲 Pendiente  | Admin/cliente login, middleware                |
 | 6. Panel Admin      | 🔲 Pendiente  | Dashboard, CRUD productos/pedidos              |
 | 7. Checkout         | 🔲 Pendiente  | 3 pasos, Stripe, webhooks                      |
@@ -61,60 +61,37 @@ Este plan divide el desarrollo en **11 fases progresivas**, cada una construyend
 
 ---
 
-## 🎨 Fase 2: Design System (Días 4-7)
+## 🎨 Fase 2: Design System ✅
 
-### Objetivo
+### Completado
 
-Crear sistema de componentes reutilizables con animaciones premium.
-
-### Checklist
-
-#### 2.1 Componentes UI Base
-
-- [ ] **Button.astro/tsx** - Estados: idle, hover, loading, disabled
-- [ ] **Input.astro** - Focus glow, error shake
-- [ ] **Modal.astro** - Fade + scale, backdrop blur
-- [ ] **Badge.astro** - Variantes colores, pulse
-- [ ] **Skeleton.astro** - Shimmer animation
-- [ ] **Toast.tsx** - Slide-in, auto-dismiss
-
-#### 2.2 Header Mejorado
-
-- [ ] Badge carrito con bounce animation
-- [ ] Backdrop-blur al scroll
-- [ ] CartIcon.tsx (React island)
-
-#### 2.3 Animaciones
-
-| Componente   | Animación       | Timing |
-| ------------ | --------------- | ------ |
-| Button Hover | Scale + shadow  | 150ms  |
-| Modal Open   | Fade + scale    | 300ms  |
-| Toast Enter  | Slide-in        | 200ms  |
-| Menu Open    | Slide + stagger | 400ms  |
+- [x] `Button.astro` - Variantes, loading, hover animations
+- [x] `Input.astro` - Focus glow, error shake
+- [x] `Badge.astro` - Colores, pulse
+- [x] `Skeleton.astro` - Shimmer
+- [x] `Modal.astro` - Fade + scale, ESC close
+- [x] `CartIcon.tsx` - Badge con bounce
+- [x] `Toast.tsx` - Sistema de notificaciones
 
 ---
 
-## 📦 Fase 3: Catálogo y Productos (Días 8-12)
+## 📦 Fase 3: Catálogo y Productos ✅
 
-### Checklist
+### Completado
 
-- [ ] **ProductCard.astro** - Hover zoom, badge oferta, lazy loading
-- [ ] **ProductGallery.astro** - Swipe mobile, thumbnails desktop
-- [ ] **SizeSelector.astro** - Touch-friendly 44px, low-stock indicator
-- [ ] `/productos/index.astro` - Grid + filtros
-- [ ] `/productos/[slug].astro` - Detalle + añadir carrito
-- [ ] `/categoria/[slug].astro` - Filtro por categoría
-- [ ] **SearchOverlay.tsx** - Predictivo con debounce 300ms
+- [x] `ProductCard.astro` - Hover zoom, badge oferta, lazy loading
+- [x] `AddToCartButton.tsx` - Estados loading/success/error
+- [x] `/productos/index.astro` - Grid + filtros + ordenamiento
+- [x] `/productos/[slug].astro` - Detalle + galería + selector tallas
+- [x] `/categoria/[slug].astro` - Filtro por categoría
 
 ---
 
-## 🛒 Fase 4: Carrito (Días 13-15)
+## 🛒 Fase 4: Carrito 🟡
 
 ### Checklist
 
-- [ ] **CartSlideOver.tsx** - Bottom sheet mobile / slide-over desktop
-- [ ] **AddToCartButton.tsx** - Estados loading/success/error
+- [ ] **CartSlideOver.tsx** - Slide-over desktop / bottom sheet mobile
 - [ ] **QuantitySelector.tsx** - Botones +/- animados
 - [ ] Barra progreso envío gratis
 - [ ] `/carrito.astro` - Página completa
@@ -186,8 +163,6 @@ Crear sistema de componentes reutilizables con animaciones premium.
 ## 🎁 Fase 11: Extras Opcionales
 
 - [ ] Guía de tallas
-- [ ] Wishlist
-- [ ] Reviews
 
 ---
 

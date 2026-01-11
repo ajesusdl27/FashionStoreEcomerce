@@ -1,0 +1,246 @@
+---
+import PublicLayout from "@/layouts/PublicLayout.astro";
+import Button from "@/components/ui/Button.astro";
+---
+
+<PublicLayout title="Carrito de Compra">
+  <div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <h1 class="font-display text-4xl md:text-5xl mb-8">Tu Carrito</h1>
+
+    <div class="lg:grid lg:grid-cols-3 lg:gap-12">
+      <!-- Cart Items -->
+      <div class="lg:col-span-2 mb-8 lg:mb-0">
+        <div id="cart-items" class="space-y-4">
+          <!-- Items will be rendered by JavaScript -->
+        </div>
+
+        <div
+          id="cart-empty"
+          class="hidden text-center py-12 border border-dashed border-border rounded-lg"
+        >
+          <svg
+            class="w-16 h-16 mx-auto text-muted-foreground mb-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+          </svg>
+          <p class="text-muted-foreground mb-4">Tu carrito está vacío</p>
+          <a href="/productos" class="text-primary hover:underline"
+            >Ver productos</a
+          >
+        </div>
+      </div>
+
+      <!-- Order Summary -->
+      <div class="lg:col-span-1">
+        <div class="bg-card border border-border rounded-lg p-6 sticky top-24">
+          <h2 class="font-heading text-xl font-semibold mb-6">
+            Resumen del Pedido
+          </h2>
+
+          <!-- Free Shipping Progress -->
+          <div id="shipping-progress" class="mb-6">
+            <p id="shipping-message" class="text-sm text-muted-foreground mb-2">
+            </p>
+            <div class="h-2 bg-muted rounded-full overflow-hidden">
+              <div
+                id="shipping-bar"
+                class="h-full bg-primary transition-all duration-500"
+                style="width: 0%"
+              >
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-3 text-sm mb-6">
+            <div class="flex justify-between">
+              <span class="text-muted-foreground">Subtotal</span>
+              <span id="subtotal">0,00 €</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-muted-foreground">Envío</span>
+              <span id="shipping">4,99 €</span>
+            </div>
+            <div
+              class="border-t border-border pt-3 flex justify-between font-bold text-lg"
+            >
+              <span>Total</span>
+              <span id="total">0,00 €</span>
+            </div>
+          </div>
+
+          <Button
+            href="/checkout"
+            variant="primary"
+            size="lg"
+            class="w-full mb-3"
+          >
+            FINALIZAR COMPRA
+          </Button>
+
+          <a
+            href="/productos"
+            class="block text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Continuar comprando
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    import {
+      $cart,
+      $cartSubtotal,
+      removeFromCart,
+      updateQuantity,
+    } from "@/stores/cart";
+
+    const FREE_SHIPPING_THRESHOLD = 50;
+    const SHIPPING_COST = 4.99;
+
+    function formatPrice(price: number): string {
+      return new Intl.NumberFormat("es-ES", {
+        style: "currency",
+        currency: "EUR",
+      }).format(price);
+    }
+
+    function renderCart() {
+      const items = $cart.get();
+      const subtotal = $cartSubtotal.get();
+      const itemsContainer = document.getElementById("cart-items");
+      const emptyContainer = document.getElementById("cart-empty");
+
+      if (!itemsContainer || !emptyContainer) return;
+
+      if (items.length === 0) {
+        itemsContainer.classList.add("hidden");
+        emptyContainer.classList.remove("hidden");
+        updateSummary(0);
+        return;
+      }
+
+      itemsContainer.classList.remove("hidden");
+      emptyContainer.classList.add("hidden");
+
+      itemsContainer.innerHTML = items
+        .map(
+          (item) => `
+        <div class="flex gap-4 p-4 bg-card border border-border rounded-lg" data-item-id="${item.id}">
+          <a href="/productos/${item.productSlug}" class="flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden bg-muted">
+            <img src="${item.imageUrl}" alt="${item.productName}" class="w-full h-full object-cover">
+          </a>
+          
+          <div class="flex-1 min-w-0">
+            <a href="/productos/${item.productSlug}" class="font-medium hover:text-primary transition-colors line-clamp-1">
+              ${item.productName}
+            </a>
+            <p class="text-sm text-muted-foreground">Talla: ${item.size}</p>
+            <p class="font-bold mt-2">${formatPrice(item.price)}</p>
+          </div>
+          
+          <div class="flex flex-col items-end gap-3">
+            <div class="inline-flex items-center border border-border rounded-lg overflow-hidden">
+              <button 
+                class="qty-btn decrease w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors"
+                data-action="decrease"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+                </svg>
+              </button>
+              <span class="w-12 text-center font-medium">${item.quantity}</span>
+              <button 
+                class="qty-btn increase w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors"
+                data-action="increase"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+            </div>
+            <button class="remove-btn text-sm text-muted-foreground hover:text-accent transition-colors">
+              Eliminar
+            </button>
+          </div>
+        </div>
+      `
+        )
+        .join("");
+
+      // Add event listeners
+      itemsContainer.querySelectorAll("[data-item-id]").forEach((el) => {
+        const itemId = el.getAttribute("data-item-id")!;
+        const item = items.find((i) => i.id === itemId)!;
+
+        el.querySelector(".decrease")?.addEventListener("click", () => {
+          updateQuantity(itemId, item.quantity - 1);
+        });
+
+        el.querySelector(".increase")?.addEventListener("click", () => {
+          updateQuantity(itemId, item.quantity + 1);
+        });
+
+        el.querySelector(".remove-btn")?.addEventListener("click", () => {
+          removeFromCart(itemId);
+        });
+      });
+
+      updateSummary(subtotal);
+    }
+
+    function updateSummary(subtotal: number) {
+      const isFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
+      const shipping = isFreeShipping ? 0 : SHIPPING_COST;
+      const total = subtotal + shipping;
+      const progress = Math.min(
+        (subtotal / FREE_SHIPPING_THRESHOLD) * 100,
+        100
+      );
+
+      const subtotalEl = document.getElementById("subtotal");
+      const shippingEl = document.getElementById("shipping");
+      const totalEl = document.getElementById("total");
+      const shippingBar = document.getElementById("shipping-bar");
+      const shippingMessage = document.getElementById("shipping-message");
+
+      if (subtotalEl) subtotalEl.textContent = formatPrice(subtotal);
+      if (shippingEl) {
+        shippingEl.textContent = isFreeShipping
+          ? "GRATIS"
+          : formatPrice(SHIPPING_COST);
+        shippingEl.className = isFreeShipping
+          ? "text-emerald-400 font-medium"
+          : "";
+      }
+      if (totalEl) totalEl.textContent = formatPrice(total);
+      if (shippingBar) shippingBar.style.width = `${progress}%`;
+      if (shippingMessage) {
+        if (isFreeShipping) {
+          shippingMessage.textContent = "🎉 ¡Tienes envío GRATIS!";
+          shippingMessage.className =
+            "text-sm text-emerald-400 font-medium mb-2";
+        } else {
+          const remaining = FREE_SHIPPING_THRESHOLD - subtotal;
+          shippingMessage.textContent = `Añade ${formatPrice(remaining)} más para envío GRATIS`;
+          shippingMessage.className = "text-sm text-muted-foreground mb-2";
+        }
+      }
+    }
+
+    // Initial render
+    renderCart();
+
+    // Subscribe to cart changes
+    $cart.subscribe(() => renderCart());
+  </script>
+</PublicLayout>

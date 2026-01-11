@@ -1,20 +1,22 @@
 import { renderers } from './renderers.mjs';
-import { c as createExports, s as serverEntrypointModule } from './chunks/_@astrojs-ssr-adapter_BYj9ViSE.mjs';
-import { manifest } from './manifest_CuGD-czj.mjs';
+import { c as createExports, s as serverEntrypointModule } from './chunks/_@astrojs-ssr-adapter_DJLS_CM-.mjs';
+import { manifest } from './manifest_7DBcHzN2.mjs';
 
 const serverIslandMap = new Map();;
 
 const _page0 = () => import('./pages/_image.astro.mjs');
-const _page1 = () => import('./pages/categoria/_slug_.astro.mjs');
-const _page2 = () => import('./pages/productos/_slug_.astro.mjs');
-const _page3 = () => import('./pages/productos.astro.mjs');
-const _page4 = () => import('./pages/index.astro.mjs');
+const _page1 = () => import('./pages/carrito.astro.mjs');
+const _page2 = () => import('./pages/categoria/_slug_.astro.mjs');
+const _page3 = () => import('./pages/productos/_slug_.astro.mjs');
+const _page4 = () => import('./pages/productos.astro.mjs');
+const _page5 = () => import('./pages/index.astro.mjs');
 const pageMap = new Map([
     ["node_modules/astro/dist/assets/endpoint/node.js", _page0],
-    ["src/pages/categoria/[slug].astro", _page1],
-    ["src/pages/productos/[slug].astro", _page2],
-    ["src/pages/productos/index.astro", _page3],
-    ["src/pages/index.astro", _page4]
+    ["src/pages/carrito.astro", _page1],
+    ["src/pages/categoria/[slug].astro", _page2],
+    ["src/pages/productos/[slug].astro", _page3],
+    ["src/pages/productos/index.astro", _page4],
+    ["src/pages/index.astro", _page5]
 ]);
 
 const _manifest = Object.assign(manifest, {
