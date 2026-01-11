@@ -22,8 +22,8 @@ Este plan divide el desarrollo en **11 fases progresivas**, cada una construyend
 | 1. Setup & Database | ✅ Completada | Astro 5, React, Tailwind, Nanostores, Supabase |
 | 2. Design System    | ✅ Completada | Componentes UI, layouts, header/footer         |
 | 3. Catálogo         | ✅ Completada | Homepage, productos, categorías                |
-| 4. Carrito          | � En curso    | Store, slide-over, persistencia                |
-| 5. Autenticación    | 🔲 Pendiente  | Admin/cliente login, middleware                |
+| 4. Carrito          | ✅ Completada | Store, slide-over, persistencia                |
+| 5. Autenticación    | ✅ Completada | Admin/cliente login, middleware, registro      |
 | 6. Panel Admin      | 🔲 Pendiente  | Dashboard, CRUD productos/pedidos              |
 | 7. Checkout         | 🔲 Pendiente  | 3 pasos, Stripe, webhooks                      |
 | 8. Emails           | 🔲 Pendiente  | Resend, confirmación pedido                    |
@@ -98,15 +98,16 @@ Este plan divide el desarrollo en **11 fases progresivas**, cada una construyend
 
 ---
 
-## 🔐 Fase 5: Autenticación (Días 16-18)
+## 🔐 Fase 5: Autenticación ✅
 
-### Checklist
+### Completado
 
-- [ ] `/admin/login.astro`
-- [ ] `/cuenta/login.astro`
-- [ ] `/cuenta/registro.astro` - Auth desde frontend
-- [ ] `/cuenta/index.astro` - Dashboard cliente
-- [ ] `/api/auth/login.ts`, `logout.ts`, `register.ts`
+- [x] `/admin/login.astro` - Login minimalista para admin
+- [x] `/cuenta/login.astro` - Login con PublicLayout
+- [x] `/cuenta/registro.astro` - Auth desde frontend (evita Cloudflare)
+- [x] `/cuenta/index.astro` - Dashboard cliente
+- [x] `/api/auth/login.ts`, `logout.ts`, `set-session.ts`
+- [x] `AuthForm.tsx` - Componente React reutilizable
 
 ---
 

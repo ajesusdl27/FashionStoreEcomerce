@@ -1,0 +1,126 @@
+---
+import PublicLayout from "@/layouts/PublicLayout.astro";
+import AuthForm from "@/components/islands/AuthForm";
+
+const redirectParam = Astro.url.searchParams.get("redirect");
+---
+
+<PublicLayout title="Iniciar Sesión - FashionStore">
+  <div class="min-h-screen flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-md">
+      <!-- Header -->
+      <div class="text-center mb-8">
+        <h1 class="font-display text-4xl text-primary mb-2">BIENVENIDO</h1>
+        <p class="text-muted-foreground">Inicia sesión en tu cuenta</p>
+      </div>
+
+      <!-- Login Card -->
+      <div class="glass border border-border rounded-2xl p-8 animate-fade-in">
+        <AuthForm
+          client:load
+          mode="login"
+          redirectTo={redirectParam || "/cuenta"}
+        />
+
+        <!-- Divider -->
+        <div class="flex items-center gap-4 my-6">
+          <div class="flex-1 h-px bg-border"></div>
+          <span class="text-sm text-muted-foreground">o</span>
+          <div class="flex-1 h-px bg-border"></div>
+        </div>
+
+        <!-- Register link -->
+        <p class="text-center text-muted-foreground">
+          ¿No tienes cuenta?{" "}
+          <a
+            href="/cuenta/registro"
+            class="text-primary hover:underline font-medium"
+          >
+            Regístrate gratis
+          </a>
+        </p>
+      </div>
+
+      <!-- Benefits -->
+      <div class="mt-8 grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+        <div class="flex items-center gap-2">
+          <svg
+            class="w-5 h-5 text-primary"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5 13l4 4L19 7"></path>
+          </svg>
+          Historial de pedidos
+        </div>
+        <div class="flex items-center gap-2">
+          <svg
+            class="w-5 h-5 text-primary"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5 13l4 4L19 7"></path>
+          </svg>
+          Ofertas exclusivas
+        </div>
+        <div class="flex items-center gap-2">
+          <svg
+            class="w-5 h-5 text-primary"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5 13l4 4L19 7"></path>
+          </svg>
+          Checkout rápido
+        </div>
+        <div class="flex items-center gap-2">
+          <svg
+            class="w-5 h-5 text-primary"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5 13l4 4L19 7"></path>
+          </svg>
+          Seguimiento envío
+        </div>
+      </div>
+    </div>
+  </div>
+</PublicLayout>
+
+<style>
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out;
+  }
+</style>

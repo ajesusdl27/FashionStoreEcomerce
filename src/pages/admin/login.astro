@@ -1,0 +1,86 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import AuthForm from "@/components/islands/AuthForm";
+
+const errorParam = Astro.url.searchParams.get("error");
+const redirectParam = Astro.url.searchParams.get("redirect");
+
+let errorMessage = "";
+if (errorParam === "unauthorized") {
+  errorMessage = "No tienes permisos para acceder a esta sección.";
+}
+---
+
+<BaseLayout title="Admin Login - FashionStore">
+  <div class="min-h-screen flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-md">
+      <!-- Logo -->
+      <div class="text-center mb-8">
+        <a href="/" class="inline-block">
+          <span class="font-display text-4xl text-primary">FASHIONSTORE</span>
+        </a>
+        <p class="mt-2 text-muted-foreground">Panel de Administración</p>
+      </div>
+
+      <!-- Login Card -->
+      <div class="glass border border-border rounded-2xl p-8 animate-fade-in">
+        <h1 class="font-heading text-2xl text-center mb-6">Iniciar Sesión</h1>
+
+        {
+          errorMessage && (
+            <div class="mb-6 p-4 bg-accent/10 border border-accent/50 rounded-lg text-accent text-sm animate-shake">
+              {errorMessage}
+            </div>
+          )
+        }
+
+        <AuthForm
+          client:load
+          mode="admin-login"
+          redirectTo={redirectParam || "/admin"}
+        />
+      </div>
+
+      <!-- Back to store link -->
+      <p class="text-center mt-8 text-muted-foreground text-sm">
+        <a href="/" class="hover:text-primary transition-colors">
+          ← Volver a la tienda
+        </a>
+      </p>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-4px);
+    }
+    75% {
+      transform: translateX(4px);
+    }
+  }
+
+  .animate-shake {
+    animation: shake 0.4s ease-in-out;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out;
+  }
+</style>
