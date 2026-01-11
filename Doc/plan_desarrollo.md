@@ -87,14 +87,14 @@ Este plan divide el desarrollo en **11 fases progresivas**, cada una construyend
 
 ---
 
-## 🛒 Fase 4: Carrito 🟡
+## 🛒 Fase 4: Carrito ✅
 
-### Checklist
+### Completado
 
-- [ ] **CartSlideOver.tsx** - Slide-over desktop / bottom sheet mobile
-- [ ] **QuantitySelector.tsx** - Botones +/- animados
-- [ ] Barra progreso envío gratis
-- [ ] `/carrito.astro` - Página completa
+- [x] `CartSlideOver.tsx` - Slide-over desktop / bottom sheet mobile
+- [x] `QuantitySelector.tsx` - Botones +/- animados
+- [x] Barra progreso envío gratis (50€)
+- [x] `/carrito.astro` - Página completa con resumen
 
 ---
 

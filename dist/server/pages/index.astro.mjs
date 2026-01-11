@@ -1,6 +1,6 @@
 import { f as createComponent, l as renderComponent, r as renderTemplate, m as maybeRenderHead, h as addAttribute, o as Fragment } from '../chunks/astro/server_DbJgTwsN.mjs';
 import 'piccolore';
-import { $ as $$PublicLayout } from '../chunks/PublicLayout_CW4JwTmC.mjs';
+import { $ as $$PublicLayout } from '../chunks/PublicLayout_BkNAbcBk.mjs';
 import { s as supabase } from '../chunks/supabase_CyPcJWDY.mjs';
 export { renderers } from '../renderers.mjs';
 
@@ -30,7 +30,7 @@ const $$Index = createComponent(async ($$result, $$props, $$slots) => {
       currency: "EUR"
     }).format(price);
   }
-  return renderTemplate`${renderComponent($$result, "PublicLayout", $$PublicLayout, { "title": "Inicio" }, { "default": async ($$result2) => renderTemplate`  ${maybeRenderHead()}<section class="relative h-[80vh] min-h-[500px] flex items-center justify-center overflow-hidden"> <div class="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background z-10"></div> <div class="absolute inset-0 bg-[url('/hero-bg.jpg')] bg-cover bg-center"></div> <div class="relative z-20 text-center px-4 animate-fade-up"> <h1 class="font-display text-5xl md:text-7xl lg:text-8xl tracking-wider mb-4">
+  return renderTemplate`${renderComponent($$result, "PublicLayout", $$PublicLayout, { "title": "Inicio" }, { "default": async ($$result2) => renderTemplate`  ${maybeRenderHead()}<section class="relative h-[80vh] min-h-[500px] flex items-center justify-center overflow-hidden"> <div class="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background z-10"></div> <div class="absolute inset-0 bg-[url('/hero-bg.svg')] bg-cover bg-center"></div> <div class="relative z-20 text-center px-4 animate-fade-up"> <h1 class="font-display text-5xl md:text-7xl lg:text-8xl tracking-wider mb-4">
 NUEVA <span class="text-primary">COLECCIÓN</span> </h1> <p class="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto mb-8">
 Descubre las últimas tendencias en streetwear urbano
 </p> <a href="/productos" class="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-4 font-heading text-lg tracking-wider hover:animate-pulse-glow neon-glow transition-all">
