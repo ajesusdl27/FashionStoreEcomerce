@@ -1,0 +1,74 @@
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+
+  /* Focus visible for accessibility */
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary;
+  }
+}
+
+@layer components {
+  /* Skeleton shimmer effect */
+  .skeleton {
+    @apply relative overflow-hidden bg-muted;
+    background: linear-gradient(
+      90deg,
+      theme("colors.muted.DEFAULT") 25%,
+      theme("colors.card.DEFAULT") 50%,
+      theme("colors.muted.DEFAULT") 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+
+  /* Glass effect */
+  .glass {
+    @apply bg-card/80 backdrop-blur-md border border-border;
+  }
+
+  /* Neon glow effect */
+  .neon-glow {
+    @apply shadow-[0_0_20px_rgba(204,255,0,0.3)];
+  }
+
+  .neon-glow-hover:hover {
+    @apply shadow-[0_0_30px_rgba(204,255,0,0.5)];
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbar but keep functionality */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Touch-friendly tap highlight */
+  .tap-highlight {
+    -webkit-tap-highlight-color: rgba(204, 255, 0, 0.1);
+  }
+
+  /* Min touch target */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+}
