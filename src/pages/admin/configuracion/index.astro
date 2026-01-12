@@ -5,14 +5,33 @@ import { supabase } from "@/lib/supabase";
 // Fetch settings
 const { data: settings } = await supabase.from("settings").select("*");
 
-const getSettingValue = (key: string) => {
+const getSettingValue = (key: string, defaultValue: string = "") => {
   const setting = settings?.find((s: any) => s.key === key);
-  return setting?.value_bool ?? setting?.value ?? false;
+  // Priority: value_number (for numeric fields) -> value (text) -> value_bool -> default
+  if (setting?.value_number !== null && setting?.value_number !== undefined) {
+    return setting.value_number;
+  }
+  if (setting?.value !== null && setting?.value !== undefined) {
+    return setting.value;
+  }
+  if (setting?.value_bool !== null && setting?.value_bool !== undefined) {
+    return setting.value_bool;
+  }
+  return defaultValue;
+};
+
+const getSettingBool = (key: string) => {
+  const setting = settings?.find((s: any) => s.key === key);
+  if (setting?.value_bool !== null && setting?.value_bool !== undefined) {
+    return setting.value_bool;
+  }
+  // Fallback: check if value is 'true' string
+  return setting?.value === "true";
 };
 ---
 
 <AdminLayout title="Configuración">
-  <div class="max-w-2xl mx-auto space-y-6">
+  <div class="max-w-3xl mx-auto space-y-6">
     <!-- Header -->
     <div>
       <h1 class="font-display text-3xl text-primary">Configuración</h1>
@@ -23,9 +42,29 @@ const getSettingValue = (key: string) => {
     <form id="settings-form" class="space-y-6">
       <!-- Offers Section -->
       <div class="glass border border-border rounded-xl p-6 space-y-4">
-        <h2 class="font-heading text-lg">Sección de Ofertas</h2>
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center"
+          >
+            <svg
+              class="w-5 h-5 text-accent"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <h2 class="font-heading text-lg">Sección de Ofertas</h2>
+        </div>
 
-        <label class="flex items-center justify-between cursor-pointer">
+        <label
+          class="flex items-center justify-between cursor-pointer p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+        >
           <div>
             <span class="font-medium">Mostrar Flash Offers</span>
             <p class="text-sm text-muted-foreground">
@@ -37,7 +76,7 @@ const getSettingValue = (key: string) => {
               type="checkbox"
               id="offers_enabled"
               name="offers_enabled"
-              checked={getSettingValue("offers_enabled")}
+              checked={getSettingBool("offers_enabled")}
               class="sr-only peer"
             />
             <div
@@ -50,11 +89,50 @@ const getSettingValue = (key: string) => {
             </div>
           </div>
         </label>
+
+        <div class="p-4 rounded-lg bg-muted/30">
+          <label
+            for="flash_offers_end"
+            class="block text-sm font-medium text-muted-foreground mb-2"
+          >
+            Fecha y hora de fin de ofertas
+          </label>
+          <input
+            type="datetime-local"
+            id="flash_offers_end"
+            name="flash_offers_end"
+            value={getSettingValue("flash_offers_end", "")}
+            class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+          />
+          <p class="text-xs text-muted-foreground mt-2">
+            La sección de ofertas se ocultará automáticamente cuando llegue esta
+            fecha
+          </p>
+        </div>
       </div>
 
-      <!-- Store Info (placeholder for future) -->
+      <!-- Store Info -->
       <div class="glass border border-border rounded-xl p-6 space-y-4">
-        <h2 class="font-heading text-lg">Información de la Tienda</h2>
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center"
+          >
+            <svg
+              class="w-5 h-5 text-blue-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              ></path>
+            </svg>
+          </div>
+          <h2 class="font-heading text-lg">Información de la Tienda</h2>
+        </div>
 
         <div class="grid gap-4">
           <div>
@@ -68,49 +146,132 @@ const getSettingValue = (key: string) => {
               type="text"
               id="store_name"
               name="store_name"
-              value="FashionStore"
-              disabled
-              class="w-full px-4 py-3 bg-muted border border-border rounded-lg text-muted-foreground cursor-not-allowed"
+              value={getSettingValue("store_name", "FashionStore")}
+              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
             />
-            <p class="text-xs text-muted-foreground mt-1">
-              Configuración fija por ahora
-            </p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label
+                for="store_email"
+                class="block text-sm font-medium text-muted-foreground mb-2"
+              >
+                Email de contacto
+              </label>
+              <input
+                type="email"
+                id="store_email"
+                name="store_email"
+                value={getSettingValue(
+                  "store_email",
+                  "contacto@fashionstore.com"
+                )}
+                class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              />
+            </div>
+            <div>
+              <label
+                for="store_phone"
+                class="block text-sm font-medium text-muted-foreground mb-2"
+              >
+                Teléfono
+              </label>
+              <input
+                type="tel"
+                id="store_phone"
+                name="store_phone"
+                value={getSettingValue("store_phone", "+34 600 000 000")}
+                class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              />
+            </div>
+          </div>
+          <div>
+            <label
+              for="store_address"
+              class="block text-sm font-medium text-muted-foreground mb-2"
+            >
+              Dirección
+            </label>
+            <input
+              type="text"
+              id="store_address"
+              name="store_address"
+              value={getSettingValue(
+                "store_address",
+                "Calle Moda, 123, 28001 Madrid"
+              )}
+              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+            />
           </div>
         </div>
       </div>
 
-      <!-- Shipping (placeholder) -->
+      <!-- Shipping -->
       <div class="glass border border-border rounded-xl p-6 space-y-4">
-        <h2 class="font-heading text-lg">Envío</h2>
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center"
+          >
+            <svg
+              class="w-5 h-5 text-green-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
+              ></path>
+            </svg>
+          </div>
+          <h2 class="font-heading text-lg">Envío</h2>
+        </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-muted-foreground mb-2">
+            <label
+              for="free_shipping_threshold"
+              class="block text-sm font-medium text-muted-foreground mb-2"
+            >
               Envío gratis desde
             </label>
             <div class="relative">
               <input
                 type="number"
-                value="50"
-                disabled
-                class="w-full px-4 py-3 pr-12 bg-muted border border-border rounded-lg text-muted-foreground cursor-not-allowed"
+                id="free_shipping_threshold"
+                name="free_shipping_threshold"
+                step="0.01"
+                min="0"
+                value={getSettingValue("free_shipping_threshold", "50")}
+                class="w-full px-4 py-3 pr-12 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
               />
               <span
                 class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
                 >€</span
               >
             </div>
+            <p class="text-xs text-muted-foreground mt-1">
+              Pedidos superiores a este valor tienen envío gratis
+            </p>
           </div>
           <div>
-            <label class="block text-sm font-medium text-muted-foreground mb-2">
-              Coste de envío
+            <label
+              for="shipping_cost"
+              class="block text-sm font-medium text-muted-foreground mb-2"
+            >
+              Coste de envío estándar
             </label>
             <div class="relative">
               <input
                 type="number"
-                value="4.99"
-                disabled
-                class="w-full px-4 py-3 pr-12 bg-muted border border-border rounded-lg text-muted-foreground cursor-not-allowed"
+                id="shipping_cost"
+                name="shipping_cost"
+                step="0.01"
+                min="0"
+                value={getSettingValue("shipping_cost", "4.99")}
+                class="w-full px-4 py-3 pr-12 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
               />
               <span
                 class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
@@ -119,18 +280,118 @@ const getSettingValue = (key: string) => {
             </div>
           </div>
         </div>
-        <p class="text-xs text-muted-foreground">
-          Estos valores se configuran en el código por ahora
-        </p>
+      </div>
+
+      <!-- Social Media -->
+      <div class="glass border border-border rounded-xl p-6 space-y-4">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center"
+          >
+            <svg
+              class="w-5 h-5 text-purple-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"
+              ></path>
+            </svg>
+          </div>
+          <h2 class="font-heading text-lg">Redes Sociales</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              for="social_instagram"
+              class="block text-sm font-medium text-muted-foreground mb-2"
+            >
+              Instagram
+            </label>
+            <input
+              type="url"
+              id="social_instagram"
+              name="social_instagram"
+              placeholder="https://instagram.com/tutienda"
+              value={getSettingValue("social_instagram", "")}
+              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+            />
+          </div>
+          <div>
+            <label
+              for="social_twitter"
+              class="block text-sm font-medium text-muted-foreground mb-2"
+            >
+              Twitter / X
+            </label>
+            <input
+              type="url"
+              id="social_twitter"
+              name="social_twitter"
+              placeholder="https://twitter.com/tutienda"
+              value={getSettingValue("social_twitter", "")}
+              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+            />
+          </div>
+          <div>
+            <label
+              for="social_tiktok"
+              class="block text-sm font-medium text-muted-foreground mb-2"
+            >
+              TikTok
+            </label>
+            <input
+              type="url"
+              id="social_tiktok"
+              name="social_tiktok"
+              placeholder="https://tiktok.com/@tutienda"
+              value={getSettingValue("social_tiktok", "")}
+              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+            />
+          </div>
+          <div>
+            <label
+              for="social_youtube"
+              class="block text-sm font-medium text-muted-foreground mb-2"
+            >
+              YouTube
+            </label>
+            <input
+              type="url"
+              id="social_youtube"
+              name="social_youtube"
+              placeholder="https://youtube.com/tutienda"
+              value={getSettingValue("social_youtube", "")}
+              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+            />
+          </div>
+        </div>
       </div>
 
       <!-- Actions -->
-      <div class="flex justify-end">
+      <div class="flex justify-end gap-4">
         <button
           type="submit"
           id="save-btn"
-          class="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:shadow-[0_0_20px_rgba(204,255,0,0.4)] transition-all disabled:opacity-50"
+          class="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:shadow-[0_0_20px_rgba(204,255,0,0.4)] transition-all disabled:opacity-50 flex items-center gap-2"
         >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5 13l4 4L19 7"></path>
+          </svg>
           Guardar Cambios
         </button>
       </div>
@@ -150,20 +411,75 @@ const getSettingValue = (key: string) => {
       e.preventDefault();
 
       saveBtn.disabled = true;
-      saveBtn.textContent = "Guardando...";
+      saveBtn.innerHTML = `
+        <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Guardando...
+      `;
       messageDiv.className = "hidden";
 
       try {
-        const offersEnabled = (
-          document.getElementById("offers_enabled") as HTMLInputElement
-        ).checked;
+        const formData = new FormData(form);
+
+        // Collect all settings
+        const settings = [
+          // Boolean settings
+          {
+            key: "offers_enabled",
+            value_bool: (
+              document.getElementById("offers_enabled") as HTMLInputElement
+            ).checked,
+          },
+          // Text settings
+          { key: "store_name", value: formData.get("store_name") as string },
+          { key: "store_email", value: formData.get("store_email") as string },
+          { key: "store_phone", value: formData.get("store_phone") as string },
+          {
+            key: "store_address",
+            value: formData.get("store_address") as string,
+          },
+          // Numeric settings
+          {
+            key: "free_shipping_threshold",
+            value_number:
+              parseFloat(formData.get("free_shipping_threshold") as string) ||
+              50,
+          },
+          {
+            key: "shipping_cost",
+            value_number:
+              parseFloat(formData.get("shipping_cost") as string) || 4.99,
+          },
+          // Social settings
+          {
+            key: "social_instagram",
+            value: formData.get("social_instagram") as string,
+          },
+          {
+            key: "social_twitter",
+            value: formData.get("social_twitter") as string,
+          },
+          {
+            key: "social_tiktok",
+            value: formData.get("social_tiktok") as string,
+          },
+          {
+            key: "social_youtube",
+            value: formData.get("social_youtube") as string,
+          },
+          // Flash offers end date
+          {
+            key: "flash_offers_end",
+            value: formData.get("flash_offers_end") as string,
+          },
+        ];
 
         const response = await fetch("/api/admin/configuracion", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            settings: [{ key: "offers_enabled", value_bool: offersEnabled }],
-          }),
+          body: JSON.stringify({ settings }),
         });
 
         const result = await response.json();
@@ -173,13 +489,23 @@ const getSettingValue = (key: string) => {
         }
 
         messageDiv.className = "p-4 rounded-lg bg-primary/20 text-primary";
-        messageDiv.textContent = "✅ Configuración guardada";
+        messageDiv.textContent = "✅ Configuración guardada correctamente";
+
+        // Auto-hide message after 3 seconds
+        setTimeout(() => {
+          messageDiv.className = "hidden";
+        }, 3000);
       } catch (error: any) {
         messageDiv.className = "p-4 rounded-lg bg-accent/20 text-accent";
-        messageDiv.textContent = error.message;
+        messageDiv.textContent = "❌ " + error.message;
       } finally {
         saveBtn.disabled = false;
-        saveBtn.textContent = "Guardar Cambios";
+        saveBtn.innerHTML = `
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          Guardar Cambios
+        `;
       }
     });
   </script>

@@ -37,13 +37,32 @@ const { data: offerProducts } = await supabase
   .limit(4);
 
 // Check if offers are enabled
-const { data: settings } = await supabase
+const { data: offersSetting } = await supabase
   .from("settings")
-  .select("value")
+  .select("value, value_bool")
   .eq("key", "offers_enabled")
   .single();
 
-const offersEnabled = settings?.value === "true";
+// Check both value and value_bool for backward compatibility
+const offersEnabledSetting =
+  offersSetting?.value === "true" || offersSetting?.value_bool === true;
+
+// Get flash offers end date
+const { data: offersEndSetting } = await supabase
+  .from("settings")
+  .select("value")
+  .eq("key", "flash_offers_end")
+  .single();
+
+const flashOffersEndDate = offersEndSetting?.value ? new Date(offersEndSetting.value) : null;
+const now = new Date();
+
+// Offers are enabled only if: setting is on AND (no end date set OR end date is in the future)
+const offersEnabled = offersEnabledSetting && 
+  (!flashOffersEndDate || flashOffersEndDate > now);
+
+// Pass end date to client as ISO string (for countdown)
+const flashOffersEndISO = flashOffersEndDate?.toISOString() || null;
 
 // Helper function
 function formatPrice(price: number): string {
@@ -155,64 +174,171 @@ function formatPrice(price: number): string {
   <!-- Flash Offers (if enabled) -->
   {
     offersEnabled && offerProducts && offerProducts.length > 0 && (
-      <section class="py-12 md:py-16 bg-card/50">
-        <div class="container mx-auto px-4">
-          <div class="flex items-center justify-between mb-8">
-            <div class="flex items-center gap-3">
-              <span class="text-2xl animate-pulse">🔥</span>
-              <h2 class="font-heading text-2xl md:text-3xl font-bold text-accent">
-                Ofertas Flash
-              </h2>
+      <section class="py-12 md:py-20 relative overflow-hidden" id="flash-offers" data-end={flashOffersEndISO}>
+        <!-- Background gradient -->
+        <div class="absolute inset-0 bg-gradient-to-br from-accent/10 via-background to-primary/5"></div>
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(239,68,68,0.15),transparent_50%)]"></div>
+        
+        <div class="container mx-auto px-4 relative z-10">
+          <!-- Header with Countdown -->
+          <div class="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
+            <div class="flex items-center gap-4">
+              <div class="w-14 h-14 rounded-2xl bg-accent/20 flex items-center justify-center animate-pulse">
+                <svg class="w-7 h-7 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
+                </svg>
+              </div>
+              <div>
+                <h2 class="font-display text-3xl md:text-4xl font-bold text-accent tracking-wide">
+                  OFERTAS FLASH
+                </h2>
+                <p class="text-muted-foreground text-sm">¡Descuentos por tiempo limitado!</p>
+              </div>
             </div>
-            <a
-              href="/productos?ofertas=true"
-              class="text-sm text-accent hover:underline"
-            >
-              Ver todas →
-            </a>
+            
+            <!-- Countdown Timer -->
+            <div class="flex items-center gap-3 bg-card/80 backdrop-blur-sm border border-accent/30 rounded-xl px-5 py-3 shadow-lg shadow-accent/10">
+              <span class="text-sm text-muted-foreground">Termina en:</span>
+              <div class="flex items-center gap-2" id="countdown-timer">
+                <div class="flex flex-col items-center">
+                  <span class="text-2xl font-bold text-accent tabular-nums" id="hours">00</span>
+                  <span class="text-[10px] text-muted-foreground uppercase">hrs</span>
+                </div>
+                <span class="text-accent font-bold">:</span>
+                <div class="flex flex-col items-center">
+                  <span class="text-2xl font-bold text-accent tabular-nums" id="minutes">00</span>
+                  <span class="text-[10px] text-muted-foreground uppercase">min</span>
+                </div>
+                <span class="text-accent font-bold">:</span>
+                <div class="flex flex-col items-center">
+                  <span class="text-2xl font-bold text-accent tabular-nums" id="seconds">00</span>
+                  <span class="text-[10px] text-muted-foreground uppercase">seg</span>
+                </div>
+              </div>
+            </div>
           </div>
 
+          <!-- Products Grid -->
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {offerProducts.map((product) => (
-              <a href={`/productos/${product.slug}`} class="group">
-                <div class="relative aspect-square rounded-lg overflow-hidden bg-muted mb-3">
-                  {product.images?.[0]?.image_url && (
-                    <img
-                      src={product.images[0].image_url}
-                      alt={product.name}
-                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                    />
-                  )}
-                  <div class="absolute top-2 left-2 bg-accent text-accent-foreground px-2 py-1 text-xs font-bold rounded">
-                    -
-                    {Math.round(
-                      ((product.price -
-                        (product.offer_price || product.price)) /
-                        product.price) *
-                        100
+            {offerProducts.map((product, index) => {
+              const discount = Math.round(
+                ((product.price - (product.offer_price || product.price)) / product.price) * 100
+              );
+              const firstImage = product.images?.sort((a: any, b: any) => a.order - b.order)?.[0]?.image_url;
+              
+              return (
+                <a 
+                  href={`/productos/${product.slug}`} 
+                  class="group relative"
+                  style={`animation-delay: ${index * 100}ms`}
+                >
+                  <div class="relative aspect-square rounded-xl overflow-hidden bg-muted mb-3 border border-border group-hover:border-accent/50 transition-all duration-300 group-hover:shadow-lg group-hover:shadow-accent/20">
+                    {firstImage && (
+                      <img
+                        src={firstImage}
+                        alt={product.name}
+                        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        loading="lazy"
+                      />
                     )}
-                    %
+                    
+                    {/* Discount Badge */}
+                    <div class="absolute top-3 left-3 bg-accent text-white px-3 py-1.5 text-sm font-bold rounded-lg shadow-lg shadow-accent/30 flex items-center gap-1">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                      </svg>
+                      -{discount}%
+                    </div>
+                    
+                    {/* Quick view overlay */}
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
+                      <span class="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                        Ver producto
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <h3 class="font-medium text-sm mb-1 group-hover:text-primary transition-colors line-clamp-1">
-                  {product.name}
-                </h3>
-                <div class="flex items-center gap-2">
-                  <span class="font-bold text-accent">
-                    {formatPrice(product.offer_price || product.price)}
-                  </span>
-                  <span class="text-sm text-muted-foreground line-through">
-                    {formatPrice(product.price)}
-                  </span>
-                </div>
-              </a>
-            ))}
+                  
+                  <h3 class="font-medium text-sm mb-2 group-hover:text-accent transition-colors line-clamp-2">
+                    {product.name}
+                  </h3>
+                  
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-lg font-bold text-accent">
+                      {formatPrice(product.offer_price || product.price)}
+                    </span>
+                    <span class="text-sm text-muted-foreground line-through">
+                      {formatPrice(product.price)}
+                    </span>
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+
+          {/* View All Link */}
+          <div class="text-center mt-10">
+            <a
+              href="/productos?ofertas=true"
+              class="inline-flex items-center gap-2 px-6 py-3 bg-accent text-white rounded-lg font-medium hover:bg-accent/90 transition-colors hover:shadow-lg hover:shadow-accent/30"
+            >
+              Ver todas las ofertas
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </a>
           </div>
         </div>
       </section>
     )
   }
+
+  <script>
+    // Countdown timer - uses configured end date or defaults to midnight
+    function updateCountdown() {
+      const section = document.getElementById('flash-offers');
+      if (!section) return;
+      
+      const endDateStr = section.dataset.end;
+      const now = new Date();
+      
+      let targetDate: Date;
+      if (endDateStr) {
+        targetDate = new Date(endDateStr);
+      } else {
+        // Fallback: next midnight
+        targetDate = new Date(now);
+        targetDate.setDate(targetDate.getDate() + 1);
+        targetDate.setHours(0, 0, 0, 0);
+      }
+      
+      const diff = targetDate.getTime() - now.getTime();
+      
+      // If time is up, hide the section
+      if (diff <= 0) {
+        section.style.display = 'none';
+        return;
+      }
+      
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      
+      const hoursEl = document.getElementById('hours');
+      const minutesEl = document.getElementById('minutes');
+      const secondsEl = document.getElementById('seconds');
+      
+      if (hoursEl) hoursEl.textContent = hours.toString().padStart(2, '0');
+      if (minutesEl) minutesEl.textContent = minutes.toString().padStart(2, '0');
+      if (secondsEl) secondsEl.textContent = seconds.toString().padStart(2, '0');
+    }
+    
+    // Only run if the section exists
+    if (document.getElementById('flash-offers')) {
+      updateCountdown();
+      setInterval(updateCountdown, 1000);
+    }
+  </script>
 
   <!-- Featured Products -->
   <section class="py-12 md:py-16">

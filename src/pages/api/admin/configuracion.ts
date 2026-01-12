@@ -26,16 +26,36 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
 
     // Update each setting
     for (const setting of settings) {
+      // Build the update object based on what's provided
+      const updateData: Record<string, any> = {
+        key: setting.key,
+      };
+
+      // Handle different value types
+      if (setting.value_bool !== undefined) {
+        updateData.value_bool = setting.value_bool;
+        // Also store as string for compatibility
+        updateData.value = setting.value_bool ? 'true' : 'false';
+      }
+      
+      if (setting.value !== undefined) {
+        updateData.value = setting.value;
+      }
+      
+      if (setting.value_number !== undefined) {
+        updateData.value_number = setting.value_number;
+        // Also store as string for compatibility
+        updateData.value = setting.value_number.toString();
+      }
+
       const { error } = await authClient
         .from('settings')
-        .upsert({
-          key: setting.key,
-          value_bool: setting.value_bool,
-        }, {
+        .upsert(updateData, {
           onConflict: 'key'
         });
 
       if (error) {
+        console.error('Error updating setting:', setting.key, error);
         return new Response(JSON.stringify({ error: error.message }), { 
           status: 400, headers: { 'Content-Type': 'application/json' } 
         });
@@ -46,6 +66,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       status: 200, headers: { 'Content-Type': 'application/json' } 
     });
   } catch (error: any) {
+    console.error('Configuration API error:', error);
     return new Response(JSON.stringify({ error: error.message }), { 
       status: 500, headers: { 'Content-Type': 'application/json' } 
     });
