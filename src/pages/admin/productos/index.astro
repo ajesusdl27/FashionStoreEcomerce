@@ -35,10 +35,9 @@ const getTotalStock = (variants: { stock: number }[]) => {
 const getFirstImage = (images: { image_url: string; order: number }[]) => {
   if (!images || images.length === 0) return "/placeholder.jpg";
   const sorted = [...images].sort((a, b) => a.order - b.order);
-  return sorted[0].image_url;
+  return sorted[0]?.image_url || "/placeholder.jpg";
 };
 
-// Extract unique category names for filter
 const uniqueCategories = categories || [];
 ---
 
@@ -48,16 +47,10 @@ const uniqueCategories = categories || [];
     <div
       class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
     >
-      <div>
-        <h1 class="font-display text-3xl text-primary">Productos</h1>
-        <p class="text-muted-foreground mt-1" id="products-count">
-          {products?.length || 0} productos
-        </p>
-      </div>
-      <a
-        href="/admin/productos/nuevo"
-        class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:shadow-[0_0_20px_rgba(204,255,0,0.4)] transition-all"
-      >
+      <p class="text-zinc-400" id="products-count">
+        {products?.length || 0} productos en total
+      </p>
+      <a href="/admin/productos/nuevo" class="admin-btn-primary">
         <svg
           class="w-5 h-5"
           fill="none"
@@ -75,12 +68,12 @@ const uniqueCategories = categories || [];
     </div>
 
     <!-- Filters -->
-    <div class="glass border border-border rounded-xl p-4">
-      <div class="flex flex-col sm:flex-row gap-4">
+    <div class="admin-filter-bar">
+      <div class="flex flex-col md:flex-row gap-4">
         <!-- Search -->
         <div class="relative flex-1">
           <svg
-            class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground"
+            class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -94,16 +87,13 @@ const uniqueCategories = categories || [];
           <input
             type="text"
             id="search-input"
-            placeholder="Buscar productos..."
-            class="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+            placeholder="Buscar por nombre o slug..."
+            class="admin-input pl-10"
           />
         </div>
 
         <!-- Category Filter -->
-        <select
-          id="category-filter"
-          class="px-4 py-2.5 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary min-w-[180px]"
-        >
+        <select id="category-filter" class="admin-select md:w-48">
           <option value="">Todas las categorías</option>
           {
             uniqueCategories.map((cat) => (
@@ -113,11 +103,8 @@ const uniqueCategories = categories || [];
         </select>
 
         <!-- Status Filter -->
-        <select
-          id="status-filter"
-          class="px-4 py-2.5 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary min-w-[140px]"
-        >
-          <option value="">Todos los estados</option>
+        <select id="status-filter" class="admin-select md:w-40">
+          <option value="">Todos</option>
           <option value="active">Activos</option>
           <option value="inactive">Inactivos</option>
           <option value="offer">En oferta</option>
@@ -128,233 +115,199 @@ const uniqueCategories = categories || [];
 
     {
       error && (
-        <div class="p-4 bg-accent/20 border border-accent rounded-lg text-accent">
+        <div class="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400">
           Error cargando productos: {error.message}
         </div>
       )
     }
 
-    <!-- Products Table -->
-    <div class="glass border border-border rounded-xl overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full" id="products-table">
-          <thead class="bg-muted/50 border-b border-border">
-            <tr>
-              <th
-                class="text-left px-6 py-4 text-sm font-medium text-muted-foreground"
-                >Producto</th
+    <!-- Products List as Cards (Better for this design) -->
+    <div class="space-y-2" id="products-list">
+      {
+        products && products.length > 0 ? (
+          products.map((product: any) => {
+            const totalStock = getTotalStock(product.variants);
+            return (
+              <div
+                class="product-row bg-zinc-900/50 hover:bg-zinc-800/70 border border-zinc-800 rounded-lg p-4 transition-all"
+                data-name={product.name.toLowerCase()}
+                data-slug={product.slug.toLowerCase()}
+                data-category-id={product.category?.id || ""}
+                data-active={product.active ? "true" : "false"}
+                data-offer={product.is_offer ? "true" : "false"}
+                data-stock={totalStock}
               >
-              <th
-                class="text-left px-6 py-4 text-sm font-medium text-muted-foreground"
-                >Categoría</th
-              >
-              <th
-                class="text-left px-6 py-4 text-sm font-medium text-muted-foreground"
-                >Precio</th
-              >
-              <th
-                class="text-left px-6 py-4 text-sm font-medium text-muted-foreground"
-                >Stock</th
-              >
-              <th
-                class="text-left px-6 py-4 text-sm font-medium text-muted-foreground"
-                >Estado</th
-              >
-              <th
-                class="text-right px-6 py-4 text-sm font-medium text-muted-foreground"
-                >Acciones</th
-              >
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-border" id="products-tbody">
-            {
-              products && products.length > 0 ? (
-                products.map((product: any) => {
-                  const totalStock = getTotalStock(product.variants);
-                  return (
-                    <tr
-                      class="hover:bg-muted/30 transition-colors product-row"
-                      data-name={product.name.toLowerCase()}
-                      data-slug={product.slug.toLowerCase()}
-                      data-category-id={product.category?.id || ""}
-                      data-category-name={
-                        product.category?.name?.toLowerCase() || "sin categoría"
-                      }
-                      data-active={product.active ? "true" : "false"}
-                      data-offer={product.is_offer ? "true" : "false"}
-                      data-stock={totalStock}
-                    >
-                      <td class="px-6 py-4">
-                        <div class="flex items-center gap-4">
-                          <img
-                            src={getFirstImage(product.images)}
-                            alt={product.name}
-                            class="w-12 h-12 object-cover rounded-lg"
-                          />
-                          <div>
-                            <p class="font-medium">{product.name}</p>
-                            <p class="text-sm text-muted-foreground">
-                              {product.slug}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td class="px-6 py-4">
-                        <span class="px-2 py-1 bg-muted rounded text-sm">
-                          {product.category?.name || "Sin categoría"}
-                        </span>
-                      </td>
-                      <td class="px-6 py-4">
-                        <div>
-                          {product.is_offer && product.offer_price ? (
-                            <>
-                              <p class="text-sm text-muted-foreground line-through">
-                                {formatPrice(product.price)}
-                              </p>
-                              <p class="font-medium text-accent">
-                                {formatPrice(product.offer_price)}
-                              </p>
-                            </>
-                          ) : (
-                            <p class="font-medium">
-                              {formatPrice(product.price)}
-                            </p>
-                          )}
-                        </div>
-                      </td>
-                      <td class="px-6 py-4">
-                        <span
-                          class={`px-2 py-1 rounded text-sm ${
-                            totalStock === 0
-                              ? "bg-accent/20 text-accent"
-                              : totalStock < 10
-                                ? "bg-yellow-500/20 text-yellow-400"
-                                : "bg-primary/20 text-primary"
-                          }`}
-                        >
-                          {totalStock} uds
-                        </span>
-                      </td>
-                      <td class="px-6 py-4">
-                        <div class="flex flex-wrap gap-1">
-                          {product.active ? (
-                            <span class="px-2 py-1 bg-primary/20 text-primary rounded text-sm">
-                              Activo
-                            </span>
-                          ) : (
-                            <span class="px-2 py-1 bg-muted text-muted-foreground rounded text-sm">
-                              Inactivo
-                            </span>
-                          )}
-                          {product.is_offer && (
-                            <span class="px-2 py-1 bg-accent/20 text-accent rounded text-sm">
-                              Oferta
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td class="px-6 py-4 text-right">
-                        <div class="flex items-center justify-end gap-2">
-                          <a
-                            href={`/admin/productos/${product.id}`}
-                            class="p-2 hover:bg-muted rounded-lg transition-colors"
-                            title="Editar"
-                          >
-                            <svg
-                              class="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                              />
-                            </svg>
-                          </a>
-                          <a
-                            href={`/productos/${product.slug}`}
-                            target="_blank"
-                            class="p-2 hover:bg-muted rounded-lg transition-colors"
-                            title="Ver en tienda"
-                          >
-                            <svg
-                              class="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                              />
-                            </svg>
-                          </a>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr id="empty-row">
-                  <td
-                    colspan="6"
-                    class="px-6 py-12 text-center text-muted-foreground"
-                  >
-                    <svg
-                      class="w-16 h-16 mx-auto mb-4 opacity-50"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                      />
-                    </svg>
-                    <p>No hay productos todavía</p>
-                    <a
-                      href="/admin/productos/nuevo"
-                      class="inline-block mt-4 text-primary hover:underline"
-                    >
-                      Crear primer producto →
-                    </a>
-                  </td>
-                </tr>
-              )
-            }
-          </tbody>
-        </table>
-      </div>
+                <div class="flex items-center gap-4">
+                  {/* Image */}
+                  <div class="flex-shrink-0">
+                    <img
+                      src={getFirstImage(product.images)}
+                      alt={product.name}
+                      class="w-16 h-16 object-cover rounded-lg bg-zinc-800 ring-1 ring-zinc-700"
+                    />
+                  </div>
 
-      <!-- No results message (hidden by default) -->
-      <div
-        id="no-results"
-        class="hidden p-12 text-center text-muted-foreground"
+                  {/* Main Info */}
+                  <div class="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
+                    {/* Product Name & Slug */}
+                    <div class="md:col-span-2">
+                      <p class="font-semibold text-foreground truncate">
+                        {product.name}
+                      </p>
+                      <p class="text-xs text-zinc-500 truncate">
+                        {product.slug}
+                      </p>
+                    </div>
+
+                    {/* Category */}
+                    <div>
+                      <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-zinc-700 text-zinc-200">
+                        {product.category?.name || "Sin categoría"}
+                      </span>
+                    </div>
+
+                    {/* Price */}
+                    <div class="text-right">
+                      {product.is_offer && product.offer_price ? (
+                        <div>
+                          <p class="text-xs text-zinc-500 line-through">
+                            {formatPrice(product.price)}
+                          </p>
+                          <p class="font-bold text-red-400">
+                            {formatPrice(product.offer_price)}
+                          </p>
+                        </div>
+                      ) : (
+                        <p class="font-bold tabular-nums text-foreground">
+                          {formatPrice(product.price)}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Stock & Status */}
+                    <div class="flex items-center justify-end gap-2 flex-wrap">
+                      <span
+                        class={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold ${
+                          totalStock === 0
+                            ? "bg-red-500/20 text-red-400"
+                            : totalStock < 10
+                              ? "bg-yellow-500/20 text-yellow-400"
+                              : "bg-green-500/20 text-green-400"
+                        }`}
+                      >
+                        {totalStock} uds
+                      </span>
+                      {product.active ? (
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-green-500/20 text-green-400">
+                          Activo
+                        </span>
+                      ) : (
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-zinc-600/50 text-zinc-400">
+                          Inactivo
+                        </span>
+                      )}
+                      {product.is_offer && (
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-red-500/20 text-red-400">
+                          Oferta
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div class="flex items-center gap-1 flex-shrink-0">
+                    <a
+                      href={`/admin/productos/${product.id}`}
+                      class="p-2 rounded-lg hover:bg-zinc-700 transition-colors"
+                      title="Editar"
+                    >
+                      <svg
+                        class="w-5 h-5 text-zinc-400 hover:text-foreground"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
+                      </svg>
+                    </a>
+                    <a
+                      href={`/productos/${product.slug}`}
+                      target="_blank"
+                      class="p-2 rounded-lg hover:bg-zinc-700 transition-colors"
+                      title="Ver en tienda"
+                    >
+                      <svg
+                        class="w-5 h-5 text-zinc-400 hover:text-foreground"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                        />
+                      </svg>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div class="text-center py-12 text-zinc-500">
+            <svg
+              class="w-16 h-16 mx-auto mb-4 opacity-30"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+              />
+            </svg>
+            <p>No hay productos todavía</p>
+            <a
+              href="/admin/productos/nuevo"
+              class="inline-block mt-4 text-primary hover:underline"
+            >
+              Crear primer producto →
+            </a>
+          </div>
+        )
+      }
+    </div>
+
+    <!-- No results message (hidden by default) -->
+    <div
+      id="no-results"
+      class="hidden p-12 text-center text-zinc-500 bg-zinc-900/50 rounded-lg border border-zinc-800"
+    >
+      <svg
+        class="w-16 h-16 mx-auto mb-4 opacity-30"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
       >
-        <svg
-          class="w-16 h-16 mx-auto mb-4 opacity-50"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="1.5"
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-        </svg>
-        <p>No se encontraron productos con los filtros actuales</p>
-        <button id="clear-filters" class="mt-4 text-primary hover:underline">
-          Limpiar filtros
-        </button>
-      </div>
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="1.5"
+          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+      </svg>
+      <p>No se encontraron productos</p>
+      <button id="clear-filters" class="mt-4 text-primary hover:underline">
+        Limpiar filtros
+      </button>
     </div>
   </div>
 
@@ -379,10 +332,7 @@ const uniqueCategories = categories || [];
     ) as HTMLButtonElement;
     const productRows = document.querySelectorAll(
       ".product-row"
-    ) as NodeListOf<HTMLTableRowElement>;
-    const emptyRow = document.getElementById(
-      "empty-row"
-    ) as HTMLTableRowElement | null;
+    ) as NodeListOf<HTMLElement>;
 
     function filterProducts() {
       const searchTerm = searchInput.value.toLowerCase().trim();
@@ -399,49 +349,33 @@ const uniqueCategories = categories || [];
         const isOffer = row.dataset.offer === "true";
         const stock = parseInt(row.dataset.stock || "0", 10);
 
-        // Search filter
         const matchesSearch =
           searchTerm === "" ||
           name.includes(searchTerm) ||
           slug.includes(searchTerm);
-
-        // Category filter
         const matchesCategory =
           categoryId === "" || rowCategoryId === categoryId;
 
-        // Status filter
         let matchesStatus = true;
-        if (status === "active") {
-          matchesStatus = isActive;
-        } else if (status === "inactive") {
-          matchesStatus = !isActive;
-        } else if (status === "offer") {
-          matchesStatus = isOffer;
-        } else if (status === "low-stock") {
-          matchesStatus = stock < 10;
-        }
+        if (status === "active") matchesStatus = isActive;
+        else if (status === "inactive") matchesStatus = !isActive;
+        else if (status === "offer") matchesStatus = isOffer;
+        else if (status === "low-stock") matchesStatus = stock < 10;
 
         const isVisible = matchesSearch && matchesCategory && matchesStatus;
         row.style.display = isVisible ? "" : "none";
-
-        if (isVisible) {
-          visibleCount++;
-        }
+        if (isVisible) visibleCount++;
       });
 
-      // Update count
-      productsCount.textContent = `${visibleCount} producto${visibleCount !== 1 ? "s" : ""}`;
+      productsCount.textContent = `${visibleCount} producto${visibleCount !== 1 ? "s" : ""} encontrado${visibleCount !== 1 ? "s" : ""}`;
 
-      // Show/hide no results message
       if (visibleCount === 0 && productRows.length > 0) {
         noResultsDiv.classList.remove("hidden");
-        if (emptyRow) emptyRow.style.display = "none";
       } else {
         noResultsDiv.classList.add("hidden");
       }
     }
 
-    // Event listeners
     searchInput?.addEventListener("input", filterProducts);
     categoryFilter?.addEventListener("change", filterProducts);
     statusFilter?.addEventListener("change", filterProducts);

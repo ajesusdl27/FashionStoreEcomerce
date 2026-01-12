@@ -4,14 +4,20 @@ import { supabase } from "@/lib/supabase";
 
 // Fetch orders with pagination
 const page = parseInt(Astro.url.searchParams.get("page") || "1");
+const statusFilter = Astro.url.searchParams.get("status") || "";
 const limit = 20;
 const offset = (page - 1) * limit;
 
-const { data: orders, count } = await supabase
+let query = supabase
   .from("orders")
   .select("*", { count: "exact" })
-  .order("created_at", { ascending: false })
-  .range(offset, offset + limit - 1);
+  .order("created_at", { ascending: false });
+
+if (statusFilter) {
+  query = query.eq("status", statusFilter);
+}
+
+const { data: orders, count } = await query.range(offset, offset + limit - 1);
 
 const totalPages = count ? Math.ceil(count / limit) : 0;
 
@@ -32,175 +38,202 @@ const formatDate = (date: string) => {
   });
 };
 
-const statusColors: Record<string, string> = {
-  pending: "bg-yellow-500/20 text-yellow-400 border-yellow-500/50",
-  paid: "bg-primary/20 text-primary border-primary/50",
-  shipped: "bg-blue-500/20 text-blue-400 border-blue-500/50",
-  delivered: "bg-green-500/20 text-green-400 border-green-500/50",
-  cancelled: "bg-accent/20 text-accent border-accent/50",
+const statusConfig: Record<
+  string,
+  { label: string; bgClass: string; textClass: string; borderColor: string }
+> = {
+  pending: {
+    label: "Pendiente",
+    bgClass: "bg-yellow-500/20",
+    textClass: "text-yellow-400",
+    borderColor: "border-l-yellow-500",
+  },
+  paid: {
+    label: "Pagado",
+    bgClass: "bg-green-500/20",
+    textClass: "text-green-400",
+    borderColor: "border-l-green-500",
+  },
+  shipped: {
+    label: "Enviado",
+    bgClass: "bg-blue-500/20",
+    textClass: "text-blue-400",
+    borderColor: "border-l-blue-500",
+  },
+  delivered: {
+    label: "Entregado",
+    bgClass: "bg-green-500/20",
+    textClass: "text-green-400",
+    borderColor: "border-l-green-500",
+  },
+  cancelled: {
+    label: "Cancelado",
+    bgClass: "bg-red-500/20",
+    textClass: "text-red-400",
+    borderColor: "border-l-red-500",
+  },
 };
 
-const statusLabels: Record<string, string> = {
-  pending: "Pendiente",
-  paid: "Pagado",
-  shipped: "Enviado",
-  delivered: "Entregado",
-  cancelled: "Cancelado",
-};
+const statusOptions = [
+  { value: "", label: "Todos los estados" },
+  { value: "pending", label: "Pendiente" },
+  { value: "paid", label: "Pagado" },
+  { value: "shipped", label: "Enviado" },
+  { value: "delivered", label: "Entregado" },
+  { value: "cancelled", label: "Cancelado" },
+];
 ---
 
 <AdminLayout title="Pedidos">
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="font-display text-3xl text-primary">Pedidos</h1>
-        <p class="text-muted-foreground mt-1">{count || 0} pedidos en total</p>
-      </div>
+    <div
+      class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+    >
+      <p class="text-zinc-400">{count || 0} pedidos en total</p>
+
+      <!-- Status Filter -->
+      <select
+        id="status-filter"
+        class="admin-select w-48"
+        onchange="window.location.href = this.value ? `/admin/pedidos?status=${this.value}` : '/admin/pedidos'"
+      >
+        {
+          statusOptions.map((opt) => (
+            <option value={opt.value} selected={statusFilter === opt.value}>
+              {opt.label}
+            </option>
+          ))
+        }
+      </select>
     </div>
 
-    <!-- Orders Table -->
-    <div class="glass border border-border rounded-xl overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead class="bg-muted/50 border-b border-border">
-            <tr>
-              <th
-                class="text-left px-6 py-4 text-sm font-medium text-muted-foreground"
-                >Pedido</th
-              >
-              <th
-                class="text-left px-6 py-4 text-sm font-medium text-muted-foreground"
-                >Cliente</th
-              >
-              <th
-                class="text-left px-6 py-4 text-sm font-medium text-muted-foreground"
-                >Fecha</th
-              >
-              <th
-                class="text-left px-6 py-4 text-sm font-medium text-muted-foreground"
-                >Total</th
-              >
-              <th
-                class="text-left px-6 py-4 text-sm font-medium text-muted-foreground"
-                >Estado</th
-              >
-              <th
-                class="text-right px-6 py-4 text-sm font-medium text-muted-foreground"
-                >Acciones</th
-              >
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-border">
-            {
-              orders && orders.length > 0 ? (
-                orders.map((order) => (
-                  <tr class="hover:bg-muted/30 transition-colors">
-                    <td class="px-6 py-4">
-                      <span class="font-mono text-sm">
-                        #{order.id.slice(0, 8)}
-                      </span>
-                    </td>
-                    <td class="px-6 py-4">
-                      <div>
-                        <p class="font-medium">{order.customer_name}</p>
-                        <p class="text-sm text-muted-foreground">
-                          {order.customer_email}
-                        </p>
-                      </div>
-                    </td>
-                    <td class="px-6 py-4 text-sm text-muted-foreground">
-                      {formatDate(order.created_at)}
-                    </td>
-                    <td class="px-6 py-4 font-medium">
-                      {formatPrice(order.total_amount)}
-                    </td>
-                    <td class="px-6 py-4">
-                      <span
-                        class={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${statusColors[order.status]}`}
-                      >
-                        {statusLabels[order.status]}
-                      </span>
-                    </td>
-                    <td class="px-6 py-4 text-right">
-                      <a
-                        href={`/admin/pedidos/${order.id}`}
-                        class="inline-flex items-center gap-2 px-3 py-1.5 border border-border rounded-lg hover:bg-muted transition-colors text-sm"
-                      >
-                        Ver detalles
-                        <svg
-                          class="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
-                      </a>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colspan="6"
-                    class="px-6 py-12 text-center text-muted-foreground"
-                  >
-                    <svg
-                      class="w-16 h-16 mx-auto mb-4 opacity-50"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                      />
-                    </svg>
-                    <p>No hay pedidos todavía</p>
-                  </td>
-                </tr>
-              )
-            }
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pagination */}
+    <!-- Orders List -->
+    <div class="space-y-2">
       {
-        totalPages > 1 && (
-          <div class="flex items-center justify-between px-6 py-4 border-t border-border">
-            <p class="text-sm text-muted-foreground">
-              Página {page} de {totalPages}
-            </p>
-            <div class="flex gap-2">
-              {page > 1 && (
-                <a
-                  href={`/admin/pedidos?page=${page - 1}`}
-                  class="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
-                >
-                  Anterior
-                </a>
-              )}
-              {page < totalPages && (
-                <a
-                  href={`/admin/pedidos?page=${page + 1}`}
-                  class="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
-                >
-                  Siguiente
-                </a>
-              )}
-            </div>
+        orders && orders.length > 0 ? (
+          orders.map((order) => {
+            const status = statusConfig[order.status] || statusConfig.pending;
+            return (
+              <div
+                class={`bg-zinc-900/50 hover:bg-zinc-800/70 border border-zinc-800 rounded-lg p-4 transition-all border-l-4 ${status.borderColor}`}
+              >
+                <div class="flex items-center gap-4">
+                  {/* Order ID */}
+                  <div class="flex-shrink-0 w-24">
+                    <span class="font-mono text-sm text-zinc-400">
+                      #{order.id.slice(0, 8)}
+                    </span>
+                  </div>
+
+                  {/* Main Info */}
+                  <div class="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                    {/* Customer */}
+                    <div class="md:col-span-1">
+                      <p class="font-semibold text-foreground truncate">
+                        {order.customer_name}
+                      </p>
+                      <p class="text-xs text-zinc-500 truncate">
+                        {order.customer_email}
+                      </p>
+                    </div>
+
+                    {/* Date */}
+                    <div class="text-sm text-zinc-400">
+                      {formatDate(order.created_at)}
+                    </div>
+
+                    {/* Total */}
+                    <div class="text-right">
+                      <p class="font-bold tabular-nums text-foreground">
+                        {formatPrice(order.total_amount)}
+                      </p>
+                    </div>
+
+                    {/* Status */}
+                    <div class="flex justify-end">
+                      <span
+                        class={`inline-flex items-center px-3 py-1.5 rounded-md text-xs font-semibold ${status.bgClass} ${status.textClass}`}
+                      >
+                        {status.label}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div class="flex-shrink-0">
+                    <a
+                      href={`/admin/pedidos/${order.id}`}
+                      class="inline-flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Ver detalles
+                      <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div class="text-center py-12 text-zinc-500 bg-zinc-900/50 rounded-lg border border-zinc-800">
+            <svg
+              class="w-16 h-16 mx-auto mb-4 opacity-30"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
+            <p>No hay pedidos {statusFilter ? "con este estado" : "todavía"}</p>
           </div>
         )
       }
     </div>
+
+    {/* Pagination */}
+    {
+      totalPages > 1 && (
+        <div class="flex items-center justify-between p-4 bg-zinc-900/50 rounded-lg border border-zinc-800">
+          <p class="text-sm text-zinc-500">
+            Página {page} de {totalPages}
+          </p>
+          <div class="flex gap-2">
+            {page > 1 && (
+              <a
+                href={`/admin/pedidos?page=${page - 1}${statusFilter ? `&status=${statusFilter}` : ""}`}
+                class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-sm transition-colors"
+              >
+                Anterior
+              </a>
+            )}
+            {page < totalPages && (
+              <a
+                href={`/admin/pedidos?page=${page + 1}${statusFilter ? `&status=${statusFilter}` : ""}`}
+                class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-sm transition-colors"
+              >
+                Siguiente
+              </a>
+            )}
+          </div>
+        </div>
+      )
+    }
   </div>
 </AdminLayout>

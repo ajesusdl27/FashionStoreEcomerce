@@ -7,145 +7,176 @@ interface Props {
 
 const { title } = Astro.props;
 const user = Astro.locals.user;
+const currentPath = Astro.url.pathname;
+
+// Helper to check if a nav item is active
+const isActive = (href: string) => {
+  if (href === "/admin") {
+    return currentPath === "/admin" || currentPath === "/admin/";
+  }
+  return currentPath.startsWith(href);
+};
+
+const navItems = [
+  { href: "/admin", label: "Dashboard", icon: "home" },
+  { href: "/admin/productos", label: "Productos", icon: "box" },
+  { href: "/admin/categorias", label: "Categorías", icon: "tag" },
+  { href: "/admin/pedidos", label: "Pedidos", icon: "clipboard" },
+  { href: "/admin/configuracion", label: "Configuración", icon: "settings" },
+];
 ---
 
 <BaseLayout title={`Admin - ${title}`}>
-  <div class="flex min-h-screen">
+  <div class="flex min-h-screen bg-[#09090b]">
     <!-- Sidebar -->
-    <aside class="hidden lg:flex flex-col w-64 bg-card border-r border-border">
-      <div class="p-6 border-b border-border">
-        <a href="/admin" class="font-display text-xl text-primary">
-          FASHIONSTORE
+    <aside
+      id="admin-sidebar"
+      class="hidden lg:flex flex-col w-72 bg-zinc-900/50 border-r border-zinc-800 fixed h-full z-40"
+    >
+      <!-- Logo -->
+      <div class="p-6 border-b border-zinc-800">
+        <a href="/admin" class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center"
+          >
+            <span class="font-display text-xl text-primary-foreground">F</span>
+          </div>
+          <div>
+            <span class="font-display text-xl text-foreground tracking-wide"
+              >FASHIONSTORE</span
+            >
+            <p class="text-xs text-zinc-500">Panel Admin</p>
+          </div>
         </a>
-        <p class="text-xs text-muted-foreground mt-1">
-          Panel de Administración
-        </p>
       </div>
 
-      <nav class="flex-1 p-4 space-y-1">
-        <a
-          href="/admin"
-          class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors"
-        >
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-            ></path>
-          </svg>
-          Dashboard
-        </a>
-
-        <a
-          href="/admin/productos"
-          class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors"
-        >
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-            ></path>
-          </svg>
-          Productos
-        </a>
-
-        <a
-          href="/admin/categorias"
-          class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors"
-        >
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-            ></path>
-          </svg>
-          Categorías
-        </a>
-
-        <a
-          href="/admin/pedidos"
-          class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors"
-        >
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-            ></path>
-          </svg>
-          Pedidos
-        </a>
-
-        <a
-          href="/admin/configuracion"
-          class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors"
-        >
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-            ></path>
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-          </svg>
-          Configuración
-        </a>
+      <!-- Navigation -->
+      <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+        {
+          navItems.map((item) => (
+            <a
+              href={item.href}
+              class:list={[
+                "flex items-center gap-3 px-4 py-3 rounded-lg transition-all group relative",
+                isActive(item.href)
+                  ? "bg-primary/10 text-foreground border-l-2 border-primary"
+                  : "text-zinc-400 hover:text-foreground hover:bg-zinc-800/50",
+              ]}
+            >
+              {/* Icon */}
+              {item.icon === "home" && (
+                <svg
+                  class={`w-5 h-5 ${isActive(item.href) ? "text-primary" : "text-zinc-500 group-hover:text-zinc-300"}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                  />
+                </svg>
+              )}
+              {item.icon === "box" && (
+                <svg
+                  class={`w-5 h-5 ${isActive(item.href) ? "text-primary" : "text-zinc-500 group-hover:text-zinc-300"}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                  />
+                </svg>
+              )}
+              {item.icon === "tag" && (
+                <svg
+                  class={`w-5 h-5 ${isActive(item.href) ? "text-primary" : "text-zinc-500 group-hover:text-zinc-300"}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                  />
+                </svg>
+              )}
+              {item.icon === "clipboard" && (
+                <svg
+                  class={`w-5 h-5 ${isActive(item.href) ? "text-primary" : "text-zinc-500 group-hover:text-zinc-300"}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                  />
+                </svg>
+              )}
+              {item.icon === "settings" && (
+                <svg
+                  class={`w-5 h-5 ${isActive(item.href) ? "text-primary" : "text-zinc-500 group-hover:text-zinc-300"}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                  />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+              )}
+              <span class="font-medium">{item.label}</span>
+              {isActive(item.href) && (
+                <div class="absolute right-3 w-1.5 h-1.5 rounded-full bg-primary" />
+              )}
+            </a>
+          ))
+        }
       </nav>
 
-      <div class="p-4 border-t border-border">
-        <div class="flex items-center gap-3 px-4 py-2">
+      <!-- User Section -->
+      <div class="p-4 border-t border-zinc-800">
+        <div
+          class="flex items-center gap-3 px-3 py-2 rounded-lg bg-zinc-800/50"
+        >
           <div
-            class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center"
+            class="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center ring-2 ring-primary/20"
           >
-            <span class="text-primary text-sm font-bold">
+            <span class="text-primary font-bold">
               {user?.email?.charAt(0).toUpperCase() || "A"}
             </span>
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium truncate">{user?.email || "Admin"}</p>
+            <p class="text-sm font-medium text-foreground truncate">
+              {user?.email || "Admin"}
+            </p>
+            <p class="text-xs text-zinc-500">Administrador</p>
           </div>
         </div>
-        <form action="/api/auth/logout" method="POST" class="mt-2">
+        <form action="/api/auth/logout" method="POST" class="mt-3">
           <button
             type="submit"
-            class="w-full flex items-center gap-3 px-4 py-2 text-sm text-muted-foreground hover:text-accent rounded-lg hover:bg-muted transition-colors"
+            class="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm text-zinc-400 hover:text-red-400 rounded-lg hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all"
           >
             <svg
               class="w-4 h-4"
@@ -167,15 +198,16 @@ const user = Astro.locals.user;
     </aside>
 
     <!-- Main Content -->
-    <div class="flex-1 flex flex-col">
-      <!-- Top Bar (Mobile) -->
+    <div class="flex-1 flex flex-col lg:ml-72">
+      <!-- Top Bar -->
       <header
-        class="lg:hidden sticky top-0 z-40 bg-card border-b border-border px-4 py-3"
+        class="sticky top-0 z-30 bg-[#09090b]/95 backdrop-blur-sm border-b border-zinc-800 px-6 py-4"
       >
         <div class="flex items-center justify-between">
+          <!-- Mobile Menu Button -->
           <button
             id="admin-menu-btn"
-            class="touch-target"
+            class="lg:hidden p-2 hover:bg-zinc-800 rounded-lg transition-colors"
             aria-label="Abrir menú"
           >
             <svg
@@ -191,15 +223,121 @@ const user = Astro.locals.user;
                 d="M4 6h16M4 12h16M4 18h16"></path>
             </svg>
           </button>
-          <span class="font-display text-lg text-primary">ADMIN</span>
-          <div class="w-10"></div>
+
+          <!-- Page Title -->
+          <h1 class="font-display text-2xl tracking-wide text-foreground">
+            {title}
+          </h1>
+
+          <!-- Quick Actions -->
+          <div class="flex items-center gap-3">
+            <a
+              href="/"
+              target="_blank"
+              class="hidden sm:flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:text-foreground hover:bg-zinc-800 rounded-lg transition-colors"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                ></path>
+              </svg>
+              Ver tienda
+            </a>
+          </div>
         </div>
       </header>
 
       <!-- Page Content -->
-      <main class="flex-1 p-6">
+      <main class="flex-1 p-6 lg:p-8">
         <slot />
       </main>
     </div>
   </div>
+
+  <!-- Mobile Sidebar Overlay -->
+  <div
+    id="sidebar-overlay"
+    class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden lg:hidden"
+  >
+  </div>
+
+  <!-- Mobile Sidebar -->
+  <aside
+    id="mobile-sidebar"
+    class="fixed top-0 left-0 h-full w-72 bg-zinc-900 border-r border-zinc-800 transform -translate-x-full transition-transform duration-300 z-50 lg:hidden"
+  >
+    <!-- Same content as desktop sidebar -->
+    <div class="p-6 border-b border-zinc-800 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div
+          class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center"
+        >
+          <span class="font-display text-xl text-primary-foreground">F</span>
+        </div>
+        <span class="font-display text-xl text-foreground">ADMIN</span>
+      </div>
+      <button id="close-sidebar-btn" class="p-2 hover:bg-zinc-800 rounded-lg">
+        <svg
+          class="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+    <nav class="p-4 space-y-1">
+      {
+        navItems.map((item) => (
+          <a
+            href={item.href}
+            class:list={[
+              "flex items-center gap-3 px-4 py-3 rounded-lg transition-all",
+              isActive(item.href)
+                ? "bg-primary/10 text-foreground border-l-2 border-primary"
+                : "text-zinc-400 hover:text-foreground hover:bg-zinc-800/50",
+            ]}
+          >
+            <span class="font-medium">{item.label}</span>
+          </a>
+        ))
+      }
+    </nav>
+  </aside>
+
+  <script>
+    const menuBtn = document.getElementById("admin-menu-btn");
+    const closeBtn = document.getElementById("close-sidebar-btn");
+    const overlay = document.getElementById("sidebar-overlay");
+    const mobileSidebar = document.getElementById("mobile-sidebar");
+
+    function openSidebar() {
+      mobileSidebar?.classList.remove("-translate-x-full");
+      overlay?.classList.remove("hidden");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeSidebar() {
+      mobileSidebar?.classList.add("-translate-x-full");
+      overlay?.classList.add("hidden");
+      document.body.style.overflow = "";
+    }
+
+    menuBtn?.addEventListener("click", openSidebar);
+    closeBtn?.addEventListener("click", closeSidebar);
+    overlay?.addEventListener("click", closeSidebar);
+  </script>
 </BaseLayout>

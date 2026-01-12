@@ -41,7 +41,7 @@ const getSettingBool = (key: string) => {
     <!-- Settings -->
     <form id="settings-form" class="space-y-6">
       <!-- Offers Section -->
-      <div class="glass border border-border rounded-xl p-6 space-y-4">
+      <div class="admin-card space-y-4">
         <div class="flex items-center gap-3">
           <div
             class="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center"
@@ -112,7 +112,7 @@ const getSettingBool = (key: string) => {
       </div>
 
       <!-- Store Info -->
-      <div class="glass border border-border rounded-xl p-6 space-y-4">
+      <div class="admin-card space-y-4">
         <div class="flex items-center gap-3">
           <div
             class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center"
@@ -207,7 +207,7 @@ const getSettingBool = (key: string) => {
       </div>
 
       <!-- Shipping -->
-      <div class="glass border border-border rounded-xl p-6 space-y-4">
+      <div class="admin-card space-y-4">
         <div class="flex items-center gap-3">
           <div
             class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center"
@@ -283,7 +283,7 @@ const getSettingBool = (key: string) => {
       </div>
 
       <!-- Social Media -->
-      <div class="glass border border-border rounded-xl p-6 space-y-4">
+      <div class="admin-card space-y-4">
         <div class="flex items-center gap-3">
           <div
             class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center"
@@ -375,11 +375,7 @@ const getSettingBool = (key: string) => {
 
       <!-- Actions -->
       <div class="flex justify-end gap-4">
-        <button
-          type="submit"
-          id="save-btn"
-          class="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:shadow-[0_0_20px_rgba(204,255,0,0.4)] transition-all disabled:opacity-50 flex items-center gap-2"
-        >
+        <button type="submit" id="save-btn" class="admin-btn-primary">
           <svg
             class="w-5 h-5"
             fill="none"

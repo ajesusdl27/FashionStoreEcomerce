@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -37,9 +37,9 @@
     animation: shimmer 2s linear infinite;
   }
 
-  /* Glass effect */
+  /* Glass effect - REDUCED opacity for admin legibility */
   .glass {
-    @apply bg-card/80 backdrop-blur-md border border-border;
+    @apply bg-card/95 backdrop-blur-sm border border-border;
   }
 
   /* Neon glow effect */
@@ -49,6 +49,142 @@
 
   .neon-glow-hover:hover {
     @apply shadow-[0_0_30px_rgba(204,255,0,0.5)];
+  }
+
+  /* ===== ADMIN DESIGN SYSTEM ===== */
+
+  /* Admin Card - Solid, high contrast */
+  .admin-card {
+    @apply bg-card border border-border rounded-xl p-6;
+  }
+
+  .admin-card-interactive {
+    @apply admin-card hover:border-primary/30 transition-colors cursor-pointer;
+  }
+
+  /* Admin Stat Card */
+  .stat-card {
+    @apply admin-card flex items-center justify-between;
+  }
+
+  .stat-value {
+    @apply text-4xl font-bold tracking-tight;
+  }
+
+  .stat-label {
+    @apply text-sm text-muted-foreground;
+  }
+
+  .stat-icon {
+    @apply w-14 h-14 rounded-xl flex items-center justify-center;
+  }
+
+  /* Admin Table */
+  .admin-table {
+    @apply w-full text-sm;
+  }
+
+  .admin-table thead {
+    @apply bg-zinc-800 border-b-2 border-zinc-700;
+  }
+
+  .admin-table th {
+    @apply px-4 py-4 text-left text-xs font-bold text-zinc-300 uppercase tracking-wider;
+  }
+
+  .admin-table tbody tr {
+    @apply border-b border-zinc-800 hover:bg-zinc-800/70 transition-colors;
+  }
+
+  .admin-table tbody tr:nth-child(odd) {
+    @apply bg-zinc-900/50;
+  }
+
+  .admin-table td {
+    @apply px-4 py-4 align-middle;
+  }
+
+  /* Admin Status Badges */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold;
+  }
+
+  .badge-success {
+    @apply bg-green-500/20 text-green-400 border border-green-500/30;
+  }
+
+  .badge-warning {
+    @apply bg-yellow-500/20 text-yellow-400 border border-yellow-500/30;
+  }
+
+  .badge-danger {
+    @apply bg-red-500/20 text-red-400 border border-red-500/30;
+  }
+
+  .badge-info {
+    @apply bg-blue-500/20 text-blue-400 border border-blue-500/30;
+  }
+
+  .badge-muted {
+    @apply bg-zinc-700/50 text-zinc-400 border border-zinc-600/30;
+  }
+
+  .badge-primary {
+    @apply bg-primary/20 text-primary border border-primary/30;
+  }
+
+  /* Admin Form Inputs */
+  .admin-input {
+    @apply w-full px-4 py-3 bg-zinc-800/80 border border-zinc-700 rounded-lg text-foreground placeholder:text-zinc-500 transition-all;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary;
+  }
+
+  .admin-select {
+    @apply admin-input appearance-none cursor-pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23a1a1aa'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.25rem;
+    padding-right: 2.5rem;
+  }
+
+  .admin-label {
+    @apply block text-sm font-medium text-muted-foreground mb-2;
+  }
+
+  /* Admin Buttons */
+  .admin-btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all;
+  }
+
+  .admin-btn-primary {
+    @apply admin-btn bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(204,255,0,0.3)];
+  }
+
+  .admin-btn-secondary {
+    @apply admin-btn bg-zinc-800 text-foreground border border-zinc-700 hover:bg-zinc-700;
+  }
+
+  .admin-btn-danger {
+    @apply admin-btn bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30;
+  }
+
+  .admin-btn-icon {
+    @apply p-2.5 rounded-lg hover:bg-zinc-800 transition-colors;
+  }
+
+  /* Admin Section Headers */
+  .admin-section-header {
+    @apply flex items-center justify-between mb-6;
+  }
+
+  .admin-section-title {
+    @apply font-display text-2xl text-foreground tracking-wide;
+  }
+
+  /* Filter Bar */
+  .admin-filter-bar {
+    @apply bg-zinc-900/50 border border-border rounded-xl p-4 mb-6;
   }
 }
 
@@ -70,5 +206,10 @@
   /* Min touch target */
   .touch-target {
     @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Tabular numbers for data */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 }

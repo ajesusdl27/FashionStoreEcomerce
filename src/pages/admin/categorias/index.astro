@@ -23,16 +23,10 @@ const categoriesWithCount = categories?.map((cat: any) => ({
   <div class="space-y-6">
     <!-- Header -->
     <div class="flex items-center justify-between">
-      <div>
-        <h1 class="font-display text-3xl text-primary">Categorías</h1>
-        <p class="text-muted-foreground mt-1">
-          {categories?.length || 0} categorías
-        </p>
-      </div>
-      <button
-        id="new-category-btn"
-        class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:shadow-[0_0_20px_rgba(204,255,0,0.4)] transition-all"
-      >
+      <p class="text-zinc-400">
+        {categories?.length || 0} categorías
+      </p>
+      <button id="new-category-btn" class="admin-btn-primary">
         <svg
           class="w-5 h-5"
           fill="none"
@@ -51,130 +45,138 @@ const categoriesWithCount = categories?.map((cat: any) => ({
 
     {
       error && (
-        <div class="p-4 bg-accent/20 border border-accent rounded-lg text-accent">
+        <div class="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400">
           Error: {error.message}
         </div>
       )
     }
 
-    <!-- Categories List -->
-    <div class="glass border border-border rounded-xl overflow-hidden">
-      <table class="w-full">
-        <thead class="bg-muted/50 border-b border-border">
-          <tr>
-            <th
-              class="text-left px-6 py-4 text-sm font-medium text-muted-foreground"
-              >Nombre</th
+    <!-- Categories Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {
+        categoriesWithCount && categoriesWithCount.length > 0 ? (
+          categoriesWithCount.map((cat: any) => (
+            <div
+              class="bg-zinc-900/50 hover:bg-zinc-800/70 border border-zinc-800 rounded-xl p-5 transition-all group"
+              data-id={cat.id}
             >
-            <th
-              class="text-left px-6 py-4 text-sm font-medium text-muted-foreground"
-              >Slug</th
+              <div class="flex items-start justify-between mb-4">
+                {/* Category Icon */}
+                <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <svg
+                    class="w-6 h-6 text-primary"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                    />
+                  </svg>
+                </div>
+
+                {/* Actions */}
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    class="edit-category p-2 rounded-lg hover:bg-zinc-700 transition-colors"
+                    title="Editar"
+                    data-id={cat.id}
+                    data-name={cat.name}
+                    data-slug={cat.slug}
+                  >
+                    <svg
+                      class="w-4 h-4 text-zinc-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    class="delete-category p-2 rounded-lg hover:bg-red-500/20 transition-colors"
+                    title="Eliminar"
+                    data-id={cat.id}
+                    data-name={cat.name}
+                  >
+                    <svg
+                      class="w-4 h-4 text-red-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
+                  <a
+                    href={`/categoria/${cat.slug}`}
+                    target="_blank"
+                    class="p-2 rounded-lg hover:bg-zinc-700 transition-colors"
+                    title="Ver en tienda"
+                  >
+                    <svg
+                      class="w-4 h-4 text-zinc-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                      />
+                    </svg>
+                  </a>
+                </div>
+              </div>
+
+              {/* Category Info */}
+              <h3 class="font-semibold text-lg text-foreground mb-1">
+                {cat.name}
+              </h3>
+              <p class="text-sm text-zinc-500 mb-3">/{cat.slug}</p>
+
+              {/* Product Count */}
+              <div class="flex items-center gap-2">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-zinc-700 text-zinc-200">
+                  {cat.productCount} producto{cat.productCount !== 1 ? "s" : ""}
+                </span>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div class="col-span-full text-center py-12 text-zinc-500 bg-zinc-900/50 rounded-lg border border-zinc-800">
+            <svg
+              class="w-16 h-16 mx-auto mb-4 opacity-30"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-            <th
-              class="text-left px-6 py-4 text-sm font-medium text-muted-foreground"
-              >Productos</th
-            >
-            <th
-              class="text-right px-6 py-4 text-sm font-medium text-muted-foreground"
-              >Acciones</th
-            >
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-border">
-          {
-            categoriesWithCount && categoriesWithCount.length > 0 ? (
-              categoriesWithCount.map((cat: any) => (
-                <tr
-                  class="hover:bg-muted/30 transition-colors"
-                  data-id={cat.id}
-                >
-                  <td class="px-6 py-4 font-medium">{cat.name}</td>
-                  <td class="px-6 py-4 text-muted-foreground">{cat.slug}</td>
-                  <td class="px-6 py-4">
-                    <span class="px-2 py-1 bg-muted rounded text-sm">
-                      {cat.productCount}
-                    </span>
-                  </td>
-                  <td class="px-6 py-4 text-right">
-                    <div class="flex items-center justify-end gap-2">
-                      <button
-                        class="edit-category p-2 hover:bg-muted rounded-lg transition-colors"
-                        title="Editar"
-                        data-id={cat.id}
-                        data-name={cat.name}
-                        data-slug={cat.slug}
-                      >
-                        <svg
-                          class="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                          />
-                        </svg>
-                      </button>
-                      <button
-                        class="delete-category p-2 hover:bg-accent/20 text-accent rounded-lg transition-colors"
-                        title="Eliminar"
-                        data-id={cat.id}
-                        data-name={cat.name}
-                      >
-                        <svg
-                          class="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
-                      </button>
-                      <a
-                        href={`/categoria/${cat.slug}`}
-                        target="_blank"
-                        class="p-2 hover:bg-muted rounded-lg transition-colors"
-                        title="Ver en tienda"
-                      >
-                        <svg
-                          class="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                          />
-                        </svg>
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colspan="4"
-                  class="px-6 py-12 text-center text-muted-foreground"
-                >
-                  No hay categorías todavía
-                </td>
-              </tr>
-            )
-          }
-        </tbody>
-      </table>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+              />
+            </svg>
+            <p>No hay categorías todavía</p>
+          </div>
+        )
+      }
     </div>
   </div>
 
@@ -186,60 +188,46 @@ const categoriesWithCount = categories?.map((cat: any) => ({
     >
     </div>
     <div class="absolute inset-0 flex items-center justify-center p-4">
-      <div class="bg-card border border-border rounded-xl p-6 max-w-md w-full">
-        <h3 id="modal-title" class="font-heading text-xl mb-4">
+      <div class="admin-card max-w-md w-full">
+        <h3 id="modal-title" class="font-heading text-xl mb-6">
           Nueva Categoría
         </h3>
         <form id="category-form" class="space-y-4">
           <input type="hidden" id="category-id" value="" />
           <div>
-            <label
-              for="category-name"
-              class="block text-sm font-medium text-muted-foreground mb-2"
-            >
-              Nombre <span class="text-accent">*</span>
+            <label for="category-name" class="admin-label">
+              Nombre <span class="text-red-400">*</span>
             </label>
             <input
               type="text"
               id="category-name"
               required
-              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              class="admin-input"
               placeholder="Ej: Camisetas"
             />
           </div>
           <div>
-            <label
-              for="category-slug"
-              class="block text-sm font-medium text-muted-foreground mb-2"
-            >
-              Slug <span class="text-accent">*</span>
+            <label for="category-slug" class="admin-label">
+              Slug <span class="text-red-400">*</span>
             </label>
             <input
               type="text"
               id="category-slug"
               required
-              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              class="admin-input"
               placeholder="camisetas"
             />
           </div>
           <div
             id="form-error"
-            class="hidden p-3 bg-accent/20 text-accent rounded-lg text-sm"
+            class="hidden p-3 bg-red-500/20 text-red-400 rounded-lg text-sm"
           >
           </div>
-          <div class="flex justify-end gap-3">
-            <button
-              type="button"
-              id="cancel-modal"
-              class="px-4 py-2 border border-border rounded-lg hover:bg-muted"
-            >
+          <div class="flex justify-end gap-3 pt-2">
+            <button type="button" id="cancel-modal" class="admin-btn-secondary">
               Cancelar
             </button>
-            <button
-              type="submit"
-              id="save-category"
-              class="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/80"
-            >
+            <button type="submit" id="save-category" class="admin-btn-primary">
               Guardar
             </button>
           </div>
@@ -252,26 +240,21 @@ const categoriesWithCount = categories?.map((cat: any) => ({
   <div id="delete-modal" class="fixed inset-0 z-50 hidden">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4">
-      <div class="bg-card border border-border rounded-xl p-6 max-w-md w-full">
+      <div class="admin-card max-w-md w-full">
         <h3 class="font-heading text-xl mb-4">¿Eliminar categoría?</h3>
-        <p class="text-muted-foreground mb-2">
-          Vas a eliminar: <strong id="delete-name"></strong>
+        <p class="text-zinc-400 mb-2">
+          Vas a eliminar: <strong class="text-foreground" id="delete-name"
+          ></strong>
         </p>
-        <p class="text-sm text-muted-foreground mb-6">
+        <p class="text-sm text-zinc-500 mb-6">
           Los productos asociados se quedarán sin categoría.
         </p>
         <input type="hidden" id="delete-id" />
         <div class="flex justify-end gap-3">
-          <button
-            id="cancel-delete"
-            class="px-4 py-2 border border-border rounded-lg hover:bg-muted"
-          >
+          <button id="cancel-delete" class="admin-btn-secondary">
             Cancelar
           </button>
-          <button
-            id="confirm-delete"
-            class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/80"
-          >
+          <button id="confirm-delete" class="admin-btn-danger">
             Eliminar
           </button>
         </div>
@@ -297,7 +280,6 @@ const categoriesWithCount = categories?.map((cat: any) => ({
     // Auto-generate slug
     categoryNameInput?.addEventListener("input", () => {
       if (!categoryIdInput?.value) {
-        // Only auto-generate for new categories
         const slug = categoryNameInput.value
           .toLowerCase()
           .normalize("NFD")
