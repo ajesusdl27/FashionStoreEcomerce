@@ -1,9 +1,10 @@
 import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead } from '../chunks/astro/server_Cxbq3ybN.mjs';
 import 'piccolore';
-import { a as $cart, b as $cartSubtotal, $ as $$PublicLayout } from '../chunks/PublicLayout_CDKIQy5M.mjs';
+import { a as $cart, b as $cartSubtotal, $ as $$PublicLayout } from '../chunks/PublicLayout_BorKmu0t.mjs';
 import { jsxs, jsx, Fragment } from 'react/jsx-runtime';
 import { useState, useEffect } from 'react';
 import { useStore } from '@nanostores/react';
+import { c as createAuthenticatedClient } from '../chunks/supabase_CjGuiMY7.mjs';
 /* empty css                                    */
 export { renderers } from '../renderers.mjs';
 
@@ -38,7 +39,10 @@ function CheckoutForm({ userData }) {
         ...prev,
         customerName: userData.name || prev.customerName,
         customerEmail: userData.email || prev.customerEmail,
-        customerPhone: userData.phone || prev.customerPhone
+        customerPhone: userData.phone || prev.customerPhone,
+        shippingAddress: userData.address || prev.shippingAddress,
+        shippingCity: userData.city || prev.shippingCity,
+        shippingPostalCode: userData.postalCode || prev.shippingPostalCode
       }));
     }
   }, [userData]);
@@ -395,16 +399,26 @@ function CheckoutForm({ userData }) {
 }
 
 const $$Astro = createAstro("http://localhost:4321");
-const $$Checkout = createComponent(($$result, $$props, $$slots) => {
+const $$Checkout = createComponent(async ($$result, $$props, $$slots) => {
   const Astro2 = $$result.createAstro($$Astro, $$props, $$slots);
   Astro2.self = $$Checkout;
   const user = Astro2.locals.user;
-  const userData = user ? {
-    name: user.user_metadata?.full_name || "",
-    email: user.email || "",
-    phone: user.user_metadata?.phone || ""
-  } : null;
-  return renderTemplate`${renderComponent($$result, "PublicLayout", $$PublicLayout, { "title": "Checkout - FashionStore", "data-astro-cid-ojox7d5b": true }, { "default": ($$result2) => renderTemplate` ${maybeRenderHead()}<div class="container mx-auto px-4 py-8" data-astro-cid-ojox7d5b> <h1 class="font-display text-4xl md:text-5xl text-center mb-8" data-astro-cid-ojox7d5b>
+  let userData = null;
+  if (user) {
+    const accessToken = Astro2.cookies.get("sb-access-token")?.value;
+    const refreshToken = Astro2.cookies.get("sb-refresh-token")?.value;
+    const authClient = createAuthenticatedClient(accessToken, refreshToken);
+    const { data: profile } = await authClient.from("customer_profiles").select("*").eq("id", user.id).single();
+    userData = {
+      name: profile?.full_name || user.user_metadata?.full_name || "",
+      email: user.email || "",
+      phone: profile?.phone || user.user_metadata?.phone || "",
+      address: profile?.default_address || "",
+      city: profile?.default_city || "",
+      postalCode: profile?.default_postal_code || ""
+    };
+  }
+  return renderTemplate`${renderComponent($$result, "PublicLayout", $$PublicLayout, { "title": "Checkout - FashionStore", "data-astro-cid-ojox7d5b": true }, { "default": async ($$result2) => renderTemplate` ${maybeRenderHead()}<div class="container mx-auto px-4 py-8" data-astro-cid-ojox7d5b> <h1 class="font-display text-4xl md:text-5xl text-center mb-8" data-astro-cid-ojox7d5b>
 Finalizar Compra
 </h1> ${renderComponent($$result2, "CheckoutForm", CheckoutForm, { "client:load": true, "userData": userData, "client:component-hydration": "load", "client:component-path": "@/components/islands/CheckoutForm", "client:component-export": "default", "data-astro-cid-ojox7d5b": true })} </div> ` })} `;
 }, "C:/Users/anton/Desktop/Development/VictoriaFPII/Sistema de Gesti\xF3n Empresarial/SegundoTrimestre/Proyectos/FashionStore/src/pages/checkout.astro", void 0);

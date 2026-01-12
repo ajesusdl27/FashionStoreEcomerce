@@ -1,0 +1,70 @@
+---
+import PublicLayout from "@/layouts/PublicLayout.astro";
+import ProfileForm from "@/components/islands/ProfileForm";
+import { createAuthenticatedClient } from "@/lib/supabase";
+
+const user = Astro.locals.user;
+
+// This page is protected by middleware
+if (!user) {
+  return Astro.redirect("/cuenta/login");
+}
+
+// Fetch profile data
+const accessToken = Astro.cookies.get("sb-access-token")?.value;
+const refreshToken = Astro.cookies.get("sb-refresh-token")?.value;
+const authClient = createAuthenticatedClient(accessToken, refreshToken);
+
+const { data: profile } = await authClient
+  .from("customer_profiles")
+  .select("*")
+  .eq("id", user.id)
+  .single();
+
+// Merge with user metadata as fallback
+const initialData = {
+  full_name: profile?.full_name || user.user_metadata?.full_name || "",
+  phone: profile?.phone || user.user_metadata?.phone || "",
+  default_address: profile?.default_address || "",
+  default_city: profile?.default_city || "",
+  default_postal_code: profile?.default_postal_code || "",
+  default_country: profile?.default_country || "España",
+};
+---
+
+<PublicLayout title="Editar Perfil - FashionStore">
+  <div class="container mx-auto px-4 py-12">
+    <!-- Header -->
+    <div class="mb-8 flex items-center gap-4">
+      <a
+        href="/cuenta"
+        class="p-2 rounded-lg hover:bg-muted transition-colors"
+        aria-label="Volver"
+      >
+        <svg
+          class="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M15 19l-7-7 7-7"></path>
+        </svg>
+      </a>
+      <div>
+        <h1 class="font-display text-4xl text-primary">EDITAR PERFIL</h1>
+        <p class="text-muted-foreground">
+          Actualiza tu información personal y dirección de envío
+        </p>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <div class="max-w-3xl">
+      <ProfileForm client:load initialData={initialData} />
+    </div>
+  </div>
+</PublicLayout>

@@ -1,16 +1,46 @@
 ---
 import PublicLayout from "@/layouts/PublicLayout.astro";
 import CheckoutForm from "@/components/islands/CheckoutForm";
+import { createAuthenticatedClient } from "@/lib/supabase";
 
 // Get user data if logged in
 const user = Astro.locals.user;
-const userData = user
-  ? {
-      name: user.user_metadata?.full_name || "",
-      email: user.email || "",
-      phone: user.user_metadata?.phone || "",
-    }
-  : null;
+let userData = null;
+
+console.log("Checkout SSR - User:", user ? user.id : "No user");
+
+if (user) {
+  // Fetch profile data using RPC (SECURITY DEFINER for reliability)
+  const accessToken = Astro.cookies.get("sb-access-token")?.value;
+  const refreshToken = Astro.cookies.get("sb-refresh-token")?.value;
+  const authClient = createAuthenticatedClient(accessToken, refreshToken);
+
+  try {
+    // Use RPC function - same as profile API
+    const { data: profileData, error } = await authClient.rpc(
+      "get_customer_profile"
+    );
+
+    console.log("Checkout SSR - RPC Data:", profileData);
+    console.log("Checkout SSR - RPC Error:", error);
+
+    const profile =
+      profileData && profileData.length > 0 ? profileData[0] : null;
+
+    userData = {
+      name: profile?.full_name || user.user_metadata?.full_name || "",
+      email: profile?.email || user.email || "",
+      phone: profile?.phone || user.user_metadata?.phone || "",
+      address: profile?.default_address || "",
+      city: profile?.default_city || "",
+      postalCode: profile?.default_postal_code || "",
+    };
+
+    console.log("Checkout SSR - Final userData:", userData);
+  } catch (e) {
+    console.error("Checkout SSR - Exception:", e);
+  }
+}
 ---
 
 <PublicLayout title="Checkout - FashionStore">
@@ -50,6 +80,7 @@ const userData = user
     20%,
     40%,
     60%,
+    70%,
     80% {
       transform: translateX(4px);
     }

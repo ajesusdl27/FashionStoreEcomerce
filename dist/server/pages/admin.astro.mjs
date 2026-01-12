@@ -1,6 +1,6 @@
 import { f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead, h as addAttribute } from '../chunks/astro/server_Cxbq3ybN.mjs';
 import 'piccolore';
-import { $ as $$AdminLayout } from '../chunks/AdminLayout_C7xUQmWa.mjs';
+import { $ as $$AdminLayout } from '../chunks/AdminLayout_CZ3D3ixx.mjs';
 import { s as supabase } from '../chunks/supabase_CjGuiMY7.mjs';
 export { renderers } from '../renderers.mjs';
 

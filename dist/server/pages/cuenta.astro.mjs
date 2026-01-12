@@ -1,6 +1,6 @@
 import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead } from '../chunks/astro/server_Cxbq3ybN.mjs';
 import 'piccolore';
-import { $ as $$PublicLayout } from '../chunks/PublicLayout_CDKIQy5M.mjs';
+import { $ as $$PublicLayout } from '../chunks/PublicLayout_BorKmu0t.mjs';
 export { renderers } from '../renderers.mjs';
 
 const $$Astro = createAstro("http://localhost:4321");
@@ -26,7 +26,9 @@ Miembro desde
 Últimos Pedidos
 </h2> <div class="text-center py-8 text-muted-foreground"> <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path> </svg> <p>No tienes pedidos todavía</p> <a href="/productos" class="inline-block mt-4 text-primary hover:underline">
 Explorar productos →
-</a> </div> </div> </div> <!-- Sidebar --> <div class="space-y-6"> <!-- Quick Actions --> <div class="glass border border-border rounded-2xl p-6"> <h3 class="font-heading text-lg mb-4">Acciones Rápidas</h3> <nav class="space-y-2"> <a href="/cuenta/pedidos" class="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors"> <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path> </svg>
+</a> </div> </div> </div> <!-- Sidebar --> <div class="space-y-6"> <!-- Quick Actions --> <div class="glass border border-border rounded-2xl p-6"> <h3 class="font-heading text-lg mb-4">Acciones Rápidas</h3> <nav class="space-y-2"> <a href="/cuenta/perfil" class="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors"> <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path> </svg>
+Editar perfil
+</a> <a href="/cuenta/pedidos" class="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors"> <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path> </svg>
 Ver todos los pedidos
 </a> <a href="/productos" class="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors"> <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path> </svg>
 Explorar tienda
