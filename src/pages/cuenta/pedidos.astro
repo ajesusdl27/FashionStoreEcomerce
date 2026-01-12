@@ -1,0 +1,160 @@
+---
+import PublicLayout from "@/layouts/PublicLayout.astro";
+import { supabase } from "@/lib/supabase";
+
+const user = Astro.locals.user;
+
+// This page is protected by middleware
+if (!user) {
+  return Astro.redirect("/cuenta/login");
+}
+
+// Fetch orders for this user's email
+const { data: orders, error } = await supabase
+  .from("orders")
+  .select("*")
+  .eq("customer_email", user.email)
+  .order("created_at", { ascending: false });
+
+function formatPrice(price: number): string {
+  return new Intl.NumberFormat("es-ES", {
+    style: "currency",
+    currency: "EUR",
+  }).format(price);
+}
+
+function formatDate(date: string): string {
+  return new Intl.DateTimeFormat("es-ES", {
+    dateStyle: "medium",
+  }).format(new Date(date));
+}
+
+function getStatusBadge(status: string) {
+  const badges: Record<string, { class: string; text: string }> = {
+    pending: { class: "bg-yellow-500/20 text-yellow-400", text: "Pendiente" },
+    paid: { class: "bg-emerald-500/20 text-emerald-400", text: "Pagado" },
+    shipped: { class: "bg-blue-500/20 text-blue-400", text: "Enviado" },
+    delivered: { class: "bg-primary/20 text-primary", text: "Entregado" },
+    cancelled: { class: "bg-accent/20 text-accent", text: "Cancelado" },
+  };
+  return badges[status] || { class: "bg-muted", text: status };
+}
+---
+
+<PublicLayout title="Mis Pedidos - FashionStore">
+  <div class="container mx-auto px-4 py-12">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="font-display text-4xl text-primary mb-2">MIS PEDIDOS</h1>
+        <p class="text-muted-foreground">Historial completo de tus compras</p>
+      </div>
+      <a
+        href="/cuenta"
+        class="text-muted-foreground hover:text-primary transition-colors"
+      >
+        ← Volver a mi cuenta
+      </a>
+    </div>
+
+    {
+      orders && orders.length > 0 ? (
+        <div class="space-y-4">
+          {orders.map((order) => {
+            const badge = getStatusBadge(order.status);
+            return (
+              <div class="glass border border-border rounded-2xl p-6 hover:border-primary/30 transition-colors">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                  <div>
+                    <p class="font-mono text-sm text-muted-foreground">
+                      Pedido #{order.id?.slice(0, 8).toUpperCase()}
+                    </p>
+                    <p class="text-sm text-muted-foreground mt-1">
+                      {formatDate(order.created_at)}
+                    </p>
+                  </div>
+                  <div class="flex items-center gap-4">
+                    <span
+                      class={`px-3 py-1 rounded-full text-xs font-medium ${badge.class}`}
+                    >
+                      {badge.text}
+                    </span>
+                    <span class="font-bold text-lg">
+                      {formatPrice(order.total_amount)}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="border-t border-border pt-4">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p class="text-muted-foreground mb-1">
+                        Dirección de envío
+                      </p>
+                      <p>{order.shipping_address}</p>
+                      <p>
+                        {order.shipping_postal_code} {order.shipping_city}
+                      </p>
+                    </div>
+                    <div class="text-right">
+                      {order.status === "paid" && (
+                        <p class="text-emerald-400 text-sm">
+                          ✓ Pago confirmado
+                        </p>
+                      )}
+                      {order.status === "shipped" && (
+                        <p class="text-blue-400 text-sm">📦 En camino</p>
+                      )}
+                      {order.status === "delivered" && (
+                        <p class="text-primary text-sm">🎉 Entregado</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div class="text-center py-16 glass border border-border rounded-2xl">
+          <svg
+            class="w-20 h-20 mx-auto text-muted-foreground/50 mb-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+            />
+          </svg>
+          <h2 class="font-heading text-xl mb-2">No tienes pedidos todavía</h2>
+          <p class="text-muted-foreground mb-6">
+            Cuando realices tu primera compra, aparecerá aquí.
+          </p>
+          <a
+            href="/productos"
+            class="inline-flex items-center gap-2 bg-primary text-background font-bold px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Explorar productos
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </a>
+        </div>
+      )
+    }
+  </div>
+</PublicLayout>

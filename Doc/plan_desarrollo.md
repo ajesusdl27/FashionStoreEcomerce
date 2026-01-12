@@ -25,7 +25,7 @@ Este plan divide el desarrollo en **11 fases progresivas**, cada una construyend
 | 4. Carrito          | ✅ Completada | Store, slide-over, persistencia                |
 | 5. Autenticación    | ✅ Completada | Admin/cliente login, middleware, registro      |
 | 6. Panel Admin      | ✅ Completada | Dashboard, CRUD productos/pedidos              |
-| 7. Checkout         | 🔲 Pendiente  | 3 pasos, Stripe, webhooks                      |
+| 7. Checkout         | ✅ Completada | 3 pasos, Stripe, webhooks                      |
 | 8. Emails           | 🔲 Pendiente  | Resend, confirmación pedido                    |
 | 9. Optimización     | 🔲 Pendiente  | LCP, CLS, accesibilidad                        |
 | 10. Deploy          | 🔲 Pendiente  | Docker, VPS, monitorización                    |
@@ -127,11 +127,11 @@ Este plan divide el desarrollo en **11 fases progresivas**, cada una construyend
 
 ### Checklist
 
-- [ ] `/checkout.astro` - 3 pasos
-- [ ] `/api/checkout/create-session.ts` - Stripe + reserva stock
-- [ ] `/api/webhooks/stripe.ts` - checkout.session.completed/expired
-- [ ] `/checkout/exito.astro` - Confetti
-- [ ] `/checkout/cancelado.astro`
+- [x] `/checkout.astro` - 3 pasos
+- [x] `/api/checkout/create-session.ts` - Stripe + reserva stock
+- [x] `/api/webhooks/stripe.ts` - checkout.session.completed/expired
+- [x] `/checkout/exito.astro` - Confetti
+- [x] `/checkout/cancelado.astro`
 
 ---
 

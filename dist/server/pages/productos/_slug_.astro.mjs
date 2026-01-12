@@ -1,7 +1,7 @@
-import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead, h as addAttribute, l as renderScript, n as Fragment } from '../../chunks/astro/server_OR-0JxUe.mjs';
+import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead, h as addAttribute, l as renderScript, n as Fragment } from '../../chunks/astro/server_Cxbq3ybN.mjs';
 import 'piccolore';
-import { a as addToCart, $ as $$PublicLayout } from '../../chunks/PublicLayout_BPOB2UdW.mjs';
-import { $ as $$Badge } from '../../chunks/Badge_CTgy1eQ4.mjs';
+import { c as addToCart, $ as $$PublicLayout } from '../../chunks/PublicLayout_Ch9DYZ86.mjs';
+import { $ as $$Badge } from '../../chunks/Badge_C0pWziJW.mjs';
 import { jsxs, jsx } from 'react/jsx-runtime';
 import { useState } from 'react';
 import { s as supabase } from '../../chunks/supabase_CyPcJWDY.mjs';

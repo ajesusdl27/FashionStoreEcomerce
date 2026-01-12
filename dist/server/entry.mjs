@@ -1,6 +1,6 @@
 import { renderers } from './renderers.mjs';
-import { c as createExports, s as serverEntrypointModule } from './chunks/_@astrojs-ssr-adapter_BYj9ViSE.mjs';
-import { manifest } from './manifest_C9mTC_Z8.mjs';
+import { c as createExports, s as serverEntrypointModule } from './chunks/_@astrojs-ssr-adapter_BWPfREFm.mjs';
+import { manifest } from './manifest_BQAfYo2u.mjs';
 
 const serverIslandMap = new Map();;
 
@@ -21,14 +21,20 @@ const _page13 = () => import('./pages/api/admin/productos.astro.mjs');
 const _page14 = () => import('./pages/api/auth/login.astro.mjs');
 const _page15 = () => import('./pages/api/auth/logout.astro.mjs');
 const _page16 = () => import('./pages/api/auth/set-session.astro.mjs');
-const _page17 = () => import('./pages/carrito.astro.mjs');
-const _page18 = () => import('./pages/categoria/_slug_.astro.mjs');
-const _page19 = () => import('./pages/cuenta/login.astro.mjs');
-const _page20 = () => import('./pages/cuenta/registro.astro.mjs');
-const _page21 = () => import('./pages/cuenta.astro.mjs');
-const _page22 = () => import('./pages/productos/_slug_.astro.mjs');
-const _page23 = () => import('./pages/productos.astro.mjs');
-const _page24 = () => import('./pages/index.astro.mjs');
+const _page17 = () => import('./pages/api/checkout/create-session.astro.mjs');
+const _page18 = () => import('./pages/api/webhooks/stripe.astro.mjs');
+const _page19 = () => import('./pages/carrito.astro.mjs');
+const _page20 = () => import('./pages/categoria/_slug_.astro.mjs');
+const _page21 = () => import('./pages/checkout/cancelado.astro.mjs');
+const _page22 = () => import('./pages/checkout/exito.astro.mjs');
+const _page23 = () => import('./pages/checkout.astro.mjs');
+const _page24 = () => import('./pages/cuenta/login.astro.mjs');
+const _page25 = () => import('./pages/cuenta/pedidos.astro.mjs');
+const _page26 = () => import('./pages/cuenta/registro.astro.mjs');
+const _page27 = () => import('./pages/cuenta.astro.mjs');
+const _page28 = () => import('./pages/productos/_slug_.astro.mjs');
+const _page29 = () => import('./pages/productos.astro.mjs');
+const _page30 = () => import('./pages/index.astro.mjs');
 const pageMap = new Map([
     ["node_modules/astro/dist/assets/endpoint/node.js", _page0],
     ["src/pages/admin/categorias/index.astro", _page1],
@@ -47,14 +53,20 @@ const pageMap = new Map([
     ["src/pages/api/auth/login.ts", _page14],
     ["src/pages/api/auth/logout.ts", _page15],
     ["src/pages/api/auth/set-session.ts", _page16],
-    ["src/pages/carrito.astro", _page17],
-    ["src/pages/categoria/[slug].astro", _page18],
-    ["src/pages/cuenta/login.astro", _page19],
-    ["src/pages/cuenta/registro.astro", _page20],
-    ["src/pages/cuenta/index.astro", _page21],
-    ["src/pages/productos/[slug].astro", _page22],
-    ["src/pages/productos/index.astro", _page23],
-    ["src/pages/index.astro", _page24]
+    ["src/pages/api/checkout/create-session.ts", _page17],
+    ["src/pages/api/webhooks/stripe.ts", _page18],
+    ["src/pages/carrito.astro", _page19],
+    ["src/pages/categoria/[slug].astro", _page20],
+    ["src/pages/checkout/cancelado.astro", _page21],
+    ["src/pages/checkout/exito.astro", _page22],
+    ["src/pages/checkout.astro", _page23],
+    ["src/pages/cuenta/login.astro", _page24],
+    ["src/pages/cuenta/pedidos.astro", _page25],
+    ["src/pages/cuenta/registro.astro", _page26],
+    ["src/pages/cuenta/index.astro", _page27],
+    ["src/pages/productos/[slug].astro", _page28],
+    ["src/pages/productos/index.astro", _page29],
+    ["src/pages/index.astro", _page30]
 ]);
 
 const _manifest = Object.assign(manifest, {

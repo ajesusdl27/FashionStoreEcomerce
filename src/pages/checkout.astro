@@ -1,0 +1,65 @@
+---
+import PublicLayout from "@/layouts/PublicLayout.astro";
+import CheckoutForm from "@/components/islands/CheckoutForm";
+
+// Get user data if logged in
+const user = Astro.locals.user;
+const userData = user
+  ? {
+      name: user.user_metadata?.full_name || "",
+      email: user.email || "",
+      phone: user.user_metadata?.phone || "",
+    }
+  : null;
+---
+
+<PublicLayout title="Checkout - FashionStore">
+  <div class="container mx-auto px-4 py-8">
+    <h1 class="font-display text-4xl md:text-5xl text-center mb-8">
+      Finalizar Compra
+    </h1>
+
+    <CheckoutForm client:load userData={userData} />
+  </div>
+</PublicLayout>
+
+<style>
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+      transform: translateX(-4px);
+    }
+    20%,
+    40%,
+    60%,
+    80% {
+      transform: translateX(4px);
+    }
+  }
+
+  :global(.animate-fadeIn) {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  :global(.animate-shake) {
+    animation: shake 0.5s ease-in-out;
+  }
+</style>

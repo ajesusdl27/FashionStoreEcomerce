@@ -1,7 +1,7 @@
-import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead, h as addAttribute } from '../../chunks/astro/server_OR-0JxUe.mjs';
+import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead, h as addAttribute } from '../../chunks/astro/server_Cxbq3ybN.mjs';
 import 'piccolore';
-import { $ as $$PublicLayout } from '../../chunks/PublicLayout_BPOB2UdW.mjs';
-import { $ as $$ProductCard } from '../../chunks/ProductCard_DB2qNlxG.mjs';
+import { $ as $$PublicLayout } from '../../chunks/PublicLayout_Ch9DYZ86.mjs';
+import { $ as $$ProductCard } from '../../chunks/ProductCard_LNm_kjYQ.mjs';
 import { s as supabase } from '../../chunks/supabase_CyPcJWDY.mjs';
 export { renderers } from '../../renderers.mjs';
 

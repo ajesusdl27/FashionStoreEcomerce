@@ -1,0 +1,275 @@
+---
+import PublicLayout from "@/layouts/PublicLayout.astro";
+import Button from "@/components/ui/Button.astro";
+import { supabase } from "@/lib/supabase";
+import { stripe } from "@/lib/stripe";
+
+const sessionId = Astro.url.searchParams.get("session_id");
+
+let order = null;
+let orderItems: any[] = [];
+
+if (sessionId) {
+  try {
+    // Get session from Stripe to confirm payment
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (session.payment_status === "paid" && session.metadata?.order_id) {
+      // Update order status to paid (backup in case webhook didn't fire)
+      await supabase.rpc("update_order_status", {
+        p_stripe_session_id: sessionId,
+        p_status: "paid",
+      });
+
+      // Get order details
+      const { data: orderData } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("id", session.metadata.order_id)
+        .single();
+
+      order = orderData;
+
+      if (order) {
+        // Get order items with product info
+        const { data: items } = await supabase
+          .from("order_items")
+          .select(
+            `
+            *,
+            products (name),
+            product_variants (size)
+          `
+          )
+          .eq("order_id", order.id);
+
+        orderItems = items || [];
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching order:", error);
+  }
+}
+
+function formatPrice(price: number): string {
+  return new Intl.NumberFormat("es-ES", {
+    style: "currency",
+    currency: "EUR",
+  }).format(price);
+}
+
+function formatDate(date: string): string {
+  return new Intl.DateTimeFormat("es-ES", {
+    dateStyle: "long",
+    timeStyle: "short",
+  }).format(new Date(date));
+}
+---
+
+<PublicLayout title="¡Pedido Confirmado! - FashionStore">
+  <div class="container mx-auto px-4 py-12">
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-50"
+    ></canvas>
+
+    <div class="max-w-2xl mx-auto text-center">
+      <!-- Success Icon -->
+      <div
+        class="w-24 h-24 mx-auto mb-8 bg-emerald-500/20 rounded-full flex items-center justify-center animate-bounce-in"
+      >
+        <svg
+          class="w-12 h-12 text-emerald-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M5 13l4 4L19 7"></path>
+        </svg>
+      </div>
+
+      <h1 class="font-display text-4xl md:text-5xl mb-4">
+        ¡Gracias por tu pedido!
+      </h1>
+      <p class="text-xl text-muted-foreground mb-8">
+        Tu pago ha sido procesado correctamente. Te hemos enviado un email de
+        confirmación.
+      </p>
+
+      {
+        order && (
+          <div class="bg-card border border-border rounded-xl p-6 md:p-8 text-left mb-8">
+            <div class="flex items-center justify-between mb-6 pb-6 border-b border-border">
+              <div>
+                <p class="text-sm text-muted-foreground">Número de pedido</p>
+                <p class="font-mono text-sm mt-1">
+                  {order.id?.slice(0, 8).toUpperCase()}
+                </p>
+              </div>
+              <div class="text-right">
+                <p class="text-sm text-muted-foreground">Fecha</p>
+                <p class="text-sm mt-1">{formatDate(order.created_at)}</p>
+              </div>
+            </div>
+
+            <div class="mb-6">
+              <h3 class="font-heading font-semibold mb-3">
+                Dirección de envío
+              </h3>
+              <p class="text-muted-foreground text-sm">
+                {order.customer_name}
+                <br />
+                {order.shipping_address}
+                <br />
+                {order.shipping_postal_code} {order.shipping_city}
+                <br />
+                {order.shipping_country}
+              </p>
+            </div>
+
+            <div class="mb-6">
+              <h3 class="font-heading font-semibold mb-3">Productos</h3>
+              <div class="space-y-3">
+                {orderItems.map((item) => (
+                  <div class="flex justify-between text-sm">
+                    <span>
+                      {item.products?.name || "Producto"}
+                      <span class="text-muted-foreground">
+                        (Talla {item.product_variants?.size})
+                      </span>
+                      <span class="text-muted-foreground">
+                        {" "}
+                        × {item.quantity}
+                      </span>
+                    </span>
+                    <span class="font-medium">
+                      {formatPrice(item.price_at_purchase * item.quantity)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div class="pt-4 border-t border-border flex justify-between text-lg font-bold">
+              <span>Total</span>
+              <span class="text-primary">
+                {formatPrice(order.total_amount)}
+              </span>
+            </div>
+          </div>
+        )
+      }
+
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <Button href="/productos" variant="primary" size="lg">
+          Seguir comprando
+        </Button>
+      </div>
+
+      <p class="text-sm text-muted-foreground mt-6">
+        Te hemos enviado un email de confirmación a tu correo electrónico.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    import { clearCart } from "@/stores/cart";
+
+    // Clear cart on success page
+    clearCart();
+
+    // Confetti animation
+    const canvas = document.getElementById(
+      "confetti-canvas"
+    ) as HTMLCanvasElement;
+    const ctx = canvas.getContext("2d");
+
+    if (ctx) {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const colors = ["#CCFF00", "#FF4757", "#3b82f6", "#10b981", "#f59e0b"];
+      const confetti: {
+        x: number;
+        y: number;
+        r: number;
+        d: number;
+        color: string;
+        tilt: number;
+        tiltAngle: number;
+        tiltAngleIncrement: number;
+      }[] = [];
+
+      // Create confetti particles
+      for (let i = 0; i < 150; i++) {
+        confetti.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height - canvas.height,
+          r: Math.random() * 6 + 4,
+          d: Math.random() * 150 + 10,
+          color: colors[Math.floor(Math.random() * colors.length)] ?? "#CCFF00",
+          tilt: Math.floor(Math.random() * 10) - 10,
+          tiltAngle: 0,
+          tiltAngleIncrement: Math.random() * 0.07 + 0.05,
+        });
+      }
+
+      let frameCount = 0;
+      const maxFrames = 200;
+
+      function draw() {
+        if (!ctx || frameCount >= maxFrames) {
+          canvas.style.display = "none";
+          return;
+        }
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (const c of confetti) {
+          ctx.beginPath();
+          ctx.lineWidth = c.r / 2;
+          ctx.strokeStyle = c.color;
+          ctx.moveTo(c.x + c.tilt + c.r / 4, c.y);
+          ctx.lineTo(c.x + c.tilt, c.y + c.tilt + c.r / 4);
+          ctx.stroke();
+        }
+
+        // Update positions
+        for (const c of confetti) {
+          c.y += (Math.cos(c.d) + 3 + c.r / 2) / 2;
+          c.x += Math.sin(c.d);
+          c.tiltAngle += c.tiltAngleIncrement;
+          c.tilt = Math.sin(c.tiltAngle) * 15;
+        }
+
+        frameCount++;
+        requestAnimationFrame(draw);
+      }
+
+      draw();
+    }
+  </script>
+
+  <style>
+    @keyframes bounceIn {
+      0% {
+        transform: scale(0);
+        opacity: 0;
+      }
+      50% {
+        transform: scale(1.2);
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .animate-bounce-in {
+      animation: bounceIn 0.6s ease-out;
+    }
+  </style>
+</PublicLayout>

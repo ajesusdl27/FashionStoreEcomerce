@@ -1,60 +1,8 @@
-import { e as createAstro, f as createComponent, m as maybeRenderHead, h as addAttribute, o as renderSlot, r as renderTemplate, k as renderComponent, l as renderScript } from '../chunks/astro/server_OR-0JxUe.mjs';
+import { f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead, l as renderScript } from '../chunks/astro/server_Cxbq3ybN.mjs';
 import 'piccolore';
-import { $ as $$PublicLayout } from '../chunks/PublicLayout_BPOB2UdW.mjs';
-import 'clsx';
+import { $ as $$PublicLayout } from '../chunks/PublicLayout_Ch9DYZ86.mjs';
+import { $ as $$Button } from '../chunks/Button_CFNw3Rqw.mjs';
 export { renderers } from '../renderers.mjs';
-
-const $$Astro = createAstro("http://localhost:4321");
-const $$Button = createComponent(($$result, $$props, $$slots) => {
-  const Astro2 = $$result.createAstro($$Astro, $$props, $$slots);
-  Astro2.self = $$Button;
-  const {
-    variant = "primary",
-    size = "md",
-    class: className = "",
-    href,
-    disabled = false,
-    loading = false,
-    type = "button"
-  } = Astro2.props;
-  const baseStyles = `
-  inline-flex items-center justify-center font-heading tracking-wider
-  transition-all duration-base touch-target
-  focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary
-  disabled:opacity-50 disabled:cursor-not-allowed
-`;
-  const variants = {
-    primary: `
-    bg-primary text-primary-foreground 
-    hover:shadow-[0_0_20px_rgba(204,255,0,0.4)] hover:scale-[1.02]
-    active:scale-[0.98]
-  `,
-    secondary: `
-    bg-card text-foreground border border-border
-    hover:bg-muted hover:border-primary/50
-    active:scale-[0.98]
-  `,
-    ghost: `
-    bg-transparent text-foreground
-    hover:bg-muted hover:text-primary
-    active:scale-[0.98]
-  `,
-    danger: `
-    bg-accent text-accent-foreground
-    hover:shadow-[0_0_20px_rgba(255,71,87,0.4)] hover:scale-[1.02]
-    active:scale-[0.98]
-  `
-  };
-  const sizes = {
-    sm: "px-4 py-2 text-sm",
-    md: "px-6 py-3 text-base",
-    lg: "px-8 py-4 text-lg"
-  };
-  const classes = [baseStyles, variants[variant], sizes[size], className].join(
-    " "
-  );
-  return renderTemplate`${href ? renderTemplate`${maybeRenderHead()}<a${addAttribute(href, "href")}${addAttribute(classes, "class")}>${renderSlot($$result, $$slots["default"])}</a>` : renderTemplate`<button${addAttribute(type, "type")}${addAttribute(classes, "class")}${addAttribute(disabled || loading, "disabled")}>${loading ? renderTemplate`<span class="flex items-center gap-2"><svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>${renderSlot($$result, $$slots["default"])}</span>` : renderTemplate`${renderSlot($$result, $$slots["default"])}`}</button>`}`;
-}, "C:/Users/anton/Desktop/Development/VictoriaFPII/Sistema de Gesti\xF3n Empresarial/SegundoTrimestre/Proyectos/FashionStore/src/components/ui/Button.astro", void 0);
 
 const $$Carrito = createComponent(($$result, $$props, $$slots) => {
   return renderTemplate`${renderComponent($$result, "PublicLayout", $$PublicLayout, { "title": "Carrito de Compra" }, { "default": ($$result2) => renderTemplate` ${maybeRenderHead()}<div class="container mx-auto px-4 py-8"> <!-- Header --> <h1 class="font-display text-4xl md:text-5xl mb-8">Tu Carrito</h1> <div class="lg:grid lg:grid-cols-3 lg:gap-12"> <!-- Cart Items --> <div class="lg:col-span-2 mb-8 lg:mb-0"> <div id="cart-items" class="space-y-4"> <!-- Items will be rendered by JavaScript --> </div> <div id="cart-empty" class="hidden text-center py-12 border border-dashed border-border rounded-lg"> <svg class="w-16 h-16 mx-auto text-muted-foreground mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path> </svg> <p class="text-muted-foreground mb-4">Tu carrito está vacío</p> <a href="/productos" class="text-primary hover:underline">Ver productos</a> </div> </div> <!-- Order Summary --> <div class="lg:col-span-1"> <div class="bg-card border border-border rounded-lg p-6 sticky top-24"> <h2 class="font-heading text-xl font-semibold mb-6">
