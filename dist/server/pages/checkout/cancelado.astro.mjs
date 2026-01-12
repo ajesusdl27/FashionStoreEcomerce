@@ -1,6 +1,6 @@
 import { f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead } from '../../chunks/astro/server_Cxbq3ybN.mjs';
 import 'piccolore';
-import { $ as $$PublicLayout } from '../../chunks/PublicLayout_BorKmu0t.mjs';
+import { $ as $$PublicLayout } from '../../chunks/PublicLayout_CVZpYtDs.mjs';
 import { $ as $$Button } from '../../chunks/Button_CFNw3Rqw.mjs';
 export { renderers } from '../../renderers.mjs';
 

@@ -101,27 +101,40 @@ export default function CheckoutForm({ userData }: Props) {
     setError(null);
 
     try {
+      // Cart items already match the expected API format
+      const mappedItems = cart.map(item => ({
+        id: item.id,
+        productId: item.productId,
+        productName: item.productName,
+        productSlug: item.productSlug,
+        variantId: item.variantId,
+        size: item.size,
+        price: item.price,
+        imageUrl: item.imageUrl,
+        quantity: item.quantity
+      }));
+
       const response = await fetch('/api/checkout/create-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          items: cart,
-          customerDetails: {
-            name: formData.customerName,
-            email: formData.customerEmail,
-            phone: formData.customerPhone,
-          },
-          shippingDetails: {
-            address: formData.shippingAddress,
-            city: formData.shippingCity,
-            postalCode: formData.shippingPostalCode,
-          }
+          items: mappedItems,
+          customerName: formData.customerName,
+          customerEmail: formData.customerEmail,
+          customerPhone: formData.customerPhone,
+          shippingAddress: formData.shippingAddress,
+          shippingCity: formData.shippingCity,
+          shippingPostalCode: formData.shippingPostalCode,
         }),
       });
 
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al iniciar el pago');
+      }
 
       if (data.url) {
         window.location.href = data.url;
@@ -130,7 +143,7 @@ export default function CheckoutForm({ userData }: Props) {
       }
     } catch (err) {
       console.error(err);
-      setError('Hubo un error al procesar tu pedido. Por favor inténtalo de nuevo.');
+      setError(err instanceof Error ? err.message : 'Hubo un error al procesar tu pedido. Por favor inténtalo de nuevo.');
       setLoading(false);
     }
   };
@@ -356,13 +369,13 @@ export default function CheckoutForm({ userData }: Props) {
           
           <div className="space-y-4 mb-6 max-h-60 overflow-y-auto custom-scrollbar">
             {cart.map((item) => (
-              <div key={`${item.id}-${item.selectedSize}`} className="flex gap-4">
+              <div key={`${item.id}-${item.size}`} className="flex gap-4">
                 <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden shrink-0">
-                  <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                  <img src={item.imageUrl} alt={item.productName} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-sm truncate">{item.name}</h4>
-                  <p className="text-xs text-muted-foreground">Talla: {item.selectedSize}</p>
+                  <h4 className="font-bold text-sm truncate">{item.productName}</h4>
+                  <p className="text-xs text-muted-foreground">Talla: {item.size}</p>
                   <p className="text-sm font-medium">{formatPrice(item.price)}</p>
                 </div>
               </div>

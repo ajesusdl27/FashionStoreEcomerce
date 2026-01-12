@@ -1,9 +1,10 @@
 import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead, l as renderScript } from '../../chunks/astro/server_Cxbq3ybN.mjs';
 import 'piccolore';
-import { $ as $$PublicLayout } from '../../chunks/PublicLayout_BorKmu0t.mjs';
+import { $ as $$PublicLayout } from '../../chunks/PublicLayout_CVZpYtDs.mjs';
 import { $ as $$Button } from '../../chunks/Button_CFNw3Rqw.mjs';
 import { s as supabase } from '../../chunks/supabase_CjGuiMY7.mjs';
 import { s as stripe } from '../../chunks/stripe_B3_Fgp7U.mjs';
+import { s as sendOrderConfirmation } from '../../chunks/email_BudQmitK.mjs';
 /* empty css                                    */
 export { renderers } from '../../renderers.mjs';
 
@@ -14,10 +15,13 @@ const $$Exito = createComponent(async ($$result, $$props, $$slots) => {
   const sessionId = Astro2.url.searchParams.get("session_id");
   let order = null;
   let orderItems = [];
+  let emailSent = false;
   if (sessionId) {
     try {
       const session = await stripe.checkout.sessions.retrieve(sessionId);
       if (session.payment_status === "paid" && session.metadata?.order_id) {
+        const { data: existingOrder } = await supabase.from("orders").select("status").eq("id", session.metadata.order_id).single();
+        const wasAlreadyPaid = existingOrder?.status === "paid";
         await supabase.rpc("update_order_status", {
           p_stripe_session_id: sessionId,
           p_status: "paid"
@@ -33,6 +37,35 @@ const $$Exito = createComponent(async ($$result, $$props, $$slots) => {
           `
           ).eq("order_id", order.id);
           orderItems = items || [];
+          if (!wasAlreadyPaid && order.customer_email) {
+            try {
+              const emailItems = orderItems.map((item) => ({
+                productName: item.products?.name || "Producto",
+                size: item.product_variants?.size || "-",
+                quantity: item.quantity,
+                price: Number(item.price_at_purchase)
+              }));
+              const result = await sendOrderConfirmation({
+                orderId: order.id,
+                customerName: order.customer_name,
+                customerEmail: order.customer_email,
+                shippingAddress: order.shipping_address,
+                shippingCity: order.shipping_city,
+                shippingPostalCode: order.shipping_postal_code,
+                shippingCountry: order.shipping_country || "Espa\xF1a",
+                totalAmount: Number(order.total_amount),
+                items: emailItems
+              });
+              emailSent = result.success;
+              if (!result.success) {
+                console.error("Failed to send confirmation email:", result.error);
+              } else {
+                console.log("Confirmation email sent from success page");
+              }
+            } catch (emailError) {
+              console.error("Error sending confirmation email:", emailError);
+            }
+          }
         }
       }
     } catch (error) {

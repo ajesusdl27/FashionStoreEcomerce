@@ -3,11 +3,13 @@ import PublicLayout from "@/layouts/PublicLayout.astro";
 import Button from "@/components/ui/Button.astro";
 import { supabase } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe";
+import { sendOrderConfirmation } from "@/lib/email";
 
 const sessionId = Astro.url.searchParams.get("session_id");
 
 let order = null;
 let orderItems: any[] = [];
+let emailSent = false;
 
 if (sessionId) {
   try {
@@ -15,6 +17,15 @@ if (sessionId) {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
     if (session.payment_status === "paid" && session.metadata?.order_id) {
+      // Get current order status first
+      const { data: existingOrder } = await supabase
+        .from("orders")
+        .select("status")
+        .eq("id", session.metadata.order_id)
+        .single();
+
+      const wasAlreadyPaid = existingOrder?.status === "paid";
+
       // Update order status to paid (backup in case webhook didn't fire)
       await supabase.rpc("update_order_status", {
         p_stripe_session_id: sessionId,
@@ -44,6 +55,40 @@ if (sessionId) {
           .eq("order_id", order.id);
 
         orderItems = items || [];
+
+        // Send confirmation email if webhook didn't already do it
+        // (check if order was already paid before we updated it)
+        if (!wasAlreadyPaid && order.customer_email) {
+          try {
+            const emailItems = orderItems.map((item: any) => ({
+              productName: item.products?.name || "Producto",
+              size: item.product_variants?.size || "-",
+              quantity: item.quantity,
+              price: Number(item.price_at_purchase),
+            }));
+
+            const result = await sendOrderConfirmation({
+              orderId: order.id,
+              customerName: order.customer_name,
+              customerEmail: order.customer_email,
+              shippingAddress: order.shipping_address,
+              shippingCity: order.shipping_city,
+              shippingPostalCode: order.shipping_postal_code,
+              shippingCountry: order.shipping_country || "España",
+              totalAmount: Number(order.total_amount),
+              items: emailItems,
+            });
+
+            emailSent = result.success;
+            if (!result.success) {
+              console.error("Failed to send confirmation email:", result.error);
+            } else {
+              console.log("Confirmation email sent from success page");
+            }
+          } catch (emailError) {
+            console.error("Error sending confirmation email:", emailError);
+          }
+        }
       }
     }
   } catch (error) {

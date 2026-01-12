@@ -13,27 +13,28 @@ const onRequest$1 = defineMiddleware(async (context, next) => {
   const refreshToken = cookies.get("sb-refresh-token")?.value;
   const isAdminRoute = pathname.startsWith("/admin") && pathname !== "/admin/login";
   const isAccountRoute = pathname.startsWith("/cuenta") && pathname !== "/cuenta/login" && pathname !== "/cuenta/registro";
-  if (!isAdminRoute && !isAccountRoute) {
-    return next();
-  }
-  if (!accessToken || !refreshToken) {
-    const loginUrl = isAdminRoute ? "/admin/login" : "/cuenta/login";
-    return context.redirect(`${loginUrl}?redirect=${encodeURIComponent(pathname)}`);
-  }
-  const { data: { user }, error } = await supabase.auth.getUser(accessToken);
-  if (error || !user) {
-    cookies.delete("sb-access-token", { path: "/" });
-    cookies.delete("sb-refresh-token", { path: "/" });
-    const loginUrl = isAdminRoute ? "/admin/login" : "/cuenta/login";
-    return context.redirect(`${loginUrl}?redirect=${encodeURIComponent(pathname)}`);
-  }
-  if (isAdminRoute) {
-    const isAdmin = user.user_metadata?.is_admin === true;
-    if (!isAdmin) {
-      return context.redirect("/admin/login?error=unauthorized");
+  if (accessToken && refreshToken) {
+    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+    if (user && !error) {
+      context.locals.user = user;
     }
   }
-  context.locals.user = user;
+  if (isAdminRoute || isAccountRoute) {
+    if (!context.locals.user) {
+      if (accessToken || refreshToken) {
+        cookies.delete("sb-access-token", { path: "/" });
+        cookies.delete("sb-refresh-token", { path: "/" });
+      }
+      const loginUrl = isAdminRoute ? "/admin/login" : "/cuenta/login";
+      return context.redirect(`${loginUrl}?redirect=${encodeURIComponent(pathname)}`);
+    }
+    if (isAdminRoute) {
+      const isAdmin = context.locals.user.user_metadata?.is_admin === true;
+      if (!isAdmin) {
+        return context.redirect("/admin/login?error=unauthorized");
+      }
+    }
+  }
   return next();
 });
 

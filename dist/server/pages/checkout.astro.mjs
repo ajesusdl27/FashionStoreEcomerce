@@ -1,6 +1,6 @@
 import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead } from '../chunks/astro/server_Cxbq3ybN.mjs';
 import 'piccolore';
-import { a as $cart, b as $cartSubtotal, $ as $$PublicLayout } from '../chunks/PublicLayout_BorKmu0t.mjs';
+import { a as $cart, b as $cartSubtotal, $ as $$PublicLayout } from '../chunks/PublicLayout_CVZpYtDs.mjs';
 import { jsxs, jsx, Fragment } from 'react/jsx-runtime';
 import { useState, useEffect } from 'react';
 import { useStore } from '@nanostores/react';
@@ -37,12 +37,12 @@ function CheckoutForm({ userData }) {
     if (userData) {
       setFormData((prev) => ({
         ...prev,
-        customerName: userData.name || prev.customerName,
-        customerEmail: userData.email || prev.customerEmail,
-        customerPhone: userData.phone || prev.customerPhone,
-        shippingAddress: userData.address || prev.shippingAddress,
-        shippingCity: userData.city || prev.shippingCity,
-        shippingPostalCode: userData.postalCode || prev.shippingPostalCode
+        customerName: userData.name || initialFormData.customerName,
+        customerEmail: userData.email || initialFormData.customerEmail,
+        customerPhone: userData.phone || initialFormData.customerPhone,
+        shippingAddress: userData.address || initialFormData.shippingAddress,
+        shippingCity: userData.city || initialFormData.shippingCity,
+        shippingPostalCode: userData.postalCode || initialFormData.shippingPostalCode
       }));
     }
   }, [userData]);
@@ -55,97 +55,89 @@ function CheckoutForm({ userData }) {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setError(null);
   };
-  const validateStep = (stepNumber) => {
-    switch (stepNumber) {
-      case 1:
-        if (!formData.customerName.trim()) {
-          setError("El nombre es obligatorio");
-          return false;
-        }
-        if (!formData.customerEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.customerEmail)) {
-          setError("Introduce un email válido");
-          return false;
-        }
-        return true;
-      case 2:
-        if (!formData.shippingAddress.trim()) {
-          setError("La dirección es obligatoria");
-          return false;
-        }
-        if (!formData.shippingCity.trim()) {
-          setError("La ciudad es obligatoria");
-          return false;
-        }
-        if (!formData.shippingPostalCode.trim() || !/^\d{5}$/.test(formData.shippingPostalCode)) {
-          setError("Introduce un código postal válido (5 dígitos)");
-          return false;
-        }
-        return true;
-      default:
-        return true;
+  const handleNextStep = () => {
+    if (step === 1) {
+      if (!formData.customerName || !formData.customerEmail) {
+        setError("Por favor completa todos los campos obligatorios");
+        return;
+      }
+      setStep(2);
+    } else if (step === 2) {
+      if (!formData.shippingAddress || !formData.shippingCity || !formData.shippingPostalCode) {
+        setError("Por favor completa la dirección de envío");
+        return;
+      }
+      setStep(3);
     }
-  };
-  const nextStep = () => {
-    if (validateStep(step)) {
-      setStep((prev) => Math.min(prev + 1, 3));
-    }
-  };
-  const prevStep = () => {
-    setStep((prev) => Math.max(prev - 1, 1));
-    setError(null);
   };
   const handleSubmit = async () => {
     setLoading(true);
     setError(null);
     try {
+      const mappedItems = cart.map((item) => ({
+        id: item.id,
+        productId: item.productId,
+        productName: item.productName,
+        productSlug: item.productSlug,
+        variantId: item.variantId,
+        size: item.size,
+        price: item.price,
+        imageUrl: item.imageUrl,
+        quantity: item.quantity
+      }));
       const response = await fetch("/api/checkout/create-session", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
-          items: cart,
-          ...formData
+          items: mappedItems,
+          customerName: formData.customerName,
+          customerEmail: formData.customerEmail,
+          customerPhone: formData.customerPhone,
+          shippingAddress: formData.shippingAddress,
+          shippingCity: formData.shippingCity,
+          shippingPostalCode: formData.shippingPostalCode
         })
       });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Error al procesar el pago");
+        throw new Error(data.error || "Error al iniciar el pago");
       }
       if (data.url) {
         window.location.href = data.url;
+      } else {
+        throw new Error("Error al iniciar el pago");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error desconocido");
+      console.error(err);
+      setError(err instanceof Error ? err.message : "Hubo un error al procesar tu pedido. Por favor inténtalo de nuevo.");
       setLoading(false);
     }
   };
-  const stepIndicator = /* @__PURE__ */ jsx("div", { className: "flex items-center justify-center mb-8", children: [1, 2, 3].map((s, i) => /* @__PURE__ */ jsxs("div", { className: "flex items-center", children: [
-    /* @__PURE__ */ jsx(
-      "div",
-      {
-        className: `w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${s === step ? "bg-primary text-background scale-110" : s < step ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground"}`,
-        children: s < step ? "✓" : s
-      }
-    ),
-    i < 2 && /* @__PURE__ */ jsx(
-      "div",
-      {
-        className: `w-16 md:w-24 h-1 mx-2 transition-all ${s < step ? "bg-emerald-500" : "bg-muted"}`
-      }
-    )
-  ] }, s)) });
-  const stepLabels = ["Datos personales", "Dirección de envío", "Resumen y pago"];
-  return /* @__PURE__ */ jsxs("div", { className: "lg:grid lg:grid-cols-5 lg:gap-12", children: [
-    /* @__PURE__ */ jsxs("div", { className: "lg:col-span-3", children: [
-      stepIndicator,
-      /* @__PURE__ */ jsxs("p", { className: "text-center text-muted-foreground mb-8", children: [
-        "Paso ",
-        step,
-        " de 3: ",
-        /* @__PURE__ */ jsx("span", { className: "text-foreground font-medium", children: stepLabels[step - 1] })
-      ] }),
-      error && /* @__PURE__ */ jsx("div", { className: "bg-accent/10 border border-accent text-accent px-4 py-3 rounded-lg mb-6 animate-shake", children: error }),
-      /* @__PURE__ */ jsxs("div", { className: "bg-card border border-border rounded-xl p-6 md:p-8", children: [
-        step === 1 && /* @__PURE__ */ jsxs("div", { className: "space-y-6 animate-fadeIn", children: [
+  if (cart.length === 0) {
+    return null;
+  }
+  return /* @__PURE__ */ jsxs("div", { className: "flex flex-col lg:flex-row gap-12", children: [
+    /* @__PURE__ */ jsxs("div", { className: "flex-1", children: [
+      /* @__PURE__ */ jsx("div", { className: "flex items-center justify-between mb-8 max-w-md mx-auto", children: [1, 2, 3].map((s) => /* @__PURE__ */ jsxs("div", { className: "flex items-center", children: [
+        /* @__PURE__ */ jsx(
+          "div",
+          {
+            className: `w-10 h-10 rounded-full flex items-center justify-center font-bold transition-colors ${step >= s ? "bg-primary text-background" : "bg-secondary text-muted-foreground"}`,
+            children: s
+          }
+        ),
+        s < 3 && /* @__PURE__ */ jsx(
+          "div",
+          {
+            className: `w-16 h-1 mx-2 transition-colors ${step > s ? "bg-primary" : "bg-secondary"}`
+          }
+        )
+      ] }, s)) }),
+      /* @__PURE__ */ jsxs("div", { className: "glass border border-border rounded-2xl p-6 md:p-8", children: [
+        step === 1 && /* @__PURE__ */ jsxs("div", { className: "animate-fadeIn space-y-4", children: [
+          /* @__PURE__ */ jsx("h2", { className: "font-heading text-xl mb-6", children: "Paso 1 de 3: Datos personales" }),
           /* @__PURE__ */ jsxs("div", { children: [
             /* @__PURE__ */ jsx("label", { htmlFor: "name", className: "block text-sm font-medium mb-2", children: "Nombre completo *" }),
             /* @__PURE__ */ jsx(
@@ -177,10 +169,7 @@ function CheckoutForm({ userData }) {
             )
           ] }),
           /* @__PURE__ */ jsxs("div", { children: [
-            /* @__PURE__ */ jsxs("label", { htmlFor: "phone", className: "block text-sm font-medium mb-2", children: [
-              "Teléfono ",
-              /* @__PURE__ */ jsx("span", { className: "text-muted-foreground", children: "(opcional)" })
-            ] }),
+            /* @__PURE__ */ jsx("label", { htmlFor: "phone", className: "block text-sm font-medium mb-2", children: "Teléfono (opcional)" }),
             /* @__PURE__ */ jsx(
               "input",
               {
@@ -195,7 +184,8 @@ function CheckoutForm({ userData }) {
             )
           ] })
         ] }),
-        step === 2 && /* @__PURE__ */ jsxs("div", { className: "space-y-6 animate-fadeIn", children: [
+        step === 2 && /* @__PURE__ */ jsxs("div", { className: "animate-fadeIn space-y-4", children: [
+          /* @__PURE__ */ jsx("h2", { className: "font-heading text-xl mb-6", children: "Paso 2 de 3: Dirección de envío" }),
           /* @__PURE__ */ jsxs("div", { children: [
             /* @__PURE__ */ jsx("label", { htmlFor: "address", className: "block text-sm font-medium mb-2", children: "Dirección *" }),
             /* @__PURE__ */ jsx(
@@ -245,152 +235,106 @@ function CheckoutForm({ userData }) {
             ] })
           ] })
         ] }),
-        step === 3 && /* @__PURE__ */ jsxs("div", { className: "space-y-6 animate-fadeIn", children: [
-          /* @__PURE__ */ jsxs("div", { children: [
-            /* @__PURE__ */ jsx("h3", { className: "font-heading text-lg font-semibold mb-4", children: "Datos de contacto" }),
-            /* @__PURE__ */ jsxs("div", { className: "bg-muted/50 rounded-lg p-4 space-y-1 text-sm", children: [
-              /* @__PURE__ */ jsxs("p", { children: [
-                /* @__PURE__ */ jsx("span", { className: "text-muted-foreground", children: "Nombre:" }),
-                " ",
-                formData.customerName
-              ] }),
-              /* @__PURE__ */ jsxs("p", { children: [
-                /* @__PURE__ */ jsx("span", { className: "text-muted-foreground", children: "Email:" }),
-                " ",
-                formData.customerEmail
-              ] }),
-              formData.customerPhone && /* @__PURE__ */ jsxs("p", { children: [
-                /* @__PURE__ */ jsx("span", { className: "text-muted-foreground", children: "Teléfono:" }),
-                " ",
-                formData.customerPhone
-              ] })
-            ] })
-          ] }),
-          /* @__PURE__ */ jsxs("div", { children: [
-            /* @__PURE__ */ jsx("h3", { className: "font-heading text-lg font-semibold mb-4", children: "Dirección de envío" }),
-            /* @__PURE__ */ jsxs("div", { className: "bg-muted/50 rounded-lg p-4 text-sm", children: [
+        step === 3 && /* @__PURE__ */ jsxs("div", { className: "animate-fadeIn space-y-6", children: [
+          /* @__PURE__ */ jsx("h2", { className: "font-heading text-xl mb-6", children: "Paso 3 de 3: Confirmación" }),
+          /* @__PURE__ */ jsxs("div", { className: "bg-muted/50 p-4 rounded-lg space-y-3", children: [
+            /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsx("h4", { className: "font-bold text-sm text-muted-foreground uppercase tracking-wider mb-1", children: "Contacto" }),
+              /* @__PURE__ */ jsx("p", { children: formData.customerName }),
+              /* @__PURE__ */ jsx("p", { children: formData.customerEmail }),
+              /* @__PURE__ */ jsx("p", { children: formData.customerPhone })
+            ] }),
+            /* @__PURE__ */ jsx("div", { className: "h-px bg-border" }),
+            /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsx("h4", { className: "font-bold text-sm text-muted-foreground uppercase tracking-wider mb-1", children: "Envío a" }),
               /* @__PURE__ */ jsx("p", { children: formData.shippingAddress }),
               /* @__PURE__ */ jsxs("p", { children: [
                 formData.shippingPostalCode,
                 " ",
                 formData.shippingCity
-              ] }),
-              /* @__PURE__ */ jsx("p", { children: "España" })
+              ] })
             ] })
           ] }),
-          /* @__PURE__ */ jsxs("div", { children: [
-            /* @__PURE__ */ jsxs("h3", { className: "font-heading text-lg font-semibold mb-4", children: [
-              "Productos (",
-              cart.length,
-              ")"
-            ] }),
-            /* @__PURE__ */ jsx("div", { className: "space-y-3 max-h-[200px] overflow-y-auto", children: cart.map((item) => /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3 text-sm", children: [
-              /* @__PURE__ */ jsx(
-                "img",
-                {
-                  src: item.imageUrl,
-                  alt: item.productName,
-                  className: "w-12 h-12 object-cover rounded-lg"
-                }
-              ),
-              /* @__PURE__ */ jsxs("div", { className: "flex-1 min-w-0", children: [
-                /* @__PURE__ */ jsx("p", { className: "font-medium truncate", children: item.productName }),
-                /* @__PURE__ */ jsxs("p", { className: "text-muted-foreground", children: [
-                  "Talla ",
-                  item.size,
-                  " × ",
-                  item.quantity
-                ] })
-              ] }),
-              /* @__PURE__ */ jsx("p", { className: "font-medium", children: formatPrice(item.price * item.quantity) })
-            ] }, item.id)) })
+          /* @__PURE__ */ jsxs("div", { className: "bg-primary/5 border border-primary/20 p-4 rounded-lg flex items-start gap-3", children: [
+            /* @__PURE__ */ jsx("svg", { className: "w-5 h-5 text-primary mt-0.5 shrink-0", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" }) }),
+            /* @__PURE__ */ jsxs("div", { className: "text-sm", children: [
+              /* @__PURE__ */ jsx("p", { className: "font-bold text-primary mb-1", children: "Redirección segura" }),
+              /* @__PURE__ */ jsx("p", { className: "text-muted-foreground", children: "Serás redirigido a la pasarela de pago segura de Stripe para completar tu compra." })
+            ] })
           ] })
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: "flex gap-4 mt-8", children: [
+        error && /* @__PURE__ */ jsx("div", { className: `mt-6 p-4 rounded-lg bg-accent/10 border border-accent text-accent animate-shake`, children: error }),
+        /* @__PURE__ */ jsxs("div", { className: "mt-8 flex gap-4", children: [
           step > 1 && /* @__PURE__ */ jsx(
             "button",
             {
-              type: "button",
-              onClick: prevStep,
-              disabled: loading,
-              className: "flex-1 py-3 px-6 border border-border rounded-lg font-medium hover:bg-muted transition-colors disabled:opacity-50",
+              onClick: () => setStep((s) => s - 1),
+              className: "flex-1 px-6 py-3 border border-border hover:bg-muted text-foreground rounded-lg font-bold transition-colors",
               children: "Atrás"
             }
           ),
           step < 3 ? /* @__PURE__ */ jsx(
             "button",
             {
-              type: "button",
-              onClick: nextStep,
-              className: "flex-1 py-3 px-6 bg-primary text-background rounded-lg font-bold hover:bg-primary/90 transition-colors",
+              onClick: handleNextStep,
+              className: "flex-1 px-6 py-3 bg-primary text-background rounded-lg font-bold hover:bg-primary/90 transition-colors",
               children: "Continuar"
             }
           ) : /* @__PURE__ */ jsx(
             "button",
             {
-              type: "button",
               onClick: handleSubmit,
               disabled: loading,
-              className: "flex-1 py-3 px-6 bg-primary text-background rounded-lg font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2",
+              className: "flex-1 px-6 py-3 bg-primary text-background rounded-lg font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2",
               children: loading ? /* @__PURE__ */ jsxs(Fragment, { children: [
                 /* @__PURE__ */ jsxs("svg", { className: "animate-spin w-5 h-5", fill: "none", viewBox: "0 0 24 24", children: [
                   /* @__PURE__ */ jsx("circle", { className: "opacity-25", cx: "12", cy: "12", r: "10", stroke: "currentColor", strokeWidth: "4" }),
                   /* @__PURE__ */ jsx("path", { className: "opacity-75", fill: "currentColor", d: "M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" })
                 ] }),
                 "Procesando..."
-              ] }) : /* @__PURE__ */ jsxs(Fragment, { children: [
-                "🔒 Pagar ",
-                formatPrice(total)
-              ] })
+              ] }) : "Pagar ahora"
             }
           )
         ] })
       ] })
     ] }),
-    /* @__PURE__ */ jsx("div", { className: "lg:col-span-2 mt-8 lg:mt-0", children: /* @__PURE__ */ jsxs("div", { className: "bg-card border border-border rounded-xl p-6 sticky top-24", children: [
-      /* @__PURE__ */ jsx("h2", { className: "font-heading text-xl font-semibold mb-6", children: "Resumen del pedido" }),
-      /* @__PURE__ */ jsx("div", { className: "space-y-4 mb-6 max-h-[300px] overflow-y-auto", children: cart.map((item) => /* @__PURE__ */ jsxs("div", { className: "flex gap-3", children: [
-        /* @__PURE__ */ jsxs("div", { className: "relative w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0", children: [
-          /* @__PURE__ */ jsx(
-            "img",
-            {
-              src: item.imageUrl,
-              alt: item.productName,
-              className: "w-full h-full object-cover"
-            }
-          ),
-          /* @__PURE__ */ jsx("span", { className: "absolute -top-1 -right-1 w-5 h-5 bg-muted-foreground text-background text-xs rounded-full flex items-center justify-center", children: item.quantity })
-        ] }),
+    /* @__PURE__ */ jsx("div", { className: "w-full lg:w-96", children: /* @__PURE__ */ jsxs("div", { className: "glass border border-border rounded-xl p-6 sticky top-24", children: [
+      /* @__PURE__ */ jsx("h3", { className: "font-heading text-xl mb-4", children: "Resumen del pedido" }),
+      /* @__PURE__ */ jsx("div", { className: "space-y-4 mb-6 max-h-60 overflow-y-auto custom-scrollbar", children: cart.map((item) => /* @__PURE__ */ jsxs("div", { className: "flex gap-4", children: [
+        /* @__PURE__ */ jsx("div", { className: "w-16 h-16 bg-muted rounded-lg overflow-hidden shrink-0", children: /* @__PURE__ */ jsx("img", { src: item.imageUrl, alt: item.productName, className: "w-full h-full object-cover" }) }),
         /* @__PURE__ */ jsxs("div", { className: "flex-1 min-w-0", children: [
-          /* @__PURE__ */ jsx("p", { className: "font-medium text-sm truncate", children: item.productName }),
+          /* @__PURE__ */ jsx("h4", { className: "font-bold text-sm truncate", children: item.productName }),
           /* @__PURE__ */ jsxs("p", { className: "text-xs text-muted-foreground", children: [
             "Talla: ",
             item.size
           ] }),
-          /* @__PURE__ */ jsx("p", { className: "font-medium text-sm mt-1", children: formatPrice(item.price * item.quantity) })
+          /* @__PURE__ */ jsx("p", { className: "text-sm font-medium", children: formatPrice(item.price) })
         ] })
-      ] }, item.id)) }),
-      /* @__PURE__ */ jsxs("div", { className: "border-t border-border pt-4 space-y-2 text-sm", children: [
-        /* @__PURE__ */ jsxs("div", { className: "flex justify-between", children: [
+      ] }, `${item.id}-${item.size}`)) }),
+      /* @__PURE__ */ jsxs("div", { className: "space-y-2 py-4 border-t border-border", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex justify-between text-sm", children: [
           /* @__PURE__ */ jsx("span", { className: "text-muted-foreground", children: "Subtotal" }),
           /* @__PURE__ */ jsx("span", { children: formatPrice(subtotal) })
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: "flex justify-between", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex justify-between text-sm", children: [
           /* @__PURE__ */ jsx("span", { className: "text-muted-foreground", children: "Envío" }),
-          /* @__PURE__ */ jsx("span", { className: shipping === 0 ? "text-emerald-400 font-medium" : "", children: shipping === 0 ? "GRATIS" : formatPrice(shipping) })
-        ] }),
-        /* @__PURE__ */ jsxs("div", { className: "flex justify-between pt-2 border-t border-border text-lg font-bold", children: [
-          /* @__PURE__ */ jsx("span", { children: "Total" }),
-          /* @__PURE__ */ jsx("span", { className: "text-primary", children: formatPrice(total) })
+          /* @__PURE__ */ jsx("span", { children: shipping === 0 ? "Gratis" : formatPrice(shipping) })
         ] })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: "mt-6 pt-6 border-t border-border", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-end pt-4 border-t border-border", children: [
+        /* @__PURE__ */ jsx("span", { className: "font-heading text-lg", children: "Total" }),
+        /* @__PURE__ */ jsxs("div", { className: "text-right", children: [
+          /* @__PURE__ */ jsx("span", { className: "block font-heading text-2xl text-primary", children: formatPrice(total) }),
+          /* @__PURE__ */ jsx("span", { className: "text-xs text-muted-foreground", children: "IVA incluido" })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "mt-6 space-y-3", children: [
         /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 text-xs text-muted-foreground", children: [
           /* @__PURE__ */ jsx("svg", { className: "w-4 h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" }) }),
           "Pago seguro con Stripe"
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 text-xs text-muted-foreground mt-2", children: [
-          /* @__PURE__ */ jsx("svg", { className: "w-4 h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" }) }),
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 text-xs text-muted-foreground", children: [
+          /* @__PURE__ */ jsx("svg", { className: "w-4 h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" }) }),
           "Reserva de stock por 30 minutos"
         ] })
       ] })
@@ -408,10 +352,11 @@ const $$Checkout = createComponent(async ($$result, $$props, $$slots) => {
     const accessToken = Astro2.cookies.get("sb-access-token")?.value;
     const refreshToken = Astro2.cookies.get("sb-refresh-token")?.value;
     const authClient = createAuthenticatedClient(accessToken, refreshToken);
-    const { data: profile } = await authClient.from("customer_profiles").select("*").eq("id", user.id).single();
+    const { data: profileData } = await authClient.rpc("get_customer_profile");
+    const profile = profileData && profileData.length > 0 ? profileData[0] : null;
     userData = {
       name: profile?.full_name || user.user_metadata?.full_name || "",
-      email: user.email || "",
+      email: profile?.email || user.email || "",
       phone: profile?.phone || user.user_metadata?.phone || "",
       address: profile?.default_address || "",
       city: profile?.default_city || "",
