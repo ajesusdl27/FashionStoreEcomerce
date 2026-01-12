@@ -1,12 +1,15 @@
 ---
 import PublicLayout from "@/layouts/PublicLayout.astro";
 import ProductCard from "@/components/product/ProductCard.astro";
-import Skeleton from "@/components/ui/Skeleton.astro";
+import ProductFilters from "@/components/islands/ProductFilters";
 import { supabase } from "@/lib/supabase";
 
 // Get query params
 const url = new URL(Astro.request.url);
 const categoryFilter = url.searchParams.get("categoria");
+const searchQuery = url.searchParams.get("q");
+const minPrice = url.searchParams.get("minPrice");
+const maxPrice = url.searchParams.get("maxPrice");
 const ofertasFilter = url.searchParams.get("ofertas") === "true";
 const sortBy = url.searchParams.get("orden") || "created_at";
 const sortOrder = url.searchParams.get("dir") === "asc" ? true : false;
@@ -24,7 +27,14 @@ let query = supabase
   )
   .eq("active", true);
 
-// Apply filters
+// Apply search filter
+if (searchQuery) {
+  query = query.or(
+    `name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`
+  );
+}
+
+// Apply category filter
 if (categoryFilter) {
   const { data: cat } = await supabase
     .from("categories")
@@ -37,6 +47,16 @@ if (categoryFilter) {
   }
 }
 
+// Apply price filters
+if (minPrice) {
+  query = query.gte("price", parseFloat(minPrice));
+}
+
+if (maxPrice) {
+  query = query.lte("price", parseFloat(maxPrice));
+}
+
+// Apply offers filter
 if (ofertasFilter) {
   query = query.eq("is_offer", true);
 }
@@ -52,11 +72,26 @@ const { data: categories } = await supabase
   .select("*")
   .order("name");
 
-const pageTitle = ofertasFilter
-  ? "Ofertas"
-  : categoryFilter
-    ? categories?.find((c) => c.slug === categoryFilter)?.name || "Productos"
-    : "Todos los Productos";
+// Build page title
+let pageTitle = "Todos los Productos";
+if (searchQuery) {
+  pageTitle = `Resultados para "${searchQuery}"`;
+} else if (ofertasFilter) {
+  pageTitle = "Ofertas";
+} else if (categoryFilter) {
+  const category = categories?.find((c) => c.slug === categoryFilter);
+  pageTitle = category?.name || "Productos";
+}
+
+// Determine initial sort value for component
+let initialSort = "created_at";
+if (sortBy === "price" && sortOrder) {
+  initialSort = "price-asc";
+} else if (sortBy === "price" && !sortOrder) {
+  initialSort = "price-desc";
+} else if (sortBy === "name") {
+  initialSort = "name";
+}
 ---
 
 <PublicLayout title={pageTitle}>
@@ -70,102 +105,17 @@ const pageTitle = ofertasFilter
     </div>
 
     <div class="lg:flex lg:gap-8">
-      <!-- Filters Sidebar (Desktop) -->
-      <aside class="hidden lg:block w-64 flex-shrink-0">
-        <div class="sticky top-24 space-y-6">
-          <!-- Categories -->
-          <div>
-            <h3
-              class="font-heading text-sm font-semibold uppercase tracking-wider mb-3"
-            >
-              Categorías
-            </h3>
-            <ul class="space-y-2">
-              <li>
-                <a
-                  href="/productos"
-                  class:list={[
-                    "block py-1.5 text-sm transition-colors",
-                    !categoryFilter
-                      ? "text-primary font-medium"
-                      : "text-muted-foreground hover:text-foreground",
-                  ]}
-                >
-                  Todas
-                </a>
-              </li>
-              {
-                categories?.map((cat) => (
-                  <li>
-                    <a
-                      href={`/productos?categoria=${cat.slug}`}
-                      class:list={[
-                        "block py-1.5 text-sm transition-colors",
-                        categoryFilter === cat.slug
-                          ? "text-primary font-medium"
-                          : "text-muted-foreground hover:text-foreground",
-                      ]}
-                    >
-                      {cat.name}
-                    </a>
-                  </li>
-                ))
-              }
-            </ul>
-          </div>
-
-          <!-- Offers Filter -->
-          <div>
-            <h3
-              class="font-heading text-sm font-semibold uppercase tracking-wider mb-3"
-            >
-              Ofertas
-            </h3>
-            <a
-              href={ofertasFilter ? "/productos" : "/productos?ofertas=true"}
-              class:list={[
-                "flex items-center gap-2 py-1.5 text-sm transition-colors",
-                ofertasFilter
-                  ? "text-accent font-medium"
-                  : "text-muted-foreground hover:text-foreground",
-              ]}
-            >
-              <span class={ofertasFilter ? "text-accent" : ""}>🔥</span>
-              Solo ofertas
-            </a>
-          </div>
-
-          <!-- Sort -->
-          <div>
-            <h3
-              class="font-heading text-sm font-semibold uppercase tracking-wider mb-3"
-            >
-              Ordenar por
-            </h3>
-            <select
-              id="sort-select"
-              class="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
-            >
-              <option value="created_at" selected={sortBy === "created_at"}
-                >Más recientes</option
-              >
-              <option
-                value="price-asc"
-                selected={sortBy === "price" && sortOrder}
-                >Precio: menor a mayor</option
-              >
-              <option
-                value="price-desc"
-                selected={sortBy === "price" && !sortOrder}
-                >Precio: mayor a menor</option
-              >
-              <option value="name" selected={sortBy === "name"}
-                >Nombre A-Z</option
-              >
-            </select>
-          </div>
-        </div>
-      </aside>
+      <!-- Filters Component -->
+      <ProductFilters
+        client:load
+        categories={categories || []}
+        initialCategory={categoryFilter || ""}
+        initialSearch={searchQuery || ""}
+        initialMinPrice={minPrice || ""}
+        initialMaxPrice={maxPrice || ""}
+        initialOffers={ofertasFilter}
+        initialSort={initialSort}
+      />
 
       <!-- Products Grid -->
       <div class="flex-1">
@@ -184,6 +134,21 @@ const pageTitle = ofertasFilter
             </div>
           ) : (
             <div class="text-center py-12">
+              <div class="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
+                <svg
+                  class="w-8 h-8 text-muted-foreground"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
               <p class="text-muted-foreground mb-4">
                 No se encontraron productos.
               </p>
@@ -196,31 +161,4 @@ const pageTitle = ofertasFilter
       </div>
     </div>
   </div>
-
-  <script>
-    // Sort select handler
-    const sortSelect = document.getElementById(
-      "sort-select"
-    ) as HTMLSelectElement;
-    sortSelect?.addEventListener("change", () => {
-      const value = sortSelect.value;
-      const url = new URL(window.location.href);
-
-      if (value === "created_at") {
-        url.searchParams.delete("orden");
-        url.searchParams.delete("dir");
-      } else if (value === "price-asc") {
-        url.searchParams.set("orden", "price");
-        url.searchParams.set("dir", "asc");
-      } else if (value === "price-desc") {
-        url.searchParams.set("orden", "price");
-        url.searchParams.delete("dir");
-      } else if (value === "name") {
-        url.searchParams.set("orden", "name");
-        url.searchParams.set("dir", "asc");
-      }
-
-      window.location.href = url.toString();
-    });
-  </script>
 </PublicLayout>

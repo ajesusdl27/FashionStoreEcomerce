@@ -1,6 +1,6 @@
 import { s as stripe } from '../../../chunks/stripe_B3_Fgp7U.mjs';
 import { s as supabase } from '../../../chunks/supabase_CjGuiMY7.mjs';
-import { s as sendOrderConfirmation } from '../../../chunks/email_BudQmitK.mjs';
+import { s as sendOrderConfirmation } from '../../../chunks/email_UxTMJncQ.mjs';
 export { renderers } from '../../../renderers.mjs';
 
 const webhookSecret = "whsec_your_webhook_secret";

@@ -76,6 +76,20 @@ export function generateOrderConfirmationHTML(order: OrderEmailData): string {
                   <th style="padding: 12px; text-align: right; font-size: 14px; color: #666;">Precio</th>
                 </tr>
                 ${itemsHTML}
+                ${(function() {
+                  const subtotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+                  const shippingCost = order.totalAmount - subtotal;
+                  
+                  if (shippingCost > 0.01) { // Use small epsilon for float comparison
+                    return `
+                    <tr>
+                      <td colspan="2" style="padding: 12px; border-bottom: 2px solid #0a0a0a; text-align: right; color: #666;">Envío</td>
+                      <td style="padding: 12px; border-bottom: 2px solid #0a0a0a; text-align: right; color: #666;">${formatPrice(shippingCost)}</td>
+                    </tr>
+                    `;
+                  }
+                  return '';
+                })()}
                 <tr style="background-color: #0a0a0a;">
                   <td colspan="2" style="padding: 15px; color: #fff; font-weight: bold;">Total</td>
                   <td style="padding: 15px; color: #CCFF00; font-weight: bold; text-align: right; font-size: 18px;">${formatPrice(order.totalAmount)}</td>
