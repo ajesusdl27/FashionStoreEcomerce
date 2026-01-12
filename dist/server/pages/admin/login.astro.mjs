@@ -1,6 +1,6 @@
 import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead } from '../../chunks/astro/server_Cxbq3ybN.mjs';
 import 'piccolore';
-import { $ as $$BaseLayout } from '../../chunks/BaseLayout_0xJdlazt.mjs';
+import { $ as $$BaseLayout } from '../../chunks/BaseLayout_HCP4G6Zh.mjs';
 import { A as AuthForm } from '../../chunks/AuthForm_C6xe_nPC.mjs';
 /* empty css                                    */
 export { renderers } from '../../renderers.mjs';
