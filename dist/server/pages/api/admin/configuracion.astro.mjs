@@ -1,15 +1,17 @@
-import { s as supabase } from '../../../chunks/supabase_CyPcJWDY.mjs';
+import { c as createAuthenticatedClient, s as supabase } from '../../../chunks/supabase_CjGuiMY7.mjs';
 export { renderers } from '../../../renderers.mjs';
 
 const PUT = async ({ request, cookies }) => {
   try {
     const accessToken = cookies.get("sb-access-token")?.value;
+    const refreshToken = cookies.get("sb-refresh-token")?.value;
     if (!accessToken) {
       return new Response(JSON.stringify({ error: "No autorizado" }), {
         status: 401,
         headers: { "Content-Type": "application/json" }
       });
     }
+    const authClient = createAuthenticatedClient(accessToken, refreshToken);
     const { data: { user } } = await supabase.auth.getUser(accessToken);
     if (!user?.user_metadata?.is_admin) {
       return new Response(JSON.stringify({ error: "No autorizado" }), {
@@ -19,7 +21,7 @@ const PUT = async ({ request, cookies }) => {
     }
     const { settings } = await request.json();
     for (const setting of settings) {
-      const { error } = await supabase.from("settings").upsert({
+      const { error } = await authClient.from("settings").upsert({
         key: setting.key,
         value_bool: setting.value_bool
       }, {

@@ -1,11 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 
 interface ImageUploaderProps {
   initialImages?: string[];
   onImagesChange?: (urls: string[]) => void;
-  bucket?: string;
-  folder?: string;
   inputName?: string;
   inputId?: string;
 }
@@ -19,8 +16,6 @@ interface UploadedImage {
 export default function ImageUploader({
   initialImages = [],
   onImagesChange,
-  bucket = 'products',
-  folder = 'images',
   inputName,
   inputId,
 }: ImageUploaderProps) {
@@ -31,88 +26,23 @@ export default function ImageUploader({
   const [isDragging, setIsDragging] = useState(false);
   const [internalUrls, setInternalUrls] = useState<string[]>(initialImages);
 
-  // Convert image to WebP using canvas
-  const convertToWebP = async (file: File): Promise<Blob> => {
-    if (typeof window === 'undefined') return new Blob(); // Guard for SSR
-
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        
-        // Max dimensions
-        const maxWidth = 1200;
-        const maxHeight = 1200;
-        
-        let { width, height } = img;
-        
-        // Scale down if needed
-        if (width > maxWidth || height > maxHeight) {
-          const ratio = Math.min(maxWidth / width, maxHeight / height);
-          width = Math.round(width * ratio);
-          height = Math.round(height * ratio);
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error('Could not get canvas context'));
-          return;
-        }
-        
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              resolve(blob);
-            } else {
-              reject(new Error('Could not convert to WebP'));
-            }
-          },
-          'image/webp',
-          0.85 // Quality
-        );
-      };
-      
-      img.onerror = () => reject(new Error('Could not load image'));
-      img.src = URL.createObjectURL(file);
-    });
-  };
-
-  // Generate unique filename
-  const generateFileName = () => {
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 8);
-    return `${folder}/${timestamp}-${random}.webp`;
-  };
-
-  // Upload single image
+  // Upload single image via API
   const uploadImage = async (file: File): Promise<string> => {
-    // Convert to WebP
-    const webpBlob = await convertToWebP(file);
-    const fileName = generateFileName();
+    const formData = new FormData();
+    formData.append('file', file);
 
-    // Upload to Supabase Storage
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .upload(fileName, webpBlob, {
-        contentType: 'image/webp',
-        cacheControl: '31536000', // 1 year cache
-      });
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
 
-    if (error) {
-      throw new Error(error.message);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Error al subir la imagen');
     }
 
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(data.path);
-
-    return publicUrl;
+    const data = await response.json();
+    return data.url;
   };
 
   // Handle file selection
@@ -183,8 +113,10 @@ export default function ImageUploader({
     if (to < 0 || to >= images.length) return;
     const newImages = [...images];
     const [moved] = newImages.splice(from, 1);
-    newImages.splice(to, 0, moved);
-    setImages(newImages);
+    if (moved) {
+      newImages.splice(to, 0, moved);
+      setImages(newImages);
+    }
   };
 
   // Drag and drop handlers

@@ -26,7 +26,7 @@ Este plan divide el desarrollo en **11 fases progresivas**, cada una construyend
 | 5. Autenticación    | ✅ Completada | Admin/cliente login, middleware, registro      |
 | 6. Panel Admin      | ✅ Completada | Dashboard, CRUD productos/pedidos              |
 | 7. Checkout         | ✅ Completada | 3 pasos, Stripe, webhooks                      |
-| 8. Emails           | 🔲 Pendiente  | Resend, confirmación pedido                    |
+| 8. Emails           | ✅ Completada | Resend, confirmación pedido                    |
 | 9. Optimización     | 🔲 Pendiente  | LCP, CLS, accesibilidad                        |
 | 10. Deploy          | 🔲 Pendiente  | Docker, VPS, monitorización                    |
 | 11. Extras          | 🔲 Opcional   | Guía tallas, wishlist, reviews                 |
@@ -135,11 +135,11 @@ Este plan divide el desarrollo en **11 fases progresivas**, cada una construyend
 
 ---
 
-## 📧 Fase 8: Emails (Días 28-29)
+## 📧 Fase 8: Emails (Días 28-29) ✅
 
-- [ ] Setup Resend
-- [ ] Template confirmación pedido
-- [ ] Trigger desde webhook
+- [x] Setup Resend
+- [x] Template confirmación pedido
+- [x] Trigger desde webhook
 
 ---
 

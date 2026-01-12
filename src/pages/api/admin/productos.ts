@@ -1,17 +1,22 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '@/lib/supabase';
+import { supabase, createAuthenticatedClient } from '@/lib/supabase';
 
 // CREATE product
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    // Verify admin auth
+    // Get auth tokens from cookies
     const accessToken = cookies.get('sb-access-token')?.value;
+    const refreshToken = cookies.get('sb-refresh-token')?.value;
+
     if (!accessToken) {
       return new Response(JSON.stringify({ error: 'No autorizado' }), { 
         status: 401, 
         headers: { 'Content-Type': 'application/json' } 
       });
     }
+
+    // Create authenticated client for RLS
+    const authClient = createAuthenticatedClient(accessToken, refreshToken);
 
     const { data: { user } } = await supabase.auth.getUser(accessToken);
     if (!user?.user_metadata?.is_admin) {
@@ -23,8 +28,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const { product, variants, images } = await request.json();
 
-    // Create product
-    const { data: newProduct, error: productError } = await supabase
+    // Create product with authenticated client
+    const { data: newProduct, error: productError } = await authClient
       .from('products')
       .insert(product)
       .select()
@@ -45,7 +50,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         stock: v.stock,
       }));
 
-      const { error: variantsError } = await supabase
+      const { error: variantsError } = await authClient
         .from('product_variants')
         .insert(variantsData);
 
@@ -62,7 +67,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         order: index,
       }));
 
-      const { error: imagesError } = await supabase
+      const { error: imagesError } = await authClient
         .from('product_images')
         .insert(imagesData);
 
@@ -88,12 +93,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 export const PUT: APIRoute = async ({ request, cookies }) => {
   try {
     const accessToken = cookies.get('sb-access-token')?.value;
+    const refreshToken = cookies.get('sb-refresh-token')?.value;
+
     if (!accessToken) {
       return new Response(JSON.stringify({ error: 'No autorizado' }), { 
         status: 401, 
         headers: { 'Content-Type': 'application/json' } 
       });
     }
+
+    // Create authenticated client for RLS
+    const authClient = createAuthenticatedClient(accessToken, refreshToken);
 
     const { data: { user } } = await supabase.auth.getUser(accessToken);
     if (!user?.user_metadata?.is_admin) {
@@ -106,7 +116,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     const { id, product, variants, images } = await request.json();
 
     // Update product
-    const { error: productError } = await supabase
+    const { error: productError } = await authClient
       .from('products')
       .update(product)
       .eq('id', id);
@@ -119,7 +129,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     }
 
     // Update variants - delete all and recreate
-    await supabase.from('product_variants').delete().eq('product_id', id);
+    await authClient.from('product_variants').delete().eq('product_id', id);
     
     if (variants && variants.length > 0) {
       const variantsData = variants.map((v: { size: string; stock: number }) => ({
@@ -128,11 +138,11 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
         stock: v.stock,
       }));
 
-      await supabase.from('product_variants').insert(variantsData);
+      await authClient.from('product_variants').insert(variantsData);
     }
 
     // Update images - delete all and recreate
-    await supabase.from('product_images').delete().eq('product_id', id);
+    await authClient.from('product_images').delete().eq('product_id', id);
     
     if (images && images.length > 0) {
       const imagesData = images.map((url: string, index: number) => ({
@@ -141,7 +151,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
         order: index,
       }));
 
-      await supabase.from('product_images').insert(imagesData);
+      await authClient.from('product_images').insert(imagesData);
     }
 
     return new Response(JSON.stringify({ success: true }), { 
@@ -161,12 +171,17 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
 export const DELETE: APIRoute = async ({ request, cookies }) => {
   try {
     const accessToken = cookies.get('sb-access-token')?.value;
+    const refreshToken = cookies.get('sb-refresh-token')?.value;
+
     if (!accessToken) {
       return new Response(JSON.stringify({ error: 'No autorizado' }), { 
         status: 401, 
         headers: { 'Content-Type': 'application/json' } 
       });
     }
+
+    // Create authenticated client for RLS
+    const authClient = createAuthenticatedClient(accessToken, refreshToken);
 
     const { data: { user } } = await supabase.auth.getUser(accessToken);
     if (!user?.user_metadata?.is_admin) {
@@ -178,7 +193,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     const { id } = await request.json();
 
-    const { error } = await supabase
+    const { error } = await authClient
       .from('products')
       .delete()
       .eq('id', id);

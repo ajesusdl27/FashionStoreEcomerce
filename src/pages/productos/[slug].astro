@@ -1,8 +1,10 @@
 ---
 import PublicLayout from "@/layouts/PublicLayout.astro";
 import Badge from "@/components/ui/Badge.astro";
+import CloudinaryImage from "@/components/ui/CloudinaryImage.astro";
 import ProductAddToCart from "@/components/islands/ProductAddToCart";
 import { supabase } from "@/lib/supabase";
+import { getOptimizedUrl, isCloudinaryUrl } from "@/lib/cloudinary";
 
 const { slug } = Astro.params;
 
@@ -52,6 +54,14 @@ const variantsForReact = (product.variants || []).map((v: any) => ({
   size: v.size,
   stock: v.stock,
 }));
+
+// Generate optimized thumbnail URLs for Cloudinary images
+const getThumbnailUrl = (url: string) => {
+  if (isCloudinaryUrl(url)) {
+    return getOptimizedUrl(url, { width: 80, height: 80 });
+  }
+  return url;
+};
 ---
 
 <PublicLayout
@@ -68,7 +78,8 @@ const variantsForReact = (product.variants || []).map((v: any) => ({
         <li>/</li>
         <li>
           <a href="/productos" class="hover:text-primary transition-colors"
-            >Productos</a>
+            >Productos</a
+          >
         </li>
         {
           product.category && (
@@ -97,10 +108,12 @@ const variantsForReact = (product.variants || []).map((v: any) => ({
         <div
           class="relative aspect-square rounded-lg overflow-hidden bg-muted mb-4"
         >
-          <img
+          <CloudinaryImage
             id="main-image"
             src={mainImage}
             alt={product.name}
+            width={800}
+            sizes="(max-width: 1024px) 100vw, 50vw"
             class="w-full h-full object-cover"
           />
 
@@ -126,7 +139,7 @@ const variantsForReact = (product.variants || []).map((v: any) => ({
                   data-image={img.image_url}
                 >
                   <img
-                    src={img.image_url}
+                    src={getThumbnailUrl(img.image_url)}
                     alt={`${product.name} - imagen ${index + 1}`}
                     class="w-full h-full object-cover"
                   />

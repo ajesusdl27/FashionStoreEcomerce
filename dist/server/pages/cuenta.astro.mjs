@@ -1,6 +1,6 @@
 import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead } from '../chunks/astro/server_Cxbq3ybN.mjs';
 import 'piccolore';
-import { $ as $$PublicLayout } from '../chunks/PublicLayout_Ch9DYZ86.mjs';
+import { $ as $$PublicLayout } from '../chunks/PublicLayout_CDKIQy5M.mjs';
 export { renderers } from '../renderers.mjs';
 
 const $$Astro = createAstro("http://localhost:4321");

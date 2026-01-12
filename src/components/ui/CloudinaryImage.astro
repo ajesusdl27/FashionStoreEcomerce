@@ -1,0 +1,73 @@
+---
+/**
+ * CloudinaryImage Component
+ *
+ * Optimized image component that generates responsive srcset
+ * and applies automatic format/quality optimization for Cloudinary URLs.
+ * Falls back gracefully for non-Cloudinary URLs (e.g., Supabase Storage).
+ */
+interface Props {
+  src: string;
+  alt: string;
+  id?: string;
+  width?: number;
+  height?: number;
+  sizes?: string;
+  class?: string;
+  loading?: "lazy" | "eager";
+  decoding?: "async" | "sync" | "auto";
+}
+
+import {
+  isCloudinaryUrl,
+  getOptimizedUrl,
+  getResponsiveSrcset,
+  getBlurPlaceholder,
+} from "@/lib/cloudinary";
+
+const {
+  src,
+  alt,
+  id,
+  width,
+  height,
+  sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw",
+  class: className = "",
+  loading = "lazy",
+  decoding = "async",
+} = Astro.props;
+
+// Check if it's a Cloudinary URL
+const isCloudinary = isCloudinaryUrl(src);
+
+// Generate optimized URLs for Cloudinary images
+const optimizedSrc = isCloudinary
+  ? getOptimizedUrl(src, { width: width || 800 })
+  : src;
+
+const srcset = isCloudinary
+  ? getResponsiveSrcset(src, [400, 800, 1200])
+  : undefined;
+
+const placeholder = isCloudinary ? getBlurPlaceholder(src) : undefined;
+---
+
+<img
+  id={id}
+  src={optimizedSrc}
+  alt={alt}
+  width={width}
+  height={height}
+  srcset={srcset}
+  sizes={srcset ? sizes : undefined}
+  class:list={["cloudinary-img", className]}
+  loading={loading}
+  decoding={decoding}
+  data-placeholder={placeholder}
+/>
+
+<style>
+  .cloudinary-img {
+    transition: opacity 0.3s ease;
+  }
+</style>

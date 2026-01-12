@@ -1,15 +1,20 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '@/lib/supabase';
+import { supabase, createAuthenticatedClient } from '@/lib/supabase';
 
 // CREATE category
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const accessToken = cookies.get('sb-access-token')?.value;
+    const refreshToken = cookies.get('sb-refresh-token')?.value;
+
     if (!accessToken) {
       return new Response(JSON.stringify({ error: 'No autorizado' }), { 
         status: 401, headers: { 'Content-Type': 'application/json' } 
       });
     }
+
+    // Create authenticated client for RLS
+    const authClient = createAuthenticatedClient(accessToken, refreshToken);
 
     const { data: { user } } = await supabase.auth.getUser(accessToken);
     if (!user?.user_metadata?.is_admin) {
@@ -20,7 +25,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const { name, slug } = await request.json();
 
-    const { data, error } = await supabase
+    const { data, error } = await authClient
       .from('categories')
       .insert({ name, slug })
       .select()
@@ -46,11 +51,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 export const PUT: APIRoute = async ({ request, cookies }) => {
   try {
     const accessToken = cookies.get('sb-access-token')?.value;
+    const refreshToken = cookies.get('sb-refresh-token')?.value;
+
     if (!accessToken) {
       return new Response(JSON.stringify({ error: 'No autorizado' }), { 
         status: 401, headers: { 'Content-Type': 'application/json' } 
       });
     }
+
+    // Create authenticated client for RLS
+    const authClient = createAuthenticatedClient(accessToken, refreshToken);
 
     const { data: { user } } = await supabase.auth.getUser(accessToken);
     if (!user?.user_metadata?.is_admin) {
@@ -61,7 +71,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
 
     const { id, name, slug } = await request.json();
 
-    const { error } = await supabase
+    const { error } = await authClient
       .from('categories')
       .update({ name, slug })
       .eq('id', id);
@@ -86,11 +96,16 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
 export const DELETE: APIRoute = async ({ request, cookies }) => {
   try {
     const accessToken = cookies.get('sb-access-token')?.value;
+    const refreshToken = cookies.get('sb-refresh-token')?.value;
+
     if (!accessToken) {
       return new Response(JSON.stringify({ error: 'No autorizado' }), { 
         status: 401, headers: { 'Content-Type': 'application/json' } 
       });
     }
+
+    // Create authenticated client for RLS
+    const authClient = createAuthenticatedClient(accessToken, refreshToken);
 
     const { data: { user } } = await supabase.auth.getUser(accessToken);
     if (!user?.user_metadata?.is_admin) {
@@ -101,7 +116,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     const { id } = await request.json();
 
-    const { error } = await supabase
+    const { error } = await authClient
       .from('categories')
       .delete()
       .eq('id', id);

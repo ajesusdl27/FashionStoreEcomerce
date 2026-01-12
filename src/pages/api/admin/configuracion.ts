@@ -1,14 +1,19 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '@/lib/supabase';
+import { supabase, createAuthenticatedClient } from '@/lib/supabase';
 
 export const PUT: APIRoute = async ({ request, cookies }) => {
   try {
     const accessToken = cookies.get('sb-access-token')?.value;
+    const refreshToken = cookies.get('sb-refresh-token')?.value;
+
     if (!accessToken) {
       return new Response(JSON.stringify({ error: 'No autorizado' }), { 
         status: 401, headers: { 'Content-Type': 'application/json' } 
       });
     }
+
+    // Create authenticated client for RLS
+    const authClient = createAuthenticatedClient(accessToken, refreshToken);
 
     const { data: { user } } = await supabase.auth.getUser(accessToken);
     if (!user?.user_metadata?.is_admin) {
@@ -21,7 +26,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
 
     // Update each setting
     for (const setting of settings) {
-      const { error } = await supabase
+      const { error } = await authClient
         .from('settings')
         .upsert({
           key: setting.key,

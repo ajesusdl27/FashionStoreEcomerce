@@ -1,15 +1,17 @@
-import { s as supabase } from '../../../chunks/supabase_CyPcJWDY.mjs';
+import { c as createAuthenticatedClient, s as supabase } from '../../../chunks/supabase_CjGuiMY7.mjs';
 export { renderers } from '../../../renderers.mjs';
 
 const PUT = async ({ request, cookies }) => {
   try {
     const accessToken = cookies.get("sb-access-token")?.value;
+    const refreshToken = cookies.get("sb-refresh-token")?.value;
     if (!accessToken) {
       return new Response(JSON.stringify({ error: "No autorizado" }), {
         status: 401,
         headers: { "Content-Type": "application/json" }
       });
     }
+    const authClient = createAuthenticatedClient(accessToken, refreshToken);
     const { data: { user } } = await supabase.auth.getUser(accessToken);
     if (!user?.user_metadata?.is_admin) {
       return new Response(JSON.stringify({ error: "No autorizado" }), {
@@ -25,7 +27,7 @@ const PUT = async ({ request, cookies }) => {
         headers: { "Content-Type": "application/json" }
       });
     }
-    const { error } = await supabase.from("orders").update({ status }).eq("id", id);
+    const { error } = await authClient.from("orders").update({ status }).eq("id", id);
     if (error) {
       return new Response(JSON.stringify({ error: error.message }), {
         status: 400,
