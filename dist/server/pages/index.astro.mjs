@@ -1,6 +1,6 @@
-import { f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead, h as addAttribute, o as Fragment } from '../chunks/astro/server_D_npfa5M.mjs';
+import { f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead, h as addAttribute, n as Fragment } from '../chunks/astro/server_OR-0JxUe.mjs';
 import 'piccolore';
-import { $ as $$PublicLayout } from '../chunks/PublicLayout_ZFYqZT-M.mjs';
+import { $ as $$PublicLayout } from '../chunks/PublicLayout_BPOB2UdW.mjs';
 import { s as supabase } from '../chunks/supabase_CyPcJWDY.mjs';
 export { renderers } from '../renderers.mjs';
 

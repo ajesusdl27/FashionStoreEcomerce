@@ -1,6 +1,6 @@
-import { e as createAstro, f as createComponent, m as maybeRenderHead, h as addAttribute, k as renderComponent, r as renderTemplate } from './astro/server_D_npfa5M.mjs';
+import { e as createAstro, f as createComponent, m as maybeRenderHead, h as addAttribute, k as renderComponent, r as renderTemplate } from './astro/server_OR-0JxUe.mjs';
 import 'piccolore';
-import { $ as $$Badge } from './Badge_B6wultHs.mjs';
+import { $ as $$Badge } from './Badge_CTgy1eQ4.mjs';
 
 const $$Astro = createAstro("http://localhost:4321");
 const $$ProductCard = createComponent(($$result, $$props, $$slots) => {

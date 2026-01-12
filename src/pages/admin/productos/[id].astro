@@ -1,6 +1,7 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { supabase } from "@/lib/supabase";
+import ImageUploader from "@/components/islands/ImageUploader";
 
 const { id } = Astro.params;
 
@@ -257,91 +258,22 @@ const sortedImages =
         </div>
       </div>
 
-      <!-- Images -->
+      <!-- Images - React Component -->
       <div class="glass border border-border rounded-xl p-6 space-y-4">
         <h2 class="font-heading text-lg">Imágenes</h2>
+        <p class="text-sm text-muted-foreground">
+          Arrastra imágenes o haz click para seleccionar. Se convertirán
+          automáticamente a WebP.
+        </p>
 
-        <div id="images-container" class="space-y-2">
-          {
-            sortedImages.length > 0 ? (
-              sortedImages.map((img: any, index: number) => (
-                <div class="flex gap-2 image-input">
-                  <input
-                    type="url"
-                    name="images[]"
-                    value={img.image_url}
-                    class="flex-1 px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
-                  />
-                  <button
-                    type="button"
-                    class={`remove-image p-3 bg-accent/20 text-accent rounded-lg hover:bg-accent/30 transition-colors ${sortedImages.length === 1 ? "hidden" : ""}`}
-                  >
-                    <svg
-                      class="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              ))
-            ) : (
-              <div class="flex gap-2 image-input">
-                <input
-                  type="url"
-                  name="images[]"
-                  class="flex-1 px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
-                  placeholder="https://ejemplo.com/imagen.jpg"
-                />
-                <button
-                  type="button"
-                  class="remove-image p-3 bg-accent/20 text-accent rounded-lg hover:bg-accent/30 transition-colors hidden"
-                >
-                  <svg
-                    class="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-            )
-          }
+        <div id="image-uploader-container">
+          <ImageUploader
+            client:load
+            initialImages={sortedImages.map((img: any) => img.image_url)}
+            inputName="uploaded_images"
+            inputId="uploaded-images"
+          />
         </div>
-
-        <button
-          type="button"
-          id="add-image"
-          class="inline-flex items-center gap-2 px-4 py-2 text-sm border border-border rounded-lg hover:bg-muted transition-colors"
-        >
-          <svg
-            class="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 4v16m8-8H4"></path>
-          </svg>
-          Añadir imagen
-        </button>
       </div>
 
       <!-- Status -->
@@ -417,51 +349,6 @@ const sortedImages =
       document.getElementById("product-id") as HTMLInputElement
     ).value;
 
-    // Image handling
-    const addImageBtn = document.getElementById("add-image");
-    const imagesContainer = document.getElementById("images-container");
-
-    addImageBtn?.addEventListener("click", () => {
-      const newInput = document.createElement("div");
-      newInput.className = "flex gap-2 image-input";
-      newInput.innerHTML = `
-        <input
-          type="url"
-          name="images[]"
-          class="flex-1 px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
-          placeholder="https://ejemplo.com/imagen.jpg"
-        />
-        <button type="button" class="remove-image p-3 bg-accent/20 text-accent rounded-lg hover:bg-accent/30 transition-colors">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        </button>
-      `;
-      imagesContainer?.appendChild(newInput);
-      updateRemoveButtons();
-    });
-
-    imagesContainer?.addEventListener("click", (e) => {
-      const target = e.target as HTMLElement;
-      const removeBtn = target.closest(".remove-image");
-      if (removeBtn) {
-        removeBtn.closest(".image-input")?.remove();
-        updateRemoveButtons();
-      }
-    });
-
-    function updateRemoveButtons() {
-      const inputs = imagesContainer?.querySelectorAll(".image-input");
-      inputs?.forEach((input) => {
-        const btn = input.querySelector(".remove-image");
-        if (inputs.length > 1) {
-          btn?.classList.remove("hidden");
-        } else {
-          btn?.classList.add("hidden");
-        }
-      });
-    }
-
     // Form submission
     const form = document.getElementById("product-form") as HTMLFormElement;
     const submitBtn = document.getElementById(
@@ -500,15 +387,18 @@ const sortedImages =
           variants.push({ size, stock });
         });
 
-        const imageInputs = form.querySelectorAll(
-          'input[name="images[]"]'
-        ) as NodeListOf<HTMLInputElement>;
-        const images: string[] = [];
-        imageInputs.forEach((input) => {
-          if (input.value.trim()) {
-            images.push(input.value.trim());
+        const imageInputs = formData.get("uploaded_images");
+        let images: string[] = [];
+        if (imageInputs) {
+          try {
+            images = JSON.parse(imageInputs as string);
+          } catch (e) {
+            console.error("Error parsing images", e);
           }
-        });
+        }
+
+        // Also support manual images array just in case (though we removed the UI)
+        // const manualImages = formData.getAll("images[]"); ...
 
         const response = await fetch("/api/admin/productos", {
           method: "PUT",

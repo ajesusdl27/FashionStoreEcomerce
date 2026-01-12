@@ -1,5 +1,6 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
+import ImageUploader from "@/components/islands/ImageUploader";
 import { supabase } from "@/lib/supabase";
 
 // Fetch categories for dropdown
@@ -212,9 +213,29 @@ const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
         </div>
       </div>
 
-      <!-- Images -->
+      <!-- Images - React Component -->
       <div class="glass border border-border rounded-xl p-6 space-y-4">
         <h2 class="font-heading text-lg">Imágenes</h2>
+        <p class="text-sm text-muted-foreground">
+          Arrastra imágenes o haz click para seleccionar. Se convertirán
+          automáticamente a WebP.
+        </p>
+
+        <div id="image-uploader-container">
+          <ImageUploader
+            client:load
+            inputName="uploaded_images"
+            inputId="uploaded-images"
+          />
+        </div>
+      </div>
+
+      <!-- Fallback: Manual URL input -->
+      <div class="glass border border-border rounded-xl p-6 space-y-4">
+        <h2 class="font-heading text-lg flex items-center gap-2">
+          <span>O añade URLs manualmente</span>
+          <span class="text-xs text-muted-foreground">(opcional)</span>
+        </h2>
 
         <div id="images-container" class="space-y-2">
           <div class="flex gap-2 image-input">
@@ -261,7 +282,7 @@ const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
               stroke-width="2"
               d="M12 4v16m8-8H4"></path>
           </svg>
-          Añadir imagen
+          Añadir URL
         </button>
       </div>
 
@@ -301,7 +322,6 @@ const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
         </button>
       </div>
 
-      <!-- Error/Success messages -->
       <div id="form-message" class="hidden p-4 rounded-lg"></div>
     </form>
   </div>
@@ -321,7 +341,7 @@ const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
       slugInput.value = slug;
     });
 
-    // Add image input
+    // Add manual URL input
     const addImageBtn = document.getElementById("add-image");
     const imagesContainer = document.getElementById("images-container");
 
@@ -345,7 +365,6 @@ const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
       updateRemoveButtons();
     });
 
-    // Remove image input
     imagesContainer?.addEventListener("click", (e) => {
       const target = e.target as HTMLElement;
       const removeBtn = target.closest(".remove-image");
@@ -357,7 +376,7 @@ const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
 
     function updateRemoveButtons() {
       const inputs = imagesContainer?.querySelectorAll(".image-input");
-      inputs?.forEach((input, index) => {
+      inputs?.forEach((input) => {
         const btn = input.querySelector(".remove-image");
         if (inputs.length > 1) {
           btn?.classList.remove("hidden");
@@ -408,11 +427,22 @@ const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
           }
         });
 
-        // Get images
+        // Get uploaded images from React component
+        const uploadedImagesInput = document.getElementById(
+          "uploaded-images"
+        ) as HTMLInputElement;
+        let images: string[] = [];
+
+        try {
+          images = JSON.parse(uploadedImagesInput?.value || "[]");
+        } catch {
+          images = [];
+        }
+
+        // Also get manual URL inputs
         const imageInputs = form.querySelectorAll(
           'input[name="images[]"]'
         ) as NodeListOf<HTMLInputElement>;
-        const images: string[] = [];
         imageInputs.forEach((input) => {
           if (input.value.trim()) {
             images.push(input.value.trim());
