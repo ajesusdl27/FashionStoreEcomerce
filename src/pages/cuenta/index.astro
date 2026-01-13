@@ -1,5 +1,6 @@
 ---
 import PublicLayout from "@/layouts/PublicLayout.astro";
+import { supabase } from "@/lib/supabase";
 
 const user = Astro.locals.user;
 
@@ -10,6 +11,27 @@ if (!user) {
 
 const displayName =
   user.user_metadata?.full_name || user.email?.split("@")[0] || "Usuario";
+const { data: recentOrders } = await supabase
+  .from("orders")
+  .select("*")
+  .eq("customer_email", user.email)
+  .order("created_at", { ascending: false })
+  .limit(5);
+
+const formatPrice = (price: number) => {
+  return new Intl.NumberFormat("es-ES", {
+    style: "currency",
+    currency: "EUR",
+  }).format(price);
+};
+
+const formatDate = (date: string) => {
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(date));
+};
 ---
 
 <PublicLayout title="Mi Cuenta - FashionStore">
@@ -76,7 +98,7 @@ const displayName =
           </div>
         </div>
 
-        <!-- Recent Orders Card (placeholder) -->
+        <!-- Recent Orders Card -->
         <div class="glass border border-border rounded-2xl p-6">
           <h2 class="font-heading text-xl mb-4 flex items-center gap-2">
             <svg
@@ -95,26 +117,78 @@ const displayName =
             Últimos Pedidos
           </h2>
 
-          <div class="text-center py-8 text-muted-foreground">
-            <svg
-              class="w-16 h-16 mx-auto mb-4 opacity-50"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="1.5"
-                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-            </svg>
-            <p>No tienes pedidos todavía</p>
-            <a
-              href="/productos"
-              class="inline-block mt-4 text-primary hover:underline"
-            >
-              Explorar productos →
-            </a>
+          <div class="space-y-4">
+            {
+              recentOrders && recentOrders.length > 0 ? (
+                <div class="divide-y divide-border/50">
+                  {recentOrders.map((order) => (
+                    <div class="flex items-center justify-between py-4 first:pt-0 last:pb-0">
+                      <div>
+                        <p class="font-mono text-sm text-muted-foreground">
+                          #{order.id.slice(0, 8)}
+                        </p>
+                        <p class="text-sm font-medium mt-1">
+                          {formatPrice(order.total_amount)}
+                        </p>
+                        <p class="text-xs text-muted-foreground">
+                          {formatDate(order.created_at)}
+                        </p>
+                      </div>
+                      <div class="flex items-center gap-4">
+                        <span
+                          class={`text-xs px-2 py-1 rounded-full ${
+                            order.status === "paid"
+                              ? "bg-emerald-500/10 text-emerald-400"
+                              : order.status === "shipped"
+                                ? "bg-blue-500/10 text-blue-400"
+                                : order.status === "delivered"
+                                  ? "bg-primary/10 text-primary"
+                                  : "bg-yellow-500/10 text-yellow-400"
+                          }`}
+                        >
+                          {order.status === "paid"
+                            ? "Pagado"
+                            : order.status === "shipped"
+                              ? "Enviado"
+                              : order.status === "delivered"
+                                ? "Entregado"
+                                : "Pendiente"}
+                        </span>
+                        <a
+                          href={`/cuenta/pedidos`}
+                          class="text-sm text-primary hover:underline hover:text-primary/80 transition-colors"
+                        >
+                          Ver detalle
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div class="text-center py-8 text-muted-foreground">
+                  <svg
+                    class="w-16 h-16 mx-auto mb-4 opacity-50"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="1.5"
+                      d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                    />
+                  </svg>
+                  <p>No tienes pedidos todavía</p>
+                  <a
+                    href="/productos"
+                    class="inline-block mt-4 text-primary hover:underline"
+                  >
+                    Explorar productos →
+                  </a>
+                </div>
+              )
+            }
           </div>
         </div>
       </div>
