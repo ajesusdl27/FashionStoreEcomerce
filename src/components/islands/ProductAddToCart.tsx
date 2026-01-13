@@ -27,12 +27,16 @@ export default function ProductAddToCart({
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [showStickyBar, setShowStickyBar] = useState(false);
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   // Sort variants by size order
   const sizeOrder = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46'];
   const sortedVariants = [...variants].sort((a, b) => 
     sizeOrder.indexOf(a.size) - sizeOrder.indexOf(b.size)
   );
+
+  // Detect if product uses numeric sizes (shoes) or letter sizes (clothing)
+  const isShoeSize = sortedVariants.some(v => !isNaN(Number(v.size)));
 
   // Detect scroll to show/hide sticky bar on mobile
   useEffect(() => {
@@ -97,7 +101,12 @@ export default function ProductAddToCart({
         <div>
           <div className="flex items-center justify-between mb-3">
             <span className="font-heading text-sm uppercase tracking-wider">Talla</span>
-            <button className="text-sm text-primary hover:underline">Guía de tallas</button>
+            <button 
+              onClick={() => setShowSizeGuide(true)}
+              className="text-sm text-primary hover:underline"
+            >
+              Guía de tallas
+            </button>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -261,6 +270,123 @@ export default function ProductAddToCart({
           )}
         </div>
       </div>
+
+      {/* Size Guide Modal */}
+      {showSizeGuide && (
+        <div 
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          onClick={() => setShowSizeGuide(false)}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          
+          {/* Modal */}
+          <div 
+            className="relative bg-card border border-border rounded-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between">
+              <h3 className="font-heading text-xl font-bold">Guía de Tallas</h3>
+              <button 
+                onClick={() => setShowSizeGuide(false)}
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
+                aria-label="Cerrar"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {isShoeSize ? (
+                <>
+                  <p className="text-muted-foreground text-sm">
+                    Mide tu pie desde el talón hasta la punta del dedo más largo. Usa la tabla para encontrar tu talla.
+                  </p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="py-2 px-3 text-left font-medium text-muted-foreground">EU</th>
+                          <th className="py-2 px-3 text-left font-medium text-muted-foreground">US</th>
+                          <th className="py-2 px-3 text-left font-medium text-muted-foreground">UK</th>
+                          <th className="py-2 px-3 text-left font-medium text-muted-foreground">CM</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[
+                          ['36', '4', '3.5', '22.5'],
+                          ['37', '5', '4', '23'],
+                          ['38', '5.5', '5', '24'],
+                          ['39', '6.5', '6', '24.5'],
+                          ['40', '7', '6.5', '25'],
+                          ['41', '8', '7', '26'],
+                          ['42', '8.5', '8', '26.5'],
+                          ['43', '9.5', '9', '27.5'],
+                          ['44', '10', '9.5', '28'],
+                          ['45', '11', '10.5', '29'],
+                          ['46', '12', '11', '30'],
+                        ].map((row, i) => (
+                          <tr key={i} className="border-b border-border/50 hover:bg-muted/50">
+                            {row.map((cell, j) => (
+                              <td key={j} className={`py-2 px-3 ${j === 0 ? 'font-medium' : ''}`}>{cell}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-muted-foreground text-sm">
+                    Mide tu cuerpo y compara con las medidas de la tabla. Si estás entre dos tallas, elige la más grande.
+                  </p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="py-2 px-3 text-left font-medium text-muted-foreground">Talla</th>
+                          <th className="py-2 px-3 text-left font-medium text-muted-foreground">Pecho (cm)</th>
+                          <th className="py-2 px-3 text-left font-medium text-muted-foreground">Cintura (cm)</th>
+                          <th className="py-2 px-3 text-left font-medium text-muted-foreground">Cadera (cm)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[
+                          ['XS', '82-87', '66-71', '86-91'],
+                          ['S', '88-93', '72-77', '92-97'],
+                          ['M', '94-99', '78-83', '98-103'],
+                          ['L', '100-105', '84-89', '104-109'],
+                          ['XL', '106-111', '90-95', '110-115'],
+                          ['XXL', '112-117', '96-101', '116-121'],
+                        ].map((row, i) => (
+                          <tr key={i} className="border-b border-border/50 hover:bg-muted/50">
+                            {row.map((cell, j) => (
+                              <td key={j} className={`py-2 px-3 ${j === 0 ? 'font-medium' : ''}`}>{cell}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+              
+              {/* Tips */}
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+                <p className="text-sm">
+                  <span className="text-primary font-medium">💡 Consejo:</span>{' '}
+                  Si tienes dudas, contacta con nosotros y te ayudaremos a encontrar tu talla perfecta.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
