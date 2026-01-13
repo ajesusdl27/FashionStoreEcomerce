@@ -86,6 +86,7 @@ const categoriesWithCount = categories?.map((cat: any) => ({
                     data-id={cat.id}
                     data-name={cat.name}
                     data-slug={cat.slug}
+                    data-size-type={cat.size_type || "clothing"}
                   >
                     <svg
                       class="w-4 h-4 text-zinc-400"
@@ -151,9 +152,25 @@ const categoriesWithCount = categories?.map((cat: any) => ({
               <p class="text-sm text-zinc-500 mb-3">/{cat.slug}</p>
 
               {/* Product Count */}
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2 flex-wrap">
                 <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-zinc-700 text-zinc-200">
                   {cat.productCount} producto{cat.productCount !== 1 ? "s" : ""}
+                </span>
+                <span
+                  class:list={[
+                    "inline-flex items-center px-2 py-1 rounded-md text-xs font-medium",
+                    cat.size_type === "footwear"
+                      ? "bg-blue-500/20 text-blue-400"
+                      : cat.size_type === "universal"
+                        ? "bg-purple-500/20 text-purple-400"
+                        : "bg-green-500/20 text-green-400",
+                  ]}
+                >
+                  {cat.size_type === "footwear"
+                    ? "👟 Calzado"
+                    : cat.size_type === "universal"
+                      ? "🏷️ Única"
+                      : "👕 Ropa"}
                 </span>
               </div>
             </div>
@@ -218,6 +235,16 @@ const categoriesWithCount = categories?.map((cat: any) => ({
               placeholder="camisetas"
             />
           </div>
+          <div>
+            <label for="category-size-type" class="admin-label">
+              Tipo de Talla
+            </label>
+            <select id="category-size-type" class="admin-input">
+              <option value="clothing">👕 Ropa (XXS-XXL)</option>
+              <option value="footwear">👟 Calzado (36-46)</option>
+              <option value="universal">🏷️ Talla Única</option>
+            </select>
+          </div>
           <div
             id="form-error"
             class="hidden p-3 bg-red-500/20 text-red-400 rounded-lg text-sm"
@@ -275,6 +302,9 @@ const categoriesWithCount = categories?.map((cat: any) => ({
     const categorySlugInput = document.getElementById(
       "category-slug"
     ) as HTMLInputElement;
+    const categorySizeTypeSelect = document.getElementById(
+      "category-size-type"
+    ) as HTMLSelectElement;
     const formError = document.getElementById("form-error");
 
     // Auto-generate slug
@@ -298,6 +328,7 @@ const categoriesWithCount = categories?.map((cat: any) => ({
         categoryIdInput.value = "";
         categoryNameInput.value = "";
         categorySlugInput.value = "";
+        categorySizeTypeSelect.value = "clothing";
         formError?.classList.add("hidden");
         modal?.classList.remove("hidden");
       });
@@ -305,11 +336,12 @@ const categoriesWithCount = categories?.map((cat: any) => ({
     // Open edit modal
     document.querySelectorAll(".edit-category").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const { id, name, slug } = (btn as HTMLElement).dataset;
+        const { id, name, slug, sizeType } = (btn as HTMLElement).dataset;
         if (modalTitle) modalTitle.textContent = "Editar Categoría";
         categoryIdInput.value = id || "";
         categoryNameInput.value = name || "";
         categorySlugInput.value = slug || "";
+        categorySizeTypeSelect.value = sizeType || "clothing";
         formError?.classList.add("hidden");
         modal?.classList.remove("hidden");
       });
@@ -334,6 +366,7 @@ const categoriesWithCount = categories?.map((cat: any) => ({
         const data = {
           name: categoryNameInput.value,
           slug: categorySlugInput.value,
+          size_type: categorySizeTypeSelect.value,
         };
 
         try {

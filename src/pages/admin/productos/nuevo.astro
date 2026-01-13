@@ -3,13 +3,24 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
 import ImageUploader from "@/components/islands/ImageUploader";
 import { supabase } from "@/lib/supabase";
 
-// Fetch categories for dropdown
+// Fetch categories for dropdown with size_type
 const { data: categories } = await supabase
   .from("categories")
-  .select("id, name")
+  .select("id, name, size_type")
   .order("name");
 
-const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
+// Size mappings by category type
+const sizeMappings = {
+  clothing: ["XXS", "XS", "S", "M", "L", "XL", "XXL"],
+  footwear: ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"],
+  universal: ["Única"],
+};
+
+// Create category to size_type mapping
+const categoryTypes: Record<string, string> = {};
+categories?.forEach((cat: any) => {
+  categoryTypes[cat.id] = cat.size_type || "clothing";
+});
 ---
 
 <AdminLayout title="Nuevo Producto">
@@ -188,30 +199,23 @@ const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
       <!-- Stock by Size -->
       <div class="glass border border-border rounded-xl p-6 space-y-4">
         <h2 class="font-heading text-lg">Stock por Talla</h2>
+        <p id="size-hint" class="text-sm text-muted-foreground">
+          Selecciona una categoría para ver las tallas disponibles
+        </p>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-          {
-            sizes.map((size) => (
-              <div>
-                <label
-                  for={`stock-${size}`}
-                  class="block text-sm font-medium text-muted-foreground mb-2 text-center"
-                >
-                  {size}
-                </label>
-                <input
-                  type="number"
-                  id={`stock-${size}`}
-                  name={`stock-${size}`}
-                  min="0"
-                  value="0"
-                  class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground text-center transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
-                />
-              </div>
-            ))
-          }
+        <div
+          id="sizes-container"
+          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4"
+        >
+          <!-- Sizes will be rendered dynamically via JS -->
         </div>
       </div>
+
+      <!-- Inject data for JS -->
+      <script define:vars={{ sizeMappings, categoryTypes }}>
+        window.sizeMappings = sizeMappings;
+        window.categoryTypes = categoryTypes;
+      </script>
 
       <!-- Images - React Component -->
       <div class="glass border border-border rounded-xl p-6 space-y-4">
@@ -327,6 +331,14 @@ const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
   </div>
 
   <script>
+    // Type declarations for window data
+    declare global {
+      interface Window {
+        sizeMappings: Record<string, string[]>;
+        categoryTypes: Record<string, string>;
+      }
+    }
+
     // Auto-generate slug from name
     const nameInput = document.getElementById("name") as HTMLInputElement;
     const slugInput = document.getElementById("slug") as HTMLInputElement;
@@ -340,6 +352,66 @@ const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
         .replace(/^-|-$/g, "");
       slugInput.value = slug;
     });
+
+    // Dynamic size rendering based on category
+    const categorySelect = document.getElementById(
+      "category_id"
+    ) as HTMLSelectElement;
+    const sizesContainer = document.getElementById(
+      "sizes-container"
+    ) as HTMLDivElement;
+    const sizeHint = document.getElementById(
+      "size-hint"
+    ) as HTMLParagraphElement;
+    let currentSizes: string[] = [];
+
+    function renderSizes(sizeType: string) {
+      const sizes =
+        (window.sizeMappings as any)[sizeType] || window.sizeMappings.clothing;
+      currentSizes = sizes;
+
+      sizesContainer.innerHTML = sizes
+        .map(
+          (size: string) => `
+        <div>
+          <label for="stock-${size}" class="block text-sm font-medium text-muted-foreground mb-2 text-center">
+            ${size}
+          </label>
+          <input
+            type="number"
+            id="stock-${size}"
+            name="stock-${size}"
+            min="0"
+            value="0"
+            class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground text-center transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+          />
+        </div>
+      `
+        )
+        .join("");
+
+      sizeHint.style.display = "none";
+    }
+
+    categorySelect?.addEventListener("change", () => {
+      const categoryId = categorySelect.value;
+      if (categoryId) {
+        const sizeType =
+          (window.categoryTypes as any)[categoryId] || "clothing";
+        renderSizes(sizeType);
+      } else {
+        sizesContainer.innerHTML = "";
+        sizeHint.style.display = "block";
+        currentSizes = [];
+      }
+    });
+
+    // Initialize with default if category pre-selected
+    if (categorySelect?.value) {
+      const sizeType =
+        (window.categoryTypes as any)[categorySelect.value] || "clothing";
+      renderSizes(sizeType);
+    }
 
     // Add manual URL input
     const addImageBtn = document.getElementById("add-image");
@@ -418,9 +490,9 @@ const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
           active: formData.get("active") === "on",
         };
 
-        // Get stock values
+        // Get stock values from dynamically rendered sizes
         const variants: { size: string; stock: number }[] = [];
-        ["XS", "S", "M", "L", "XL", "XXL"].forEach((size) => {
+        currentSizes.forEach((size) => {
           const stock = parseInt(formData.get(`stock-${size}`) as string) || 0;
           if (stock > 0) {
             variants.push({ size, stock });

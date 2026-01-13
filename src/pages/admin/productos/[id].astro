@@ -11,7 +11,7 @@ const { data: product, error } = await supabase
   .select(
     `
     *,
-    category:categories(id, name),
+    category:categories(id, name, size_type),
     images:product_images(id, image_url, order),
     variants:product_variants(id, size, stock)
   `
@@ -23,19 +23,30 @@ if (error || !product) {
   return Astro.redirect("/admin/productos?error=not-found");
 }
 
-// Fetch categories for dropdown
+// Fetch categories for dropdown with size_type
 const { data: categories } = await supabase
   .from("categories")
-  .select("id, name")
+  .select("id, name, size_type")
   .order("name");
 
-const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
-
-// Get stock by size
-const getStockForSize = (size: string) => {
-  const variant = product.variants?.find((v: any) => v.size === size);
-  return variant?.stock || 0;
+// Size mappings by category type
+const sizeMappings = {
+  clothing: ["XXS", "XS", "S", "M", "L", "XL", "XXL"],
+  footwear: ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"],
+  universal: ["Única"],
 };
+
+// Create category to size_type mapping
+const categoryTypes: Record<string, string> = {};
+categories?.forEach((cat: any) => {
+  categoryTypes[cat.id] = cat.size_type || "clothing";
+});
+
+// Get existing variant data as JSON for JS
+const existingVariants: Record<string, number> = {};
+product.variants?.forEach((v: any) => {
+  existingVariants[v.size] = v.stock || 0;
+});
 
 // Get sorted images
 const sortedImages =
@@ -234,29 +245,28 @@ const sortedImages =
       <div class="glass border border-border rounded-xl p-6 space-y-4">
         <h2 class="font-heading text-lg">Stock por Talla</h2>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-          {
-            sizes.map((size) => (
-              <div>
-                <label
-                  for={`stock-${size}`}
-                  class="block text-sm font-medium text-muted-foreground mb-2 text-center"
-                >
-                  {size}
-                </label>
-                <input
-                  type="number"
-                  id={`stock-${size}`}
-                  name={`stock-${size}`}
-                  min="0"
-                  value={getStockForSize(size)}
-                  class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground text-center transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
-                />
-              </div>
-            ))
-          }
+        <div
+          id="sizes-container"
+          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4"
+        >
+          <!-- Sizes will be rendered dynamically via JS -->
         </div>
       </div>
+
+      <!-- Inject data for JS -->
+      <script
+        define:vars={{
+          sizeMappings,
+          categoryTypes,
+          existingVariants,
+          currentCategoryId: product.category_id,
+        }}
+      >
+        window.sizeMappings = sizeMappings;
+        window.categoryTypes = categoryTypes;
+        window.existingVariants = existingVariants;
+        window.currentCategoryId = currentCategoryId;
+      </script>
 
       <!-- Images - React Component -->
       <div class="glass border border-border rounded-xl p-6 space-y-4">
@@ -345,9 +355,78 @@ const sortedImages =
   </div>
 
   <script>
+    // Type declarations for window data
+    declare global {
+      interface Window {
+        sizeMappings: Record<string, string[]>;
+        categoryTypes: Record<string, string>;
+        existingVariants: Record<string, number>;
+        currentCategoryId: string | null;
+      }
+    }
+
     const productId = (
       document.getElementById("product-id") as HTMLInputElement
     ).value;
+
+    // Dynamic size rendering based on category
+    const categorySelect = document.getElementById(
+      "category_id"
+    ) as HTMLSelectElement;
+    const sizesContainer = document.getElementById(
+      "sizes-container"
+    ) as HTMLDivElement;
+    let currentSizes: string[] = [];
+
+    function renderSizes(sizeType: string) {
+      const sizes =
+        (window.sizeMappings as any)[sizeType] || window.sizeMappings.clothing;
+      currentSizes = sizes;
+
+      sizesContainer.innerHTML = sizes
+        .map((size: string) => {
+          const existingStock = (window.existingVariants as any)[size] || 0;
+          return `
+          <div>
+            <label for="stock-${size}" class="block text-sm font-medium text-muted-foreground mb-2 text-center">
+              ${size}
+            </label>
+            <input
+              type="number"
+              id="stock-${size}"
+              name="stock-${size}"
+              min="0"
+              value="${existingStock}"
+              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground text-center transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+            />
+          </div>
+        `;
+        })
+        .join("");
+    }
+
+    categorySelect?.addEventListener("change", () => {
+      const categoryId = categorySelect.value;
+      if (categoryId) {
+        const sizeType =
+          (window.categoryTypes as any)[categoryId] || "clothing";
+        renderSizes(sizeType);
+      } else {
+        sizesContainer.innerHTML = "";
+        currentSizes = [];
+      }
+    });
+
+    // Initialize with current category
+    if (window.currentCategoryId) {
+      const sizeType =
+        (window.categoryTypes as any)[window.currentCategoryId] || "clothing";
+      renderSizes(sizeType);
+    } else if (categorySelect?.value) {
+      const sizeType =
+        (window.categoryTypes as any)[categorySelect.value] || "clothing";
+      renderSizes(sizeType);
+    }
 
     // Form submission
     const form = document.getElementById("product-form") as HTMLFormElement;
@@ -381,8 +460,9 @@ const sortedImages =
           active: formData.get("active") === "on",
         };
 
+        // Get stock values from dynamically rendered sizes
         const variants: { size: string; stock: number }[] = [];
-        ["XS", "S", "M", "L", "XL", "XXL"].forEach((size) => {
+        currentSizes.forEach((size) => {
           const stock = parseInt(formData.get(`stock-${size}`) as string) || 0;
           variants.push({ size, stock });
         });

@@ -23,11 +23,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const { name, slug } = await request.json();
+    const { name, slug, size_type } = await request.json();
 
     const { data, error } = await authClient
       .from('categories')
-      .insert({ name, slug })
+      .insert({ name, slug, size_type: size_type || 'clothing' })
       .select()
       .single();
 
@@ -69,11 +69,11 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const { id, name, slug } = await request.json();
+    const { id, name, slug, size_type } = await request.json();
 
     const { error } = await authClient
       .from('categories')
-      .update({ name, slug })
+      .update({ name, slug, size_type })
       .eq('id', id);
 
     if (error) {
