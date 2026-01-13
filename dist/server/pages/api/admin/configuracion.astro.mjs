@@ -21,13 +21,25 @@ const PUT = async ({ request, cookies }) => {
     }
     const { settings } = await request.json();
     for (const setting of settings) {
-      const { error } = await authClient.from("settings").upsert({
-        key: setting.key,
-        value_bool: setting.value_bool
-      }, {
+      const updateData = {
+        key: setting.key
+      };
+      if (setting.value_bool !== void 0) {
+        updateData.value_bool = setting.value_bool;
+        updateData.value = setting.value_bool ? "true" : "false";
+      }
+      if (setting.value !== void 0) {
+        updateData.value = setting.value;
+      }
+      if (setting.value_number !== void 0) {
+        updateData.value_number = setting.value_number;
+        updateData.value = setting.value_number.toString();
+      }
+      const { error } = await authClient.from("settings").upsert(updateData, {
         onConflict: "key"
       });
       if (error) {
+        console.error("Error updating setting:", setting.key, error);
         return new Response(JSON.stringify({ error: error.message }), {
           status: 400,
           headers: { "Content-Type": "application/json" }
@@ -39,6 +51,7 @@ const PUT = async ({ request, cookies }) => {
       headers: { "Content-Type": "application/json" }
     });
   } catch (error) {
+    console.error("Configuration API error:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { "Content-Type": "application/json" }

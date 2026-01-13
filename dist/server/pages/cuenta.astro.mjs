@@ -1,10 +1,11 @@
-import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead } from '../chunks/astro/server_Cxbq3ybN.mjs';
+import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead, h as addAttribute } from '../chunks/astro/server_DutnL9ib.mjs';
 import 'piccolore';
-import { $ as $$PublicLayout } from '../chunks/PublicLayout_DQdCzLgh.mjs';
+import { $ as $$PublicLayout } from '../chunks/PublicLayout_BHSFkYSe.mjs';
+import { s as supabase } from '../chunks/supabase_CjGuiMY7.mjs';
 export { renderers } from '../renderers.mjs';
 
 const $$Astro = createAstro("http://localhost:4321");
-const $$Index = createComponent(($$result, $$props, $$slots) => {
+const $$Index = createComponent(async ($$result, $$props, $$slots) => {
   const Astro2 = $$result.createAstro($$Astro, $$props, $$slots);
   Astro2.self = $$Index;
   const user = Astro2.locals.user;
@@ -12,7 +13,21 @@ const $$Index = createComponent(($$result, $$props, $$slots) => {
     return Astro2.redirect("/cuenta/login");
   }
   const displayName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Usuario";
-  return renderTemplate`${renderComponent($$result, "PublicLayout", $$PublicLayout, { "title": "Mi Cuenta - FashionStore" }, { "default": ($$result2) => renderTemplate` ${maybeRenderHead()}<div class="container mx-auto px-4 py-12"> <!-- Header --> <div class="mb-8"> <h1 class="font-display text-4xl text-primary mb-2">MI CUENTA</h1> <p class="text-muted-foreground">Hola, ${displayName} 👋</p> </div> <div class="grid grid-cols-1 lg:grid-cols-3 gap-8"> <!-- Main Content --> <div class="lg:col-span-2 space-y-6"> <!-- Account Info Card --> <div class="glass border border-border rounded-2xl p-6"> <h2 class="font-heading text-xl mb-4 flex items-center gap-2"> <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path> </svg>
+  const { data: recentOrders } = await supabase.from("orders").select("*").eq("customer_email", user.email).order("created_at", { ascending: false }).limit(5);
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat("es-ES", {
+      style: "currency",
+      currency: "EUR"
+    }).format(price);
+  };
+  const formatDate = (date) => {
+    return new Intl.DateTimeFormat("es-ES", {
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    }).format(new Date(date));
+  };
+  return renderTemplate`${renderComponent($$result, "PublicLayout", $$PublicLayout, { "title": "Mi Cuenta - FashionStore" }, { "default": async ($$result2) => renderTemplate` ${maybeRenderHead()}<div class="container mx-auto px-4 py-12"> <!-- Header --> <div class="mb-8"> <h1 class="font-display text-4xl text-primary mb-2">MI CUENTA</h1> <p class="text-muted-foreground">Hola, ${displayName} 👋</p> </div> <div class="grid grid-cols-1 lg:grid-cols-3 gap-8"> <!-- Main Content --> <div class="lg:col-span-2 space-y-6"> <!-- Account Info Card --> <div class="glass border border-border rounded-2xl p-6"> <h2 class="font-heading text-xl mb-4 flex items-center gap-2"> <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path> </svg>
 Información de la Cuenta
 </h2> <div class="space-y-4"> <div> <label class="block text-sm text-muted-foreground mb-1">Email</label> <p class="text-foreground">${user.email}</p> </div> ${user.user_metadata?.full_name && renderTemplate`<div> <label class="block text-sm text-muted-foreground mb-1">
 Nombre
@@ -22,11 +37,14 @@ Miembro desde
     year: "numeric",
     month: "long",
     day: "numeric"
-  })} </p> </div> </div> </div> <!-- Recent Orders Card (placeholder) --> <div class="glass border border-border rounded-2xl p-6"> <h2 class="font-heading text-xl mb-4 flex items-center gap-2"> <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path> </svg>
+  })} </p> </div> </div> </div> <!-- Recent Orders Card --> <div class="glass border border-border rounded-2xl p-6"> <h2 class="font-heading text-xl mb-4 flex items-center gap-2"> <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path> </svg>
 Últimos Pedidos
-</h2> <div class="text-center py-8 text-muted-foreground"> <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path> </svg> <p>No tienes pedidos todavía</p> <a href="/productos" class="inline-block mt-4 text-primary hover:underline">
+</h2> <div class="space-y-4"> ${recentOrders && recentOrders.length > 0 ? renderTemplate`<div class="divide-y divide-border/50"> ${recentOrders.map((order) => renderTemplate`<div class="flex items-center justify-between py-4 first:pt-0 last:pb-0"> <div> <p class="font-mono text-sm text-muted-foreground">
+#${order.id.slice(0, 8)} </p> <p class="text-sm font-medium mt-1"> ${formatPrice(order.total_amount)} </p> <p class="text-xs text-muted-foreground"> ${formatDate(order.created_at)} </p> </div> <div class="flex items-center gap-4"> <span${addAttribute(`text-xs px-2 py-1 rounded-full ${order.status === "paid" ? "bg-emerald-500/10 text-emerald-400" : order.status === "shipped" ? "bg-blue-500/10 text-blue-400" : order.status === "delivered" ? "bg-primary/10 text-primary" : "bg-yellow-500/10 text-yellow-400"}`, "class")}> ${order.status === "paid" ? "Pagado" : order.status === "shipped" ? "Enviado" : order.status === "delivered" ? "Entregado" : "Pendiente"} </span> <a${addAttribute(`/cuenta/pedidos`, "href")} class="text-sm text-primary hover:underline hover:text-primary/80 transition-colors">
+Ver detalle
+</a> </div> </div>`)} </div>` : renderTemplate`<div class="text-center py-8 text-muted-foreground"> <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path> </svg> <p>No tienes pedidos todavía</p> <a href="/productos" class="inline-block mt-4 text-primary hover:underline">
 Explorar productos →
-</a> </div> </div> </div> <!-- Sidebar --> <div class="space-y-6"> <!-- Quick Actions --> <div class="glass border border-border rounded-2xl p-6"> <h3 class="font-heading text-lg mb-4">Acciones Rápidas</h3> <nav class="space-y-2"> <a href="/cuenta/perfil" class="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors"> <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path> </svg>
+</a> </div>`} </div> </div> </div> <!-- Sidebar --> <div class="space-y-6"> <!-- Quick Actions --> <div class="glass border border-border rounded-2xl p-6"> <h3 class="font-heading text-lg mb-4">Acciones Rápidas</h3> <nav class="space-y-2"> <a href="/cuenta/perfil" class="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors"> <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path> </svg>
 Editar perfil
 </a> <a href="/cuenta/pedidos" class="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors"> <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path> </svg>
 Ver todos los pedidos

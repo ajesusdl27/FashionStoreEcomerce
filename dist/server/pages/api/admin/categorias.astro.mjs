@@ -19,8 +19,8 @@ const POST = async ({ request, cookies }) => {
         headers: { "Content-Type": "application/json" }
       });
     }
-    const { name, slug } = await request.json();
-    const { data, error } = await authClient.from("categories").insert({ name, slug }).select().single();
+    const { name, slug, size_type } = await request.json();
+    const { data, error } = await authClient.from("categories").insert({ name, slug, size_type: size_type || "clothing" }).select().single();
     if (error) {
       return new Response(JSON.stringify({ error: error.message }), {
         status: 400,
@@ -56,8 +56,8 @@ const PUT = async ({ request, cookies }) => {
         headers: { "Content-Type": "application/json" }
       });
     }
-    const { id, name, slug } = await request.json();
-    const { error } = await authClient.from("categories").update({ name, slug }).eq("id", id);
+    const { id, name, slug, size_type } = await request.json();
+    const { error } = await authClient.from("categories").update({ name, slug, size_type }).eq("id", id);
     if (error) {
       return new Response(JSON.stringify({ error: error.message }), {
         status: 400,

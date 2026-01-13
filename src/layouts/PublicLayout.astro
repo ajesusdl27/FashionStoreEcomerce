@@ -4,6 +4,9 @@ import CartIcon from "@/components/islands/CartIcon";
 import CartSlideOver from "@/components/islands/CartSlideOver";
 import HeaderSearch from "@/components/islands/HeaderSearch";
 import NewsletterForm from "@/components/islands/NewsletterForm";
+import AnnouncementBar from "@/components/islands/AnnouncementBar";
+import UserMenu from "@/components/islands/UserMenu";
+import HeaderNavigation from "@/components/islands/HeaderNavigation";
 
 interface Props {
   title: string;
@@ -11,11 +14,16 @@ interface Props {
 }
 
 const { title, description } = Astro.props;
+const currentPath = Astro.url.pathname + Astro.url.search;
 ---
 
 <BaseLayout title={title} description={description}>
   <!-- Cart Slide Over (React Island) -->
   <CartSlideOver client:load />
+
+  <!-- Announcement Bar (React Island) -->
+  <AnnouncementBar client:load />
+
   <!-- Header -->
   <header class="sticky top-0 z-50 glass border-b border-border">
     <div class="container mx-auto px-4">
@@ -48,50 +56,16 @@ const { title, description } = Astro.props;
           FASHIONSTORE
         </a>
 
-        <!-- Desktop Navigation -->
-        <nav class="hidden lg:flex items-center gap-8">
-          <a
-            href="/"
-            class="text-sm font-medium hover:text-primary transition-colors"
-            >Inicio</a
-          >
-          <a
-            href="/productos"
-            class="text-sm font-medium hover:text-primary transition-colors"
-            >Productos</a
-          >
-          <a
-            href="/productos?ofertas=true"
-            class="text-sm font-medium text-accent hover:text-accent/80 transition-colors"
-            >Ofertas</a
-          >
-        </nav>
+        <!-- Desktop Navigation (React Island) -->
+        <HeaderNavigation client:load currentPath={currentPath} />
 
         <!-- Actions -->
         <div class="flex items-center gap-4">
           <!-- Search (React Island) -->
           <HeaderSearch client:idle />
 
-          <!-- User Account -->
-          <a
-            href="/cuenta"
-            class="touch-target flex items-center justify-center hover:text-primary transition-colors"
-            aria-label="Mi cuenta"
-          >
-            <svg
-              class="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              ></path>
-            </svg>
-          </a>
+          <!-- User Menu (React Island) -->
+          <UserMenu client:load />
 
           <!-- Cart (React Island) -->
           <CartIcon client:load />

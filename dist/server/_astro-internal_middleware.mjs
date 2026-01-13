@@ -1,9 +1,9 @@
-import { d as defineMiddleware, s as sequence } from './chunks/index_BPt0y4-W.mjs';
+import { d as defineMiddleware, s as sequence } from './chunks/index_DEBn-AW2.mjs';
 import { s as supabase } from './chunks/supabase_CjGuiMY7.mjs';
 import 'es-module-lexer';
-import './chunks/astro-designed-error-pages_DtovkyaN.mjs';
+import './chunks/astro-designed-error-pages_Boz_-pHq.mjs';
 import 'piccolore';
-import './chunks/astro/server_Cxbq3ybN.mjs';
+import './chunks/astro/server_DutnL9ib.mjs';
 import 'clsx';
 
 const onRequest$1 = defineMiddleware(async (context, next) => {

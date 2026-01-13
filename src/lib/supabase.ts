@@ -1,18 +1,32 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+// Get environment variables - these are exposed to the client because they start with PUBLIC_
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL as string;
+const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+// Create a singleton to avoid multiple instances
+let supabaseInstance: SupabaseClient | null = null;
+
+export function getSupabase(): SupabaseClient {
+  if (supabaseInstance) {
+    return supabaseInstance;
+  }
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Missing Supabase environment variables');
+  }
+
+  supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
+  return supabaseInstance;
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Export a getter for backwards compatibility
+export const supabase = getSupabase();
 
 // Helper to create authenticated client with cookies (for SSR)
 export function createAuthenticatedClient(accessToken?: string, refreshToken?: string) {
   if (!accessToken || !refreshToken) {
-    return supabase;
+    return getSupabase();
   }
 
   const client = createClient(supabaseUrl, supabaseAnonKey, {
@@ -25,3 +39,4 @@ export function createAuthenticatedClient(accessToken?: string, refreshToken?: s
 
   return client;
 }
+
