@@ -1,6 +1,11 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
-import { supabase } from "@/lib/supabase";
+import { createAuthenticatedClient } from "@/lib/supabase";
+
+// Get authenticated client for RLS compliance
+const accessToken = Astro.cookies.get("sb-access-token")?.value;
+const refreshToken = Astro.cookies.get("sb-refresh-token")?.value;
+const authClient = createAuthenticatedClient(accessToken, refreshToken);
 
 // Fetch dashboard stats
 const today = new Date();
@@ -10,34 +15,29 @@ const yesterday = new Date(today);
 yesterday.setDate(yesterday.getDate() - 1);
 
 // Orders today
-const { count: ordersToday } = await supabase
+const { count: ordersToday } = await authClient
   .from("orders")
   .select("*", { count: "exact", head: true })
   .gte("created_at", today.toISOString());
 
 // Orders yesterday (for comparison)
-const { count: ordersYesterday } = await supabase
+const { count: ordersYesterday } = await authClient
   .from("orders")
   .select("*", { count: "exact", head: true })
   .gte("created_at", yesterday.toISOString())
   .lt("created_at", today.toISOString());
 
-// Total orders
-const { count: totalOrders } = await supabase
-  .from("orders")
-  .select("*", { count: "exact", head: true });
-
-// Revenue (paid orders)
-const { data: revenueData } = await supabase
+// Revenue (paid + shipped + delivered orders) - optimized
+const { data: revenueData } = await authClient
   .from("orders")
   .select("total_amount")
-  .eq("status", "paid");
+  .in("status", ["paid", "shipped", "delivered"]);
 
 const totalRevenue =
   revenueData?.reduce((sum, order) => sum + Number(order.total_amount), 0) || 0;
 
 // Low stock products (variants with stock < 5)
-const { data: lowStockVariants } = await supabase
+const { data: lowStockVariants } = await authClient
   .from("product_variants")
   .select(
     `
@@ -52,21 +52,27 @@ const { data: lowStockVariants } = await supabase
   .limit(8);
 
 // Recent orders
-const { data: recentOrders } = await supabase
+const { data: recentOrders } = await authClient
   .from("orders")
   .select("*")
   .order("created_at", { ascending: false })
   .limit(5);
 
 // Products count
-const { count: productsCount } = await supabase
+const { count: productsCount } = await authClient
   .from("products")
   .select("*", { count: "exact", head: true });
 
 // Categories count
-const { count: categoriesCount } = await supabase
+const { count: categoriesCount } = await authClient
   .from("categories")
   .select("*", { count: "exact", head: true });
+
+// Newsletter subscribers count
+const { count: subscribersCount } = await authClient
+  .from("newsletter_subscribers")
+  .select("*", { count: "exact", head: true })
+  .eq("active", true);
 
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat("es-ES", {
@@ -99,7 +105,7 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
 <AdminLayout title="Dashboard">
   <div class="space-y-8">
     <!-- Stats Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
       <!-- Orders Today -->
       <div class="stat-card group">
         <div>
@@ -237,6 +243,32 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
               stroke-linejoin="round"
               stroke-width="2"
               d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+            ></path>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Newsletter Subscribers -->
+      <div class="stat-card group">
+        <div>
+          <p class="stat-label">Suscriptores</p>
+          <p class="stat-value text-amber-400">{subscribersCount || 0}</p>
+          <p class="text-xs text-zinc-500 mt-1">newsletter</p>
+        </div>
+        <div
+          class="stat-icon bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors"
+        >
+          <svg
+            class="w-7 h-7 text-amber-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
             ></path>
           </svg>
         </div>
@@ -435,7 +467,7 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
       <h2 class="font-heading text-lg text-foreground mb-6">
         Acciones Rápidas
       </h2>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
         <a
           href="/admin/productos/nuevo"
           class="flex flex-col items-center gap-3 p-6 rounded-xl bg-zinc-800/50 border border-zinc-700/50 hover:border-primary/50 hover:bg-primary/5 transition-all group"
@@ -534,6 +566,30 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
             </svg>
           </div>
           <span class="text-sm font-medium">Configuración</span>
+        </a>
+
+        <a
+          href="/admin/newsletter"
+          class="flex flex-col items-center gap-3 p-6 rounded-xl bg-zinc-800/50 border border-zinc-700/50 hover:border-amber-500/50 hover:bg-amber-500/5 transition-all group"
+        >
+          <div
+            class="w-14 h-14 rounded-xl bg-amber-500/10 flex items-center justify-center group-hover:scale-110 transition-transform"
+          >
+            <svg
+              class="w-7 h-7 text-amber-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              ></path>
+            </svg>
+          </div>
+          <span class="text-sm font-medium">Newsletter</span>
         </a>
       </div>
     </div>
