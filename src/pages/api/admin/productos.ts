@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
-import { supabase, createAuthenticatedClient } from '@/lib/supabase';
+import { createAuthenticatedClient } from '@/lib/supabase';
+import { validateToken } from '@/lib/auth-utils';
 
 // CREATE product
 export const POST: APIRoute = async ({ request, cookies }) => {
@@ -18,7 +19,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Create authenticated client for RLS
     const authClient = createAuthenticatedClient(accessToken, refreshToken);
 
-    const { data: { user } } = await supabase.auth.getUser(accessToken);
+    const user = await validateToken(accessToken);
     if (!user?.user_metadata?.is_admin) {
       return new Response(JSON.stringify({ error: 'No autorizado' }), { 
         status: 403, 
@@ -105,7 +106,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     // Create authenticated client for RLS
     const authClient = createAuthenticatedClient(accessToken, refreshToken);
 
-    const { data: { user } } = await supabase.auth.getUser(accessToken);
+    const user = await validateToken(accessToken);
     if (!user?.user_metadata?.is_admin) {
       return new Response(JSON.stringify({ error: 'No autorizado' }), { 
         status: 403, 
@@ -183,7 +184,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     // Create authenticated client for RLS
     const authClient = createAuthenticatedClient(accessToken, refreshToken);
 
-    const { data: { user } } = await supabase.auth.getUser(accessToken);
+    const user = await validateToken(accessToken);
     if (!user?.user_metadata?.is_admin) {
       return new Response(JSON.stringify({ error: 'No autorizado' }), { 
         status: 403, 

@@ -1,30 +1,57 @@
 import { defineMiddleware } from 'astro:middleware';
-import { supabase } from '@/lib/supabase';
+import { validateToken, refreshSession } from '@/lib/auth-utils';
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
   const cookies = context.cookies;
 
   // Get tokens from cookies
-  const accessToken = cookies.get('sb-access-token')?.value;
+  let accessToken = cookies.get('sb-access-token')?.value;
   const refreshToken = cookies.get('sb-refresh-token')?.value;
 
   // Check if route requires authentication
   const isAdminRoute = pathname.startsWith('/admin') && pathname !== '/admin/login';
   const isAccountRoute = pathname.startsWith('/cuenta') && 
     pathname !== '/cuenta/login' && 
-    pathname !== '/cuenta/registro';
+    pathname !== '/cuenta/registro' &&
+    pathname !== '/cuenta/recuperar-password' &&
+    pathname !== '/cuenta/reset-password';
 
-  // If we have tokens, try to get the user (for ANY route)
-  if (accessToken && refreshToken) {
-    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+  // If we have tokens, try to validate the user
+  if (accessToken) {
+    let user = await validateToken(accessToken);
 
-    if (user && !error) {
+    // If access token is invalid but we have refresh token, try to refresh
+    if (!user && refreshToken) {
+      const newTokens = await refreshSession(refreshToken);
+      
+      if (newTokens) {
+        // Update cookies with new tokens
+        cookies.set('sb-access-token', newTokens.access_token, {
+          path: '/',
+          httpOnly: true,
+          secure: import.meta.env.PROD,
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 7, // 7 days
+        });
+
+        cookies.set('sb-refresh-token', newTokens.refresh_token, {
+          path: '/',
+          httpOnly: true,
+          secure: import.meta.env.PROD,
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 30, // 30 days
+        });
+
+        // Validate with new token
+        user = await validateToken(newTokens.access_token);
+        accessToken = newTokens.access_token;
+      }
+    }
+
+    if (user) {
       // Attach user to locals for use in pages
       context.locals.user = user;
-    } else {
-      // Invalid tokens - only clear if we tried to use them
-      // Don't clear immediately to avoid race conditions, but if explicit auth is needed it will fail below
     }
   }
 
@@ -54,3 +81,4 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   return next();
 });
+

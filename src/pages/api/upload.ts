@@ -6,19 +6,24 @@
  */
 import type { APIRoute } from 'astro';
 import { uploadImage } from '@/lib/cloudinary';
-import { createAuthenticatedClient } from '@/lib/supabase';
+import { validateToken } from '@/lib/auth-utils';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Get auth tokens from cookies
     const accessToken = cookies.get('sb-access-token')?.value;
-    const refreshToken = cookies.get('sb-refresh-token')?.value;
+
+    if (!accessToken) {
+      return new Response(
+        JSON.stringify({ error: 'No autorizado' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Verify admin authentication
-    const supabase = createAuthenticatedClient(accessToken, refreshToken);
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const user = await validateToken(accessToken);
 
-    if (authError || !user) {
+    if (!user) {
       return new Response(
         JSON.stringify({ error: 'No autorizado' }),
         { status: 401, headers: { 'Content-Type': 'application/json' } }

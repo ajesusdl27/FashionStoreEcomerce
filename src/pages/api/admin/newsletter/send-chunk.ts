@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
-import { supabase, createAuthenticatedClient } from '@/lib/supabase';
+import { createAuthenticatedClient } from '@/lib/supabase';
+import { validateToken } from '@/lib/auth-utils';
 import { resend } from '@/lib/email';
 
 // Sends a chunk of emails (called multiple times from the client)
@@ -15,7 +16,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const { data: { user } } = await supabase.auth.getUser(accessToken);
+    const user = await validateToken(accessToken);
     if (!user?.user_metadata?.is_admin) {
       return new Response(JSON.stringify({ error: 'No autorizado' }), {
         status: 403,

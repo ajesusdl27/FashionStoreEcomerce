@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
-import { supabase, createAuthenticatedClient } from '@/lib/supabase';
+import { createAuthenticatedClient } from '@/lib/supabase';
+import { validateToken } from '@/lib/auth-utils';
 
 export interface CustomerProfile {
   id: string;
@@ -24,7 +25,7 @@ export const GET: APIRoute = async ({ cookies }) => {
     }
 
     const authClient = createAuthenticatedClient(accessToken, refreshToken);
-    const { data: { user } } = await supabase.auth.getUser(accessToken);
+    const user = await validateToken(accessToken);
 
     if (!user) {
       return new Response(JSON.stringify({ error: 'No autorizado' }), { 
@@ -101,7 +102,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     }
 
     const authClient = createAuthenticatedClient(accessToken, refreshToken);
-    const { data: { user } } = await supabase.auth.getUser(accessToken);
+    const user = await validateToken(accessToken);
 
     if (!user) {
       return new Response(JSON.stringify({ error: 'No autorizado' }), { 
@@ -113,7 +114,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     const { full_name, phone, default_address, default_city, default_postal_code, default_country } = body;
 
     // Use RPC function with SECURITY DEFINER (bypasses RLS)
-    const { data, error } = await authClient.rpc('upsert_customer_profile', {
+    const { error } = await authClient.rpc('upsert_customer_profile', {
       p_full_name: full_name || null,
       p_phone: phone || null,
       p_default_address: default_address || null,

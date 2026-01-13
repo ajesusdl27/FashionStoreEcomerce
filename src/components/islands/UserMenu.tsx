@@ -105,10 +105,8 @@ export default function UserMenu() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    // Clear cookies
-    document.cookie = 'sb-access-token=; Max-Age=0; path=/';
-    document.cookie = 'sb-refresh-token=; Max-Age=0; path=/';
-    window.location.href = '/';
+    // Redirect to server logout endpoint (clears httpOnly cookies)
+    window.location.href = '/api/auth/logout';
   };
 
   // Get user initials for avatar
