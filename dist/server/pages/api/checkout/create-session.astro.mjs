@@ -1,5 +1,5 @@
 import { F as FREE_SHIPPING_THRESHOLD, S as SHIPPING_COST, a as STOCK_RESERVATION_MINUTES, s as stripe } from '../../../chunks/stripe_B3_Fgp7U.mjs';
-import { s as supabase } from '../../../chunks/supabase_CjGuiMY7.mjs';
+import { s as supabase } from '../../../chunks/supabase_DtlKUSBa.mjs';
 export { renderers } from '../../../renderers.mjs';
 
 const POST = async ({ request, url }) => {
@@ -95,19 +95,37 @@ const POST = async ({ request, url }) => {
       });
     }
     const expiresAt = Math.floor(Date.now() / 1e3) + STOCK_RESERVATION_MINUTES * 60;
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      line_items: lineItems,
-      success_url: `${url.origin}/checkout/exito?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${url.origin}/checkout/cancelado?order_id=${orderId}`,
-      expires_at: expiresAt,
-      customer_email: customerEmail,
-      metadata: {
-        order_id: orderId
-      },
-      locale: "es",
-      billing_address_collection: "auto"
-    });
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create({
+        mode: "payment",
+        line_items: lineItems,
+        success_url: `${url.origin}/checkout/exito?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${url.origin}/checkout/cancelado?order_id=${orderId}`,
+        expires_at: expiresAt,
+        customer_email: customerEmail,
+        metadata: {
+          order_id: orderId
+        },
+        locale: "es",
+        billing_address_collection: "auto"
+      });
+    } catch (stripeError) {
+      console.error("Error creating Stripe session:", stripeError);
+      for (const reserved of reservedItems) {
+        await supabase.rpc("restore_stock", {
+          p_variant_id: reserved.variantId,
+          p_quantity: reserved.quantity
+        });
+      }
+      await supabase.from("orders").delete().eq("id", orderId);
+      return new Response(JSON.stringify({
+        error: "Error al conectar con el sistema de pagos. Por favor, inténtalo de nuevo."
+      }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
     await supabase.from("orders").update({ stripe_session_id: session.id }).eq("id", orderId);
     return new Response(JSON.stringify({
       url: session.url,

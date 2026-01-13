@@ -1,5 +1,5 @@
 import { s as stripe } from '../../../chunks/stripe_B3_Fgp7U.mjs';
-import { s as supabase } from '../../../chunks/supabase_CjGuiMY7.mjs';
+import { s as supabase } from '../../../chunks/supabase_DtlKUSBa.mjs';
 import { a as sendOrderConfirmation } from '../../../chunks/email_CMNVW2Q8.mjs';
 export { renderers } from '../../../renderers.mjs';
 
@@ -24,6 +24,11 @@ const POST = async ({ request }) => {
       const orderId = session.metadata?.order_id;
       if (!orderId) {
         console.error("No order_id in session metadata");
+        break;
+      }
+      const { data: existingOrder } = await supabase.from("orders").select("status").eq("id", orderId).single();
+      if (existingOrder?.status === "paid") {
+        console.log(`Order ${orderId} already marked as paid - skipping (idempotency)`);
         break;
       }
       const { error } = await supabase.rpc("update_order_status", {

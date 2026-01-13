@@ -1,4 +1,4 @@
-import { c as createAuthenticatedClient, s as supabase } from '../../../chunks/supabase_CjGuiMY7.mjs';
+import { c as createAuthenticatedClient, s as supabase } from '../../../chunks/supabase_DtlKUSBa.mjs';
 export { renderers } from '../../../renderers.mjs';
 
 const POST = async ({ request, cookies }) => {

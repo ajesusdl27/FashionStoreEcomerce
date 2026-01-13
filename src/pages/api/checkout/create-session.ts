@@ -144,24 +144,47 @@ export const POST: APIRoute = async ({ request, url }) => {
       });
     }
 
-    // Calculate session expiration (15 minutes from now)
+    // Calculate session expiration (30 minutes from now - minimum required by Stripe)
     const expiresAt = Math.floor(Date.now() / 1000) + (STOCK_RESERVATION_MINUTES * 60);
 
     // Create Stripe Checkout session
     // Payment methods are automatically determined from Stripe Dashboard settings
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      line_items: lineItems,
-      success_url: `${url.origin}/checkout/exito?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${url.origin}/checkout/cancelado?order_id=${orderId}`,
-      expires_at: expiresAt,
-      customer_email: customerEmail,
-      metadata: {
-        order_id: orderId
-      },
-      locale: 'es',
-      billing_address_collection: 'auto'
-    });
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        line_items: lineItems,
+        success_url: `${url.origin}/checkout/exito?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${url.origin}/checkout/cancelado?order_id=${orderId}`,
+        expires_at: expiresAt,
+        customer_email: customerEmail,
+        metadata: {
+          order_id: orderId
+        },
+        locale: 'es',
+        billing_address_collection: 'auto'
+      });
+    } catch (stripeError) {
+      // Stripe session creation failed - rollback stock and delete order
+      console.error('Error creating Stripe session:', stripeError);
+      
+      for (const reserved of reservedItems) {
+        await supabase.rpc('restore_stock', {
+          p_variant_id: reserved.variantId,
+          p_quantity: reserved.quantity
+        });
+      }
+      
+      // Delete the orphaned order
+      await supabase.from('orders').delete().eq('id', orderId);
+      
+      return new Response(JSON.stringify({ 
+        error: 'Error al conectar con el sistema de pagos. Por favor, inténtalo de nuevo.' 
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
 
     // Update order with Stripe session ID
     await supabase

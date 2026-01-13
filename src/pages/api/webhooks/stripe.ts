@@ -41,6 +41,18 @@ export const POST: APIRoute = async ({ request }) => {
         break;
       }
 
+      // Idempotency check: verify if order was already processed
+      const { data: existingOrder } = await supabase
+        .from('orders')
+        .select('status')
+        .eq('id', orderId)
+        .single();
+
+      if (existingOrder?.status === 'paid') {
+        console.log(`Order ${orderId} already marked as paid - skipping (idempotency)`);
+        break;
+      }
+
       // Update order status to paid using RPC function
       const { error } = await supabase.rpc('update_order_status', {
         p_stripe_session_id: session.id,

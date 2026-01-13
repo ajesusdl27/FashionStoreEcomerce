@@ -1,5 +1,5 @@
 import { d as defineMiddleware, s as sequence } from './chunks/index_DEBn-AW2.mjs';
-import { s as supabase } from './chunks/supabase_CjGuiMY7.mjs';
+import { s as supabase } from './chunks/supabase_DtlKUSBa.mjs';
 import 'es-module-lexer';
 import './chunks/astro-designed-error-pages_Boz_-pHq.mjs';
 import 'piccolore';

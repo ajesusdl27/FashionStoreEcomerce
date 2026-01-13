@@ -2,7 +2,7 @@ import { f as createComponent, k as renderComponent, r as renderTemplate, l as r
 import 'piccolore';
 import { $ as $$AdminLayout } from '../../../chunks/AdminLayout_D2ja8uRB.mjs';
 import { I as ImageUploader } from '../../../chunks/ImageUploader_CBXR3Zym.mjs';
-import { s as supabase } from '../../../chunks/supabase_CjGuiMY7.mjs';
+import { s as supabase } from '../../../chunks/supabase_DtlKUSBa.mjs';
 export { renderers } from '../../../renderers.mjs';
 
 var __freeze = Object.freeze;

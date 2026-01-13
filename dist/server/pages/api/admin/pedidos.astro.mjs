@@ -1,4 +1,4 @@
-import { c as createAuthenticatedClient, s as supabase } from '../../../chunks/supabase_CjGuiMY7.mjs';
+import { c as createAuthenticatedClient, s as supabase } from '../../../chunks/supabase_DtlKUSBa.mjs';
 import { s as sendOrderShipped } from '../../../chunks/email_CMNVW2Q8.mjs';
 export { renderers } from '../../../renderers.mjs';
 

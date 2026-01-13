@@ -1,7 +1,7 @@
 import { f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead, l as renderScript, h as addAttribute } from '../../chunks/astro/server_DutnL9ib.mjs';
 import 'piccolore';
 import { $ as $$AdminLayout } from '../../chunks/AdminLayout_D2ja8uRB.mjs';
-import { s as supabase } from '../../chunks/supabase_CjGuiMY7.mjs';
+import { s as supabase } from '../../chunks/supabase_DtlKUSBa.mjs';
 export { renderers } from '../../renderers.mjs';
 
 const $$Index = createComponent(async ($$result, $$props, $$slots) => {
