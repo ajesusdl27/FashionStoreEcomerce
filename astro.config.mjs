@@ -8,6 +8,9 @@ export default defineConfig({
   site: "http://localhost:4321",
   output: "server",
   adapter: node({ mode: "standalone" }),
+  server: {
+    host: true
+  },
   integrations: [
     react(),
     tailwind({
@@ -15,6 +18,9 @@ export default defineConfig({
     }),
   ],
   vite: {
+    server: {
+      allowedHosts: ['lk8s0o440kskkcogwsccc8gg.victoriafp.online']
+    },
     resolve: {
       alias: {
         "@": "/src",
