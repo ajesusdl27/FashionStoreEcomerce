@@ -1,12 +1,12 @@
 import { useStore } from '@nanostores/react';
-import { $cartCount } from '@/stores/cart';
+import { $cartCount, toggleCart } from '@/stores/cart';
 
 export default function CartIcon() {
   const count = useStore($cartCount);
 
   return (
     <button
-      id="cart-toggle"
+      onClick={toggleCart}
       className="relative touch-target flex items-center justify-center hover:text-primary transition-colors"
       aria-label={`Carrito (${count} items)`}
     >

@@ -99,3 +99,18 @@ export function clearCart() {
 export function getCartItem(itemId: string): CartItem | undefined {
   return $cart.get().find((i) => i.id === itemId);
 }
+
+// UI State
+export const $isCartOpen = atom(false);
+
+export function toggleCart() {
+  $isCartOpen.set(!$isCartOpen.get());
+}
+
+export function openCart() {
+  $isCartOpen.set(true);
+}
+
+export function closeCart() {
+  $isCartOpen.set(false);
+}

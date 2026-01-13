@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useStore } from '@nanostores/react';
-import { $cart, $cartSubtotal, removeFromCart, updateQuantity } from '@/stores/cart';
+import { $cart, $cartSubtotal, removeFromCart, updateQuantity, $isCartOpen, closeCart } from '@/stores/cart';
 import QuantitySelector from '@/components/islands/QuantitySelector';
 
 interface CartSlideOverProps {
@@ -12,7 +12,7 @@ export default function CartSlideOver({
   freeShippingThreshold = 50, 
   shippingCost = 4.99 
 }: CartSlideOverProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const isOpen = useStore($isCartOpen);
   const items = useStore($cart);
   const subtotal = useStore($cartSubtotal);
   
@@ -20,20 +20,14 @@ export default function CartSlideOver({
   const isFreeShipping = subtotal >= freeShippingThreshold;
   const amountToFreeShipping = freeShippingThreshold - subtotal;
 
-  // Listen for cart toggle event
+  // Listen for ESC
   useEffect(() => {
-    const handleToggle = () => setIsOpen((prev) => !prev);
-    const cartBtn = document.getElementById('cart-toggle');
-    cartBtn?.addEventListener('click', handleToggle);
-
-    // ESC to close
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsOpen(false);
+      if (e.key === 'Escape') closeCart();
     };
     document.addEventListener('keydown', handleEsc);
 
     return () => {
-      cartBtn?.removeEventListener('click', handleToggle);
       document.removeEventListener('keydown', handleEsc);
     };
   }, []);
@@ -60,7 +54,7 @@ export default function CartSlideOver({
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
-        onClick={() => setIsOpen(false)}
+        onClick={closeCart}
       />
 
       {/* Slide-over Panel */}
@@ -73,7 +67,7 @@ export default function CartSlideOver({
             Tu Carrito ({items.length})
           </h2>
           <button
-            onClick={() => setIsOpen(false)}
+            onClick={closeCart}
             className="touch-target flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
             aria-label="Cerrar carrito"
           >
@@ -115,7 +109,7 @@ export default function CartSlideOver({
               </svg>
               <p className="text-muted-foreground mb-4">Tu carrito está vacío</p>
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={closeCart}
                 className="text-primary hover:underline"
               >
                 Continuar comprando
@@ -207,7 +201,7 @@ export default function CartSlideOver({
                 FINALIZAR COMPRA
               </a>
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={closeCart}
                 className="block w-full py-3 text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 Continuar comprando
