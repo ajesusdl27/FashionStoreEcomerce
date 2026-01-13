@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { addToCart } from '@/stores/cart';
 
 interface Variant {
@@ -26,12 +26,24 @@ export default function ProductAddToCart({
 }: ProductAddToCartProps) {
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [showStickyBar, setShowStickyBar] = useState(false);
 
   // Sort variants by size order
   const sizeOrder = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46'];
   const sortedVariants = [...variants].sort((a, b) => 
     sizeOrder.indexOf(a.size) - sizeOrder.indexOf(b.size)
   );
+
+  // Detect scroll to show/hide sticky bar on mobile
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show sticky bar after scrolling past 400px
+      setShowStickyBar(window.scrollY > 400);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleAddToCart = async () => {
     if (!selectedVariant || selectedVariant.stock <= 0) return;
@@ -70,100 +82,185 @@ export default function ProductAddToCart({
   const formatPrice = (p: number) =>
     new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(p);
 
+  // Scroll to size selector when clicking the sticky bar without a size selected
+  const scrollToSizeSelector = () => {
+    const sizeSection = document.querySelector('[data-size-selector]');
+    if (sizeSection) {
+      sizeSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Size Selector */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <span className="font-heading text-sm uppercase tracking-wider">Talla</span>
-          <button className="text-sm text-primary hover:underline">Guía de tallas</button>
+    <>
+      <div className="space-y-6" data-size-selector>
+        {/* Size Selector */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <span className="font-heading text-sm uppercase tracking-wider">Talla</span>
+            <button className="text-sm text-primary hover:underline">Guía de tallas</button>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {sortedVariants.map((variant) => (
+              <button
+                key={variant.id}
+                onClick={() => setSelectedVariant(variant)}
+                disabled={variant.stock <= 0}
+                aria-pressed={selectedVariant?.id === variant.id}
+                className={`
+                  px-4 py-3 min-w-[60px] border rounded-lg font-medium transition-all
+                  ${variant.stock <= 0 
+                    ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-50 border-border' 
+                    : selectedVariant?.id === variant.id
+                      ? 'border-primary bg-primary/10'
+                      : 'bg-card border-border hover:border-primary'
+                  }
+                `}
+              >
+                {variant.size}
+                {variant.stock > 0 && variant.stock <= 5 && (
+                  <span className="ml-1 text-yellow-400" aria-label="Pocas unidades">⚡</span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Stock warning */}
+          {selectedVariant && selectedVariant.stock > 0 && selectedVariant.stock <= 5 && (
+            <p className="mt-3 text-sm text-yellow-400">
+              ⚡ {selectedVariant.stock} unidades disponibles
+            </p>
+          )}
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {sortedVariants.map((variant) => (
-            <button
-              key={variant.id}
-              onClick={() => setSelectedVariant(variant)}
-              disabled={variant.stock <= 0}
-              className={`
-                px-4 py-3 min-w-[60px] border rounded-lg font-medium transition-all
-                ${variant.stock <= 0 
-                  ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-50 border-border' 
-                  : selectedVariant?.id === variant.id
-                    ? 'border-primary bg-primary/10'
-                    : 'bg-card border-border hover:border-primary'
-                }
-              `}
-            >
-              {variant.size}
-              {variant.stock > 0 && variant.stock <= 5 && (
-                <span className="ml-1 text-yellow-400">⚡</span>
-              )}
-            </button>
-          ))}
-        </div>
+        {/* Add to Cart Button */}
+        {selectedVariant ? (
+          <button
+            onClick={handleAddToCart}
+            disabled={selectedVariant.stock <= 0 || status === 'loading'}
+            className={`
+              w-full py-4 font-heading text-lg tracking-wider
+              transition-all duration-300 flex items-center justify-center gap-2
+              ${status === 'success' 
+                ? 'bg-emerald-500 text-white' 
+                : status === 'error'
+                ? 'bg-accent text-accent-foreground'
+                : 'bg-primary text-primary-foreground hover:shadow-[0_0_20px_rgba(204,255,0,0.4)]'
+              }
+              disabled:opacity-50 disabled:cursor-not-allowed
+            `}
+          >
+            {status === 'loading' && (
+              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+            )}
 
-        {/* Stock warning */}
-        {selectedVariant && selectedVariant.stock > 0 && selectedVariant.stock <= 5 && (
-          <p className="mt-3 text-sm text-yellow-400">
-            ⚡ {selectedVariant.stock} unidades disponibles
-          </p>
+            {status === 'success' && (
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+
+            {status === 'error' && (
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            )}
+
+            <span>
+              {selectedVariant.stock <= 0
+                ? 'AGOTADO'
+                : status === 'loading'
+                ? 'AÑADIENDO...'
+                : status === 'success'
+                ? '¡AÑADIDO!'
+                : status === 'error'
+                ? 'ERROR'
+                : `AÑADIR AL CARRITO - ${formatPrice(price)}`}
+            </span>
+          </button>
+        ) : (
+          <div className="py-4 text-center text-muted-foreground border border-dashed border-border rounded-lg">
+            Selecciona una talla para añadir al carrito
+          </div>
         )}
       </div>
 
-      {/* Add to Cart Button */}
-      {selectedVariant ? (
-        <button
-          onClick={handleAddToCart}
-          disabled={selectedVariant.stock <= 0 || status === 'loading'}
-          className={`
-            w-full py-4 font-heading text-lg tracking-wider
-            transition-all duration-300 flex items-center justify-center gap-2
-            ${status === 'success' 
-              ? 'bg-emerald-500 text-white' 
-              : status === 'error'
-              ? 'bg-accent text-accent-foreground'
-              : 'bg-primary text-primary-foreground hover:shadow-[0_0_20px_rgba(204,255,0,0.4)]'
-            }
-            disabled:opacity-50 disabled:cursor-not-allowed
-          `}
-        >
-          {status === 'loading' && (
-            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-          )}
+      {/* Mobile Sticky Add-to-Cart Bar */}
+      <div 
+        className={`
+          fixed bottom-0 left-0 right-0 z-50 md:hidden
+          bg-card/95 backdrop-blur-md border-t border-border
+          px-4 py-3 transform transition-transform duration-300 ease-out
+          ${showStickyBar ? 'translate-y-0' : 'translate-y-full'}
+        `}
+        style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+      >
+        <div className="flex items-center gap-3">
+          {/* Product Thumbnail */}
+          <img 
+            src={imageUrl} 
+            alt={productName}
+            className="w-12 h-12 rounded-lg object-cover flex-shrink-0 border border-border"
+          />
+          
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-sm truncate">{productName}</p>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-primary font-bold">{formatPrice(price)}</span>
+              {selectedVariant && (
+                <span className="text-muted-foreground">
+                  Talla: <span className="text-foreground">{selectedVariant.size}</span>
+                </span>
+              )}
+            </div>
+          </div>
 
-          {status === 'success' && (
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+          {/* Action Button */}
+          {selectedVariant ? (
+            <button
+              onClick={handleAddToCart}
+              disabled={selectedVariant.stock <= 0 || status === 'loading'}
+              className={`
+                px-4 py-2.5 rounded-lg font-heading text-sm tracking-wider flex-shrink-0
+                transition-all duration-300 flex items-center gap-2
+                ${status === 'success' 
+                  ? 'bg-emerald-500 text-white' 
+                  : 'bg-primary text-primary-foreground'
+                }
+                disabled:opacity-50
+              `}
+            >
+              {status === 'loading' && (
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+              )}
+              {status === 'success' ? (
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : status === 'idle' && (
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+              )}
+              <span>{status === 'success' ? '¡LISTO!' : 'AÑADIR'}</span>
+            </button>
+          ) : (
+            <button
+              onClick={scrollToSizeSelector}
+              className="px-4 py-2.5 rounded-lg font-heading text-sm tracking-wider flex-shrink-0 bg-primary/20 text-primary border border-primary/30"
+            >
+              ELIGE TALLA
+            </button>
           )}
-
-          {status === 'error' && (
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          )}
-
-          <span>
-            {selectedVariant.stock <= 0
-              ? 'AGOTADO'
-              : status === 'loading'
-              ? 'AÑADIENDO...'
-              : status === 'success'
-              ? '¡AÑADIDO!'
-              : status === 'error'
-              ? 'ERROR'
-              : `AÑADIR AL CARRITO - ${formatPrice(price)}`}
-          </span>
-        </button>
-      ) : (
-        <div className="py-4 text-center text-muted-foreground border border-dashed border-border rounded-lg">
-          Selecciona una talla para añadir al carrito
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }
