@@ -10,7 +10,7 @@ if (!user) {
 }
 
 // Fetch orders for this user's email
-const { data: orders, error } = await supabase
+const { data: orders } = await supabase
   .from("orders")
   .select("*")
   .eq("customer_email", user.email)
@@ -63,12 +63,30 @@ function getStatusBadge(status: string) {
           {orders.map((order) => {
             const badge = getStatusBadge(order.status);
             return (
-              <div class="glass border border-border rounded-2xl p-6 hover:border-primary/30 transition-colors">
+              <a
+                href={`/cuenta/pedidos/${order.id}`}
+                class="block glass border border-border rounded-2xl p-6 hover:border-primary/50 hover:bg-zinc-900/50 transition-all cursor-pointer group"
+              >
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                   <div>
-                    <p class="font-mono text-sm text-muted-foreground">
-                      Pedido #{order.id?.slice(0, 8).toUpperCase()}
-                    </p>
+                    <div class="flex items-center gap-2">
+                      <p class="font-mono text-sm text-muted-foreground group-hover:text-primary transition-colors">
+                        Pedido #{order.id?.slice(0, 8).toUpperCase()}
+                      </p>
+                      <svg
+                        class="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                        />
+                      </svg>
+                    </div>
                     <p class="text-sm text-muted-foreground mt-1">
                       {formatDate(order.created_at)}
                     </p>
@@ -108,10 +126,13 @@ function getStatusBadge(status: string) {
                       {order.status === "delivered" && (
                         <p class="text-primary text-sm">🎉 Entregado</p>
                       )}
+                      <span class="inline-flex items-center gap-1 text-primary text-xs mt-2 group-hover:translate-x-1 transition-transform">
+                        Ver detalles completos →
+                      </span>
                     </div>
                   </div>
                 </div>
-              </div>
+              </a>
             );
           })}
         </div>

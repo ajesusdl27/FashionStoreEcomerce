@@ -1,0 +1,171 @@
+---
+import PublicLayout from "@/layouts/PublicLayout.astro";
+---
+
+<PublicLayout
+  title="Envíos y Devoluciones - FashionStore"
+  description="Información sobre envíos, plazos de entrega y política de devoluciones."
+>
+  <div class="container mx-auto px-4 py-12 max-w-4xl">
+    <div class="text-center mb-16">
+      <h1 class="font-display text-4xl md:text-5xl text-primary mb-4">
+        ENVÍOS Y DEVOLUCIONES
+      </h1>
+      <p class="text-xl text-muted-foreground">
+        Todo lo que necesitas saber sobre la entrega de tu pedido
+      </p>
+    </div>
+
+    <div class="space-y-12">
+      <!-- Shipping Section -->
+      <section>
+        <div class="flex items-center gap-4 mb-6">
+          <div class="p-3 bg-primary/10 rounded-xl text-primary">
+            <svg
+              class="w-8 h-8"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
+              ></path>
+            </svg>
+          </div>
+          <h2 class="font-heading text-3xl">Política de Envíos</h2>
+        </div>
+
+        <div class="glass border border-border rounded-2xl p-8 space-y-6">
+          <div class="grid md:grid-cols-3 gap-6">
+            <div class="bg-background/50 p-6 rounded-xl border border-border">
+              <h3 class="font-bold text-lg mb-2">Envío Estándar</h3>
+              <p class="text-2xl font-display text-primary mb-1">4,99 €</p>
+              <p class="text-sm text-muted-foreground">
+                Gratis en pedidos +50€
+              </p>
+              <p class="mt-4 text-sm font-medium">
+                Entrega en 3-5 días laborables
+              </p>
+            </div>
+            <div class="bg-background/50 p-6 rounded-xl border border-border">
+              <h3 class="font-bold text-lg mb-2">Envío Express</h3>
+              <p class="text-2xl font-display text-primary mb-1">9,99 €</p>
+              <p class="text-sm text-muted-foreground">
+                Para los que no pueden esperar
+              </p>
+              <p class="mt-4 text-sm font-medium">Entrega en 24-48 horas</p>
+            </div>
+            <div class="bg-background/50 p-6 rounded-xl border border-border">
+              <h3 class="font-bold text-lg mb-2">Internacional</h3>
+              <p class="text-2xl font-display text-primary mb-1">14,99 €</p>
+              <p class="text-sm text-muted-foreground">
+                Europa y zonas seleccionadas
+              </p>
+              <p class="mt-4 text-sm font-medium">
+                Entrega en 5-10 días laborables
+              </p>
+            </div>
+          </div>
+
+          <div class="prose prose-invert max-w-none text-muted-foreground">
+            <p>
+              Los pedidos realizados antes de las 14:00 (hora peninsular) se
+              preparan y envían el mismo día laborable. Recibirás un email con
+              el número de seguimiento en cuanto tu paquete salga de nuestros
+              almacenes.
+            </p>
+            <p>
+              Realizamos envíos a toda España (Península y Baleares). Por el
+              momento no realizamos envíos a Canarias, Ceuta y Melilla.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Returns Section -->
+      <section>
+        <div class="flex items-center gap-4 mb-6">
+          <div class="p-3 bg-primary/10 rounded-xl text-primary">
+            <svg
+              class="w-8 h-8"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m9 14V5a2 2 0 00-2-2H6a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z"
+              ></path>
+            </svg>
+          </div>
+          <h2 class="font-heading text-3xl">Devoluciones y Cambios</h2>
+        </div>
+
+        <div class="glass border border-border rounded-2xl p-8 space-y-6">
+          <div
+            class="bg-primary/5 border border-primary/20 rounded-xl p-6 flex flex-col md:flex-row items-center gap-6"
+          >
+            <div class="text-center md:text-left flex-1">
+              <h3 class="font-bold text-xl text-primary mb-2">
+                Garantía de Satisfacción
+              </h3>
+              <p class="text-muted-foreground">
+                Tienes 30 días naturales desde la recepción de tu pedido para
+                realizar cualquier cambio o devolución de forma totalmente
+                gratuita.
+              </p>
+            </div>
+            <button
+              class="bg-primary text-background font-bold px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors whitespace-nowrap"
+            >
+              Iniciar Devolución
+            </button>
+          </div>
+
+          <div class="space-y-4">
+            <h3 class="font-bold text-lg">¿Cómo realizar una devolución?</h3>
+            <ol
+              class="space-y-4 list-decimal list-inside text-muted-foreground"
+            >
+              <li class="pl-2">
+                <span class="font-medium text-foreground"
+                  >Solicita la devolución:</span
+                > Entra en "Mi Cuenta", selecciona el pedido y los artículos que quieres
+                devolver.
+              </li>
+              <li class="pl-2">
+                <span class="font-medium text-foreground"
+                  >Prepara el paquete:</span
+                > Guarda los artículos en su embalaje original junto con el albarán
+                de entrega.
+              </li>
+              <li class="pl-2">
+                <span class="font-medium text-foreground">Entrégalo:</span> Lleva
+                el paquete al punto de recogida más cercano o espera a que pasen a
+                recogerlo (según la opción elegida).
+              </li>
+              <li class="pl-2">
+                <span class="font-medium text-foreground">Reembolso:</span> Una vez
+                recibamos y revisemos los artículos, te devolveremos el dinero en
+                el mismo método de pago en un plazo de 5-7 días.
+              </li>
+            </ol>
+          </div>
+
+          <div
+            class="text-sm text-yellow-500/80 bg-yellow-500/10 p-4 rounded-lg border border-yellow-500/20"
+          >
+            <strong>Importante:</strong> Los artículos deben estar en perfecto estado,
+            con sus etiquetas originales y sin usar. La ropa interior no admite devolución
+            por motivos de higiene.
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</PublicLayout>

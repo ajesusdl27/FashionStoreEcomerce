@@ -1,0 +1,105 @@
+---
+import PublicLayout from "@/layouts/PublicLayout.astro";
+
+const lastUpdate = new Date().toLocaleDateString("es-ES", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+});
+---
+
+<PublicLayout
+  title="Términos y Condiciones - FashionStore"
+  description="Condiciones generales de compra y uso del sitio web."
+>
+  <div class="container mx-auto px-4 py-12 max-w-4xl">
+    <div class="mb-12">
+      <h1 class="font-display text-4xl text-primary mb-4">
+        TÉRMINOS Y CONDICIONES
+      </h1>
+      <p class="text-muted-foreground">Última actualización: {lastUpdate}</p>
+    </div>
+
+    <div
+      class="glass border border-border rounded-2xl p-8 md:p-12 space-y-8 text-muted-foreground leading-relaxed"
+    >
+      <section>
+        <h2 class="font-heading text-2xl text-foreground mb-4">
+          1. Introducción
+        </h2>
+        <p>
+          Bienvenido a FashionStore. Estos términos y condiciones rigen el uso
+          de nuestro sitio web y la compra de productos en el mismo. Al acceder
+          y usar este sitio, aceptas cumplir con estos términos en su totalidad.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="font-heading text-2xl text-foreground mb-4">
+          2. Pedidos y Contrato
+        </h2>
+        <p>
+          Al realizar un pedido, garantizas que eres mayor de 18 años y tienes
+          capacidad legal para celebrar contratos.
+        </p>
+        <p class="mt-4">
+          Tras realizar un pedido, recibirás un email de confirmación. Esto no
+          significa que el pedido haya sido aceptado. Todos los pedidos están
+          sujetos a aceptación por nuestra parte, y te confirmaremos tal
+          aceptación enviándote un email de confirmación de envío.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="font-heading text-2xl text-foreground mb-4">
+          3. Precios y Pagos
+        </h2>
+        <p>
+          Los precios incluyen el IVA aplicable en España, pero excluyen los
+          gastos de envío, que se añadirán al importe total.
+        </p>
+        <p class="mt-4">
+          Nos reservamos el derecho de cambiar los precios en cualquier momento.
+          Aceptamos pagos mediante tarjeta de crédito/débito y otros métodos
+          indicados en el proceso de compra.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="font-heading text-2xl text-foreground mb-4">
+          4. Disponibilidad de Productos
+        </h2>
+        <p>
+          Todos los pedidos están sujetos a la disponibilidad de los productos.
+          Si se producen dificultades en cuanto al suministro o si no quedan
+          artículos en stock, te reembolsaremos cualquier cantidad que pudieras
+          haber abonado.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="font-heading text-2xl text-foreground mb-4">
+          5. Propiedad Intelectual
+        </h2>
+        <p>
+          Todo el contenido de este sitio web (imágenes, textos, diseños, logos)
+          es propiedad de FashionStore o sus licenciantes y está protegido por
+          las leyes de propiedad intelectual. No está permitido su uso sin
+          nuestro consentimiento expreso.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="font-heading text-2xl text-foreground mb-4">
+          6. Legislación Aplicable
+        </h2>
+        <p>
+          El uso de nuestra página web y los contratos de compra de productos a
+          través de dicha página web se regirán por la legislación española.
+          Cualquier controversia será sometida a la jurisdicción no exclusiva de
+          los juzgados y tribunales de la ciudad de Madrid.
+        </p>
+      </section>
+    </div>
+  </div>
+</PublicLayout>
