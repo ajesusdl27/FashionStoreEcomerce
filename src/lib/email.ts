@@ -1,5 +1,5 @@
 import { Resend } from 'resend';
-import { generateOrderConfirmationHTML } from './email-templates';
+import { generateOrderConfirmationHTML, generateOrderShippedHTML } from './email-templates';
 
 const resendApiKey = import.meta.env.RESEND_API_KEY;
 
@@ -54,6 +54,40 @@ export async function sendOrderConfirmation(order: OrderEmailData): Promise<{ su
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
     console.error('Exception sending order confirmation email:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+// Re-export interface for convenience
+export type { OrderShippedData } from './email-templates';
+
+// Envía el email de pedido enviado
+export async function sendOrderShipped(data: import('./email-templates').OrderShippedData): Promise<{ success: boolean; error?: string }> {
+  if (!resend) {
+    console.warn('Resend not configured - skipping order shipped email');
+    return { success: false, error: 'Email service not configured' };
+  }
+
+  try {
+    const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
+    
+    const { data: responseData, error } = await resend.emails.send({
+      from: fromEmail,
+      to: data.customerEmail,
+      subject: `🚚 ¡Tu pedido #${data.orderId.slice(0, 8).toUpperCase()} ha sido enviado! - FashionStore`,
+      html: generateOrderShippedHTML(data),
+    });
+
+    if (error) {
+      console.error('Error sending order shipped email:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`Order shipped email sent successfully. ID: ${responseData?.id}`);
+    return { success: true };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error('Exception sending order shipped email:', errorMessage);
     return { success: false, error: errorMessage };
   }
 }

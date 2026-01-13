@@ -26,6 +26,17 @@ if (error || !order) {
   return Astro.redirect("/admin/pedidos?error=not-found");
 }
 
+// Fetch existing shipment data if order is shipped
+let shipmentData = null;
+if (order.status === "shipped" || order.status === "delivered") {
+  const { data: shipment } = await supabase
+    .from("order_shipments")
+    .select("*")
+    .eq("order_id", id)
+    .single();
+  shipmentData = shipment;
+}
+
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat("es-ES", {
     style: "currency",
@@ -76,6 +87,8 @@ const statusConfig: Record<
 
 const statuses = ["pending", "paid", "shipped", "delivered", "cancelled"];
 const currentStatus = statusConfig[order.status] || statusConfig.pending;
+const isAlreadyShipped =
+  order.status === "shipped" || order.status === "delivered";
 ---
 
 <AdminLayout title={`Pedido #${order.id.slice(0, 8)}`}>
@@ -220,6 +233,7 @@ const currentStatus = statusConfig[order.status] || statusConfig.pending;
             id="status-select"
             class="admin-select w-full mb-3"
             data-order-id={order.id}
+            data-already-shipped={isAlreadyShipped ? "true" : "false"}
           >
             {
               statuses.map((status) => (
@@ -229,8 +243,129 @@ const currentStatus = statusConfig[order.status] || statusConfig.pending;
               ))
             }
           </select>
+
+          {/* Show existing shipment info if already shipped */}
+          {
+            isAlreadyShipped && shipmentData && (
+              <div class="mb-4 p-4 bg-blue-500/10 rounded-lg border border-blue-500/30">
+                <h3 class="text-sm font-semibold text-blue-400 flex items-center gap-2 mb-3">
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  Datos de Envío
+                </h3>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between">
+                    <span class="text-zinc-400">Transportista</span>
+                    <span class="text-foreground font-medium">
+                      {shipmentData.carrier}
+                    </span>
+                  </div>
+                  {shipmentData.tracking_number && (
+                    <div class="flex justify-between">
+                      <span class="text-zinc-400">Nº Seguimiento</span>
+                      <span class="text-foreground font-mono text-xs">
+                        {shipmentData.tracking_number}
+                      </span>
+                    </div>
+                  )}
+                  {shipmentData.tracking_url && (
+                    <a
+                      href={shipmentData.tracking_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="block mt-3 text-center py-2 px-4 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors"
+                    >
+                      📦 Ver seguimiento
+                    </a>
+                  )}
+                  <p class="text-xs text-zinc-500 mt-2">
+                    Enviado: {formatDate(shipmentData.shipped_at)}
+                  </p>
+                </div>
+              </div>
+            )
+          }
+
+          {/* Tracking Fields - only for NEW shipments */}
+          <div
+            id="tracking-fields"
+            class="hidden space-y-3 mb-4 p-4 bg-zinc-800/50 rounded-lg border border-zinc-700"
+          >
+            <h3
+              class="text-sm font-semibold text-blue-400 flex items-center gap-2"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"
+                ></path>
+              </svg>
+              Datos de Envío
+            </h3>
+            <div>
+              <label class="block text-sm text-zinc-400 mb-1"
+                >Transportista *</label
+              >
+              <select id="carrier-select" class="admin-select w-full">
+                <option value="">Seleccionar...</option>
+                <option value="SEUR">SEUR</option>
+                <option value="MRW">MRW</option>
+                <option value="Correos">Correos</option>
+                <option value="Correos Express">Correos Express</option>
+                <option value="GLS">GLS</option>
+                <option value="DHL">DHL</option>
+                <option value="UPS">UPS</option>
+                <option value="FedEx">FedEx</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm text-zinc-400 mb-1"
+                >Número de seguimiento</label
+              >
+              <input
+                type="text"
+                id="tracking-number"
+                class="admin-input w-full"
+                placeholder="Ej: 1Z999AA10123456784"
+              />
+            </div>
+            <div>
+              <label class="block text-sm text-zinc-400 mb-1"
+                >URL de seguimiento</label
+              >
+              <input
+                type="url"
+                id="tracking-url"
+                class="admin-input w-full"
+                placeholder="https://..."
+              />
+              <p class="text-xs text-zinc-500 mt-1">
+                Enlace directo al seguimiento del paquete
+              </p>
+            </div>
+          </div>
+
           <button id="update-status" class="admin-btn-primary w-full">
-            Actualizar Estado
+            <span id="btn-text">Actualizar Estado</span>
           </button>
           <div id="status-message" class="hidden mt-3 p-3 rounded-lg text-sm">
           </div>
@@ -276,16 +411,79 @@ const currentStatus = statusConfig[order.status] || statusConfig.pending;
     ) as HTMLSelectElement;
     const updateBtn = document.getElementById("update-status");
     const messageDiv = document.getElementById("status-message");
+    const btnText = document.getElementById("btn-text");
     const orderId = statusSelect?.dataset.orderId;
+    const isAlreadyShipped = statusSelect?.dataset.alreadyShipped === "true";
+
+    // Tracking fields
+    const trackingFields = document.getElementById("tracking-fields");
+    const carrierSelect = document.getElementById(
+      "carrier-select"
+    ) as HTMLSelectElement;
+    const trackingNumber = document.getElementById(
+      "tracking-number"
+    ) as HTMLInputElement;
+    const trackingUrl = document.getElementById(
+      "tracking-url"
+    ) as HTMLInputElement;
+
+    // Show/hide tracking fields based on status
+    // Only show when selecting 'shipped' AND order is NOT already shipped
+    function updateTrackingVisibility() {
+      if (!trackingFields || !btnText) return;
+
+      // If order is already shipped, never show the form (info is shown in read-only section)
+      if (isAlreadyShipped) {
+        trackingFields.classList.add("hidden");
+        btnText.textContent = "Actualizar Estado";
+        return;
+      }
+
+      // For orders not yet shipped, show form when selecting 'shipped'
+      if (statusSelect.value === "shipped") {
+        trackingFields.classList.remove("hidden");
+        btnText.textContent = "📦 Marcar como Enviado";
+      } else {
+        trackingFields.classList.add("hidden");
+        btnText.textContent = "Actualizar Estado";
+      }
+    }
+
+    // Initialize visibility
+    updateTrackingVisibility();
+    statusSelect?.addEventListener("change", updateTrackingVisibility);
 
     updateBtn?.addEventListener("click", async () => {
       const newStatus = statusSelect.value;
+
+      // Validate carrier if shipping
+      if (newStatus === "shipped" && !carrierSelect?.value) {
+        if (messageDiv) {
+          messageDiv.className =
+            "mt-3 p-3 rounded-lg text-sm bg-yellow-500/20 text-yellow-400";
+          messageDiv.textContent = "⚠️ Debes seleccionar un transportista";
+          messageDiv.classList.remove("hidden");
+        }
+        return;
+      }
+
+      // Build request body
+      const requestBody: any = { id: orderId, status: newStatus };
+
+      // Include tracking data if shipping
+      if (newStatus === "shipped") {
+        requestBody.tracking = {
+          carrier: carrierSelect?.value || "",
+          trackingNumber: trackingNumber?.value || "",
+          trackingUrl: trackingUrl?.value || "",
+        };
+      }
 
       try {
         const response = await fetch("/api/admin/pedidos", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: orderId, status: newStatus }),
+          body: JSON.stringify(requestBody),
         });
 
         const result = await response.json();
@@ -297,13 +495,16 @@ const currentStatus = statusConfig[order.status] || statusConfig.pending;
         if (messageDiv) {
           messageDiv.className =
             "mt-3 p-3 rounded-lg text-sm bg-green-500/20 text-green-400";
-          messageDiv.textContent = "✅ Estado actualizado";
+          messageDiv.textContent =
+            newStatus === "shipped"
+              ? "✅ Pedido marcado como enviado y email enviado al cliente"
+              : "✅ Estado actualizado";
           messageDiv.classList.remove("hidden");
         }
 
         setTimeout(() => {
           window.location.reload();
-        }, 1000);
+        }, 1500);
       } catch (error: any) {
         if (messageDiv) {
           messageDiv.className =
