@@ -1,0 +1,116 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { supabase } from "@/lib/supabase";
+
+// Fetch all subscribers
+const { data: subscribers } = await supabase
+  .from("newsletter_subscribers")
+  .select("*")
+  .order("created_at", { ascending: false });
+
+const formatDate = (date: string) => {
+  return new Date(date).toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const activeCount = subscribers?.filter((s) => s.is_active).length || 0;
+const inactiveCount = subscribers?.filter((s) => !s.is_active).length || 0;
+---
+
+<AdminLayout title="Suscriptores - Newsletter">
+  <div class="max-w-4xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <a
+          href="/admin/newsletter"
+          class="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 19l-7-7 7-7"></path>
+          </svg>
+        </a>
+        <div>
+          <h1 class="text-2xl font-bold text-foreground">Suscriptores</h1>
+          <p class="text-zinc-500">
+            {activeCount} activos · {inactiveCount} inactivos
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subscribers List -->
+    <div class="admin-card p-0">
+      {
+        !subscribers || subscribers.length === 0 ? (
+          <div class="p-8 text-center text-zinc-500">
+            <p>No hay suscriptores todavía.</p>
+          </div>
+        ) : (
+          <div class="divide-y divide-zinc-800">
+            {subscribers.map((subscriber) => (
+              <div class="p-4 flex items-center justify-between hover:bg-zinc-800/30 transition-colors">
+                <div class="flex items-center gap-3">
+                  <div
+                    class={`w-2 h-2 rounded-full ${subscriber.is_active ? "bg-green-500" : "bg-zinc-500"}`}
+                  />
+                  <span class="text-foreground">{subscriber.email}</span>
+                </div>
+                <div class="flex items-center gap-4 text-sm">
+                  <span class="text-zinc-500">
+                    {formatDate(subscriber.created_at)}
+                  </span>
+                  <button
+                    class="toggle-status text-zinc-400 hover:text-foreground transition-colors"
+                    data-id={subscriber.id}
+                    data-active={subscriber.is_active ? "true" : "false"}
+                  >
+                    {subscriber.is_active ? "Desactivar" : "Activar"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      }
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll(".toggle-status").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = (btn as HTMLElement).dataset.id;
+        const isActive = (btn as HTMLElement).dataset.active === "true";
+
+        try {
+          const response = await fetch(
+            "/api/admin/newsletter/toggle-subscriber",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id, is_active: !isActive }),
+            }
+          );
+
+          if (response.ok) {
+            window.location.reload();
+          }
+        } catch (error) {
+          console.error("Error toggling subscriber:", error);
+        }
+      });
+    });
+  </script>
+</AdminLayout>

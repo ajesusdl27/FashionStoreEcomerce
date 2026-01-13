@@ -1,0 +1,152 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+---
+
+<AdminLayout title="Nueva Campaña - Newsletter">
+  <div class="max-w-3xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex items-center gap-4">
+      <a
+        href="/admin/newsletter"
+        class="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+      >
+        <svg
+          class="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M15 19l-7-7 7-7"></path>
+        </svg>
+      </a>
+      <div>
+        <h1 class="text-2xl font-bold text-foreground">Nueva Campaña</h1>
+        <p class="text-zinc-500">Crea un nuevo email para tus suscriptores</p>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <form id="campaign-form" class="space-y-6">
+      <div class="admin-card space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-zinc-300 mb-2"
+            >Asunto *</label
+          >
+          <input
+            type="text"
+            id="subject"
+            name="subject"
+            class="admin-input w-full"
+            placeholder="¡Novedades de esta semana!"
+            required
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-zinc-300 mb-2"
+            >Contenido *</label
+          >
+          <textarea
+            id="content"
+            name="content"
+            rows="15"
+            class="admin-input w-full font-mono text-sm"
+            placeholder="Escribe el contenido de tu email aquí...
+
+Puedes usar HTML básico como:
+<h1>Título</h1>
+<p>Párrafo</p>
+<a href='https://...'>Enlace</a>
+<img src='https://...' alt='Imagen' />"
+            required></textarea>
+          <p class="text-xs text-zinc-500 mt-2">
+            Puedes usar HTML para formatear el contenido.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex gap-4">
+        <button
+          type="button"
+          id="save-draft"
+          class="flex-1 py-3 px-4 bg-zinc-700 text-foreground rounded-lg font-medium hover:bg-zinc-600 transition-colors"
+        >
+          💾 Guardar Borrador
+        </button>
+        <button
+          type="button"
+          id="save-and-send"
+          class="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+        >
+          📤 Guardar y Enviar
+        </button>
+      </div>
+
+      <div id="form-message" class="hidden p-4 rounded-lg text-sm"></div>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById("campaign-form") as HTMLFormElement;
+    const subjectInput = document.getElementById("subject") as HTMLInputElement;
+    const contentInput = document.getElementById(
+      "content"
+    ) as HTMLTextAreaElement;
+    const saveDraftBtn = document.getElementById("save-draft");
+    const saveAndSendBtn = document.getElementById("save-and-send");
+    const messageDiv = document.getElementById("form-message");
+
+    async function saveCampaign(andSend: boolean) {
+      const subject = subjectInput.value.trim();
+      const content = contentInput.value.trim();
+
+      if (!subject || !content) {
+        showMessage("Por favor, completa todos los campos", "error");
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/admin/newsletter/campaigns", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subject, content }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || "Error al guardar");
+        }
+
+        if (andSend) {
+          // Redirect to send page
+          window.location.href = `/admin/newsletter/send/${result.id}`;
+        } else {
+          showMessage("Borrador guardado correctamente", "success");
+          setTimeout(() => {
+            window.location.href = "/admin/newsletter";
+          }, 1000);
+        }
+      } catch (error: any) {
+        showMessage(error.message, "error");
+      }
+    }
+
+    function showMessage(text: string, type: "success" | "error") {
+      if (!messageDiv) return;
+      messageDiv.textContent = text;
+      messageDiv.className = `p-4 rounded-lg text-sm ${
+        type === "success"
+          ? "bg-green-500/20 text-green-400"
+          : "bg-red-500/20 text-red-400"
+      }`;
+    }
+
+    saveDraftBtn?.addEventListener("click", () => saveCampaign(false));
+    saveAndSendBtn?.addEventListener("click", () => saveCampaign(true));
+  </script>
+</AdminLayout>

@@ -1,0 +1,134 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { supabase } from "@/lib/supabase";
+
+// Fetch campaigns and subscriber count
+const { data: campaigns } = await supabase
+  .from("newsletter_campaigns")
+  .select("*")
+  .order("created_at", { ascending: false });
+
+const { count: subscriberCount } = await supabase
+  .from("newsletter_subscribers")
+  .select("*", { count: "exact", head: true })
+  .eq("is_active", true);
+
+const formatDate = (date: string) => {
+  return new Date(date).toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+---
+
+<AdminLayout title="Newsletter">
+  <div class="max-w-6xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-foreground">Newsletter</h1>
+        <p class="text-zinc-500">Gestiona tus campañas y suscriptores</p>
+      </div>
+      <a href="/admin/newsletter/new" class="admin-btn-primary">
+        + Nueva Campaña
+      </a>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="admin-card">
+        <p class="text-sm text-zinc-500">Suscriptores Activos</p>
+        <p class="text-3xl font-bold text-primary">{subscriberCount || 0}</p>
+      </div>
+      <div class="admin-card">
+        <p class="text-sm text-zinc-500">Campañas Enviadas</p>
+        <p class="text-3xl font-bold text-foreground">
+          {campaigns?.filter((c) => c.status === "sent").length || 0}
+        </p>
+      </div>
+      <div class="admin-card">
+        <p class="text-sm text-zinc-500">Borradores</p>
+        <p class="text-3xl font-bold text-foreground">
+          {campaigns?.filter((c) => c.status === "draft").length || 0}
+        </p>
+      </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="flex gap-4">
+      <a
+        href="/admin/newsletter/subscribers"
+        class="text-sm text-primary hover:underline"
+      >
+        Ver todos los suscriptores →
+      </a>
+    </div>
+
+    <!-- Campaigns List -->
+    <div class="admin-card p-0">
+      <div class="p-5 border-b border-zinc-800">
+        <h2 class="font-semibold text-lg">Campañas</h2>
+      </div>
+
+      {
+        !campaigns || campaigns.length === 0 ? (
+          <div class="p-8 text-center text-zinc-500">
+            <p>No hay campañas todavía.</p>
+            <a
+              href="/admin/newsletter/new"
+              class="text-primary hover:underline mt-2 inline-block"
+            >
+              Crear tu primera campaña
+            </a>
+          </div>
+        ) : (
+          <div class="divide-y divide-zinc-800">
+            {campaigns.map((campaign) => (
+              <div class="p-5 flex items-center justify-between hover:bg-zinc-800/30 transition-colors">
+                <div class="flex-1">
+                  <h3 class="font-medium text-foreground">
+                    {campaign.subject}
+                  </h3>
+                  <p class="text-sm text-zinc-500">
+                    {formatDate(campaign.created_at)}
+                    {campaign.status === "sent" && campaign.sent_count && (
+                      <span class="ml-2">
+                        · Enviado a {campaign.sent_count} suscriptores
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <div class="flex items-center gap-4">
+                  <span
+                    class={`px-3 py-1 rounded-full text-xs font-medium ${
+                      campaign.status === "sent"
+                        ? "bg-green-500/20 text-green-400"
+                        : campaign.status === "sending"
+                          ? "bg-yellow-500/20 text-yellow-400"
+                          : "bg-zinc-700 text-zinc-300"
+                    }`}
+                  >
+                    {campaign.status === "sent"
+                      ? "Enviada"
+                      : campaign.status === "sending"
+                        ? "Enviando..."
+                        : "Borrador"}
+                  </span>
+                  {campaign.status === "draft" && (
+                    <a
+                      href={`/admin/newsletter/send/${campaign.id}`}
+                      class="text-sm text-primary hover:underline"
+                    >
+                      Enviar
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      }
+    </div>
+  </div>
+</AdminLayout>

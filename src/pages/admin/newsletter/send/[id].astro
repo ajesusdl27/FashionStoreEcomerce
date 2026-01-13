@@ -1,0 +1,181 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { supabase } from "@/lib/supabase";
+
+const { id } = Astro.params;
+
+// Fetch campaign
+const { data: campaign, error } = await supabase
+  .from("newsletter_campaigns")
+  .select("*")
+  .eq("id", id)
+  .single();
+
+if (error || !campaign) {
+  return Astro.redirect("/admin/newsletter?error=not-found");
+}
+
+// Get subscriber count
+const { count: subscriberCount } = await supabase
+  .from("newsletter_subscribers")
+  .select("*", { count: "exact", head: true })
+  .eq("is_active", true);
+---
+
+<AdminLayout title={`Enviar: ${campaign.subject}`}>
+  <div class="max-w-2xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="text-center">
+      <h1 class="text-2xl font-bold text-foreground">Enviar Campaña</h1>
+      <p class="text-zinc-500 mt-2">"{campaign.subject}"</p>
+    </div>
+
+    <!-- Info Card -->
+    <div class="admin-card text-center">
+      <p class="text-sm text-zinc-400 mb-2">Se enviará a</p>
+      <p class="text-4xl font-bold text-primary">{subscriberCount || 0}</p>
+      <p class="text-sm text-zinc-400 mt-1">suscriptores activos</p>
+    </div>
+
+    <!-- Warning -->
+    <div class="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+      <p class="text-sm text-yellow-400">
+        ⚠️ <strong>Importante:</strong> El proceso de envío puede tardar varios minutos
+        dependiendo del número de suscriptores.
+        <strong>No cierres esta pestaña</strong> hasta que finalice.
+      </p>
+    </div>
+
+    <!-- Progress Section -->
+    <div id="progress-section" class="hidden admin-card">
+      <div class="flex justify-between text-sm mb-2">
+        <span class="text-zinc-400">Progreso</span>
+        <span id="progress-text" class="text-foreground"
+          >0 / {subscriberCount}</span
+        >
+      </div>
+      <div class="w-full h-3 bg-zinc-800 rounded-full overflow-hidden">
+        <div
+          id="progress-bar"
+          class="h-full bg-gradient-to-r from-primary to-lime-400 transition-all duration-300"
+          style="width: 0%"
+        >
+        </div>
+      </div>
+      <p id="status-text" class="text-sm text-zinc-500 mt-3 text-center">
+        Preparando envío...
+      </p>
+    </div>
+
+    <!-- Result Section -->
+    <div id="result-section" class="hidden admin-card text-center">
+      <div class="text-5xl mb-4">✅</div>
+      <h2 class="text-xl font-bold text-foreground">¡Campaña enviada!</h2>
+      <p id="result-text" class="text-zinc-400 mt-2"></p>
+      <a
+        href="/admin/newsletter"
+        class="inline-block mt-6 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+      >
+        Volver al dashboard
+      </a>
+    </div>
+
+    <!-- Action Buttons -->
+    <div id="action-buttons" class="flex gap-4">
+      <a
+        href="/admin/newsletter"
+        class="flex-1 py-3 px-4 bg-zinc-700 text-foreground rounded-lg font-medium text-center hover:bg-zinc-600 transition-colors"
+      >
+        Cancelar
+      </a>
+      <button
+        id="start-send"
+        class="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+        data-campaign-id={campaign.id}
+        data-total={subscriberCount || 0}
+      >
+        🚀 Comenzar Envío
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const startBtn = document.getElementById("start-send") as HTMLButtonElement;
+    const actionButtons = document.getElementById("action-buttons");
+    const progressSection = document.getElementById("progress-section");
+    const resultSection = document.getElementById("result-section");
+    const progressBar = document.getElementById("progress-bar");
+    const progressText = document.getElementById("progress-text");
+    const statusText = document.getElementById("status-text");
+    const resultText = document.getElementById("result-text");
+
+    const campaignId = startBtn?.dataset.campaignId;
+    const total = parseInt(startBtn?.dataset.total || "0", 10);
+    const CHUNK_SIZE = 5; // Send 5 emails per request (5 seconds per chunk)
+
+    startBtn?.addEventListener("click", async () => {
+      if (total === 0) {
+        alert("No hay suscriptores activos");
+        return;
+      }
+
+      // Hide buttons, show progress
+      actionButtons?.classList.add("hidden");
+      progressSection?.classList.remove("hidden");
+
+      let offset = 0;
+      let totalSent = 0;
+
+      while (true) {
+        if (statusText) {
+          statusText.textContent = `Enviando emails ${offset + 1} - ${Math.min(offset + CHUNK_SIZE, total)}...`;
+        }
+
+        try {
+          const response = await fetch("/api/admin/newsletter/send-chunk", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ campaignId, offset, limit: CHUNK_SIZE }),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.error || "Error al enviar");
+          }
+
+          totalSent += result.sent;
+          offset = result.nextOffset || offset + CHUNK_SIZE;
+
+          // Update progress
+          const percentage = Math.min((totalSent / total) * 100, 100);
+          if (progressBar) progressBar.style.width = `${percentage}%`;
+          if (progressText)
+            progressText.textContent = `${totalSent} / ${total}`;
+
+          if (result.done) {
+            // Mark campaign as sent
+            await fetch("/api/admin/newsletter/mark-sent", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ campaignId, totalSent }),
+            });
+
+            // Show result
+            progressSection?.classList.add("hidden");
+            resultSection?.classList.remove("hidden");
+            if (resultText)
+              resultText.textContent = `Se han enviado ${totalSent} emails correctamente.`;
+            break;
+          }
+        } catch (error: any) {
+          if (statusText) {
+            statusText.textContent = `Error: ${error.message}. Reintentando...`;
+          }
+          // Wait and retry
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+        }
+      }
+    });
+  </script>
+</AdminLayout>
