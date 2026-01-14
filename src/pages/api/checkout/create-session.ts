@@ -22,12 +22,13 @@ interface CheckoutRequest {
   shippingAddress: string;
   shippingCity: string;
   shippingPostalCode: string;
+  couponCode?: string;
 }
 
 export const POST: APIRoute = async ({ request, url }) => {
   try {
     const body: CheckoutRequest = await request.json();
-    const { items, customerName, customerEmail, customerPhone, shippingAddress, shippingCity, shippingPostalCode } = body;
+    const { items, customerName, customerEmail, customerPhone, shippingAddress, shippingCity, shippingPostalCode, couponCode } = body;
 
     // Validate required fields
     if (!items?.length || !customerName || !customerEmail || !shippingAddress || !shippingCity || !shippingPostalCode) {
@@ -40,6 +41,36 @@ export const POST: APIRoute = async ({ request, url }) => {
     // Calculate subtotal in cents
     const subtotalCents = items.reduce((sum, item) => sum + Math.round(item.price * 100) * item.quantity, 0);
     const shippingCents = subtotalCents >= FREE_SHIPPING_THRESHOLD * 100 ? 0 : SHIPPING_COST;
+    
+    // Validate coupon if provided
+    let validatedCoupon: { id: string; stripeCouponId: string; calculatedDiscount: number } | null = null;
+    
+    if (couponCode) {
+      const { data: couponResult, error: couponError } = await supabase.rpc('validate_coupon', {
+        p_code: couponCode,
+        p_cart_total: subtotalCents / 100,
+        p_customer_email: customerEmail
+      });
+      
+      const result = Array.isArray(couponResult) ? couponResult[0] : couponResult;
+      
+      if (couponError || !result?.is_valid) {
+        return new Response(JSON.stringify({ 
+          error: result?.error_message || 'Código promocional no válido' 
+        }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      validatedCoupon = {
+        id: result.coupon_id,
+        stripeCouponId: result.stripe_coupon_id,
+        calculatedDiscount: result.calculated_discount
+      };
+    }
+    
+    // Calculate total (discount will be applied by Stripe)
     const totalCents = subtotalCents + shippingCents;
 
     // Reserve stock for each item
@@ -159,10 +190,12 @@ export const POST: APIRoute = async ({ request, url }) => {
         expires_at: expiresAt,
         customer_email: customerEmail,
         metadata: {
-          order_id: orderId
+          order_id: orderId,
+          coupon_id: validatedCoupon?.id || ''
         },
         locale: 'es',
-        billing_address_collection: 'auto'
+        billing_address_collection: 'auto',
+        ...(validatedCoupon && { discounts: [{ coupon: validatedCoupon.stripeCouponId }] })
       });
     } catch (stripeError) {
       // Stripe session creation failed - rollback stock and delete order

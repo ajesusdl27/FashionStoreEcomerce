@@ -1,7 +1,7 @@
-import { s as supabase } from '../../../chunks/supabase_DtlKUSBa.mjs';
+import { s as supabase } from '../../../chunks/supabase_COljrJv9.mjs';
 export { renderers } from '../../../renderers.mjs';
 
-const POST = async ({ request, cookies, redirect }) => {
+const POST = async ({ request, cookies }) => {
   const formData = await request.formData();
   const email = formData.get("email")?.toString();
   const password = formData.get("password")?.toString();

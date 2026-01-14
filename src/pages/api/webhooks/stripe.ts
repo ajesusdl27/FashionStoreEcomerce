@@ -63,6 +63,22 @@ export const POST: APIRoute = async ({ request }) => {
         console.error('Error updating order status:', error);
       } else {
         console.log(`Order ${orderId} marked as paid`);
+
+        // Record coupon usage if present
+        const couponId = session.metadata?.coupon_id;
+        if (couponId) {
+          const { error: couponError } = await supabase.rpc('use_coupon', {
+            p_coupon_id: couponId,
+            p_customer_email: session.customer_details?.email || session.customer_email || '',
+            p_order_id: orderId
+          });
+
+          if (couponError) {
+            console.error('Error recording coupon usage:', couponError);
+          } else {
+            console.log(`Coupon ${couponId} usage recorded for order ${orderId}`);
+          }
+        }
         
         // Send order confirmation email
         try {

@@ -1,5 +1,5 @@
 import { F as FREE_SHIPPING_THRESHOLD, S as SHIPPING_COST, a as STOCK_RESERVATION_MINUTES, s as stripe } from '../../../chunks/stripe_B3_Fgp7U.mjs';
-import { s as supabase } from '../../../chunks/supabase_DtlKUSBa.mjs';
+import { s as supabase } from '../../../chunks/supabase_COljrJv9.mjs';
 export { renderers } from '../../../renderers.mjs';
 
 const POST = async ({ request, url }) => {

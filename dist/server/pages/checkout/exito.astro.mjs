@@ -1,8 +1,8 @@
 import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead, l as renderScript } from '../../chunks/astro/server_DutnL9ib.mjs';
 import 'piccolore';
-import { $ as $$PublicLayout } from '../../chunks/PublicLayout_BliXkQC9.mjs';
+import { $ as $$PublicLayout } from '../../chunks/PublicLayout_BtMQN1yW.mjs';
 import { $ as $$Button } from '../../chunks/Button_CqeZ6wvD.mjs';
-import { s as supabase } from '../../chunks/supabase_DtlKUSBa.mjs';
+import { s as supabase } from '../../chunks/supabase_COljrJv9.mjs';
 import { s as stripe } from '../../chunks/stripe_B3_Fgp7U.mjs';
 import { a as sendOrderConfirmation } from '../../chunks/email_CMNVW2Q8.mjs';
 /* empty css                                    */

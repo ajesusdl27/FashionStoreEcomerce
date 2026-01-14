@@ -1,10 +1,10 @@
 import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead } from '../chunks/astro/server_DutnL9ib.mjs';
 import 'piccolore';
-import { a as $cart, b as $cartSubtotal, $ as $$PublicLayout } from '../chunks/PublicLayout_BliXkQC9.mjs';
+import { a as $cart, b as $cartSubtotal, $ as $$PublicLayout } from '../chunks/PublicLayout_BtMQN1yW.mjs';
 import { jsxs, jsx, Fragment } from 'react/jsx-runtime';
 import { useState, useEffect } from 'react';
 import { useStore } from '@nanostores/react';
-import { c as createAuthenticatedClient } from '../chunks/supabase_DtlKUSBa.mjs';
+import { c as createAuthenticatedClient } from '../chunks/supabase_COljrJv9.mjs';
 /* empty css                                    */
 export { renderers } from '../renderers.mjs';
 

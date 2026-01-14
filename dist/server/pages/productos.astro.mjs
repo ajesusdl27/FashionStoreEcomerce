@@ -1,10 +1,10 @@
 import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead } from '../chunks/astro/server_DutnL9ib.mjs';
 import 'piccolore';
-import { $ as $$PublicLayout } from '../chunks/PublicLayout_BliXkQC9.mjs';
+import { $ as $$PublicLayout } from '../chunks/PublicLayout_BtMQN1yW.mjs';
 import { $ as $$ProductCard } from '../chunks/ProductCard_DbI-Axmj.mjs';
 import { jsxs, jsx, Fragment } from 'react/jsx-runtime';
 import { useState } from 'react';
-import { s as supabase } from '../chunks/supabase_DtlKUSBa.mjs';
+import { s as supabase } from '../chunks/supabase_COljrJv9.mjs';
 export { renderers } from '../renderers.mjs';
 
 function ProductFilters({

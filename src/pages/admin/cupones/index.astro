@@ -1,0 +1,470 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { createAuthenticatedClient } from "@/lib/supabase";
+
+// Get authenticated client for RLS compliance
+const accessToken = Astro.cookies.get("sb-access-token")?.value;
+const refreshToken = Astro.cookies.get("sb-refresh-token")?.value;
+const authClient = createAuthenticatedClient(accessToken, refreshToken);
+
+// Fetch coupons
+const { data: coupons, error } = await authClient
+  .from("coupons")
+  .select("*")
+  .order("created_at", { ascending: false });
+
+const formatDate = (date: string | null) => {
+  if (!date) return "-";
+  return new Date(date).toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const formatDiscount = (type: string, value: number) => {
+  return type === "percentage" ? `${value}%` : `${value}€`;
+};
+---
+
+<AdminLayout title="Cupones">
+  <div class="space-y-6">
+    <!-- Header -->
+    <div
+      class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+    >
+      <div>
+        <h1 class="font-heading text-2xl text-foreground">
+          Códigos Promocionales
+        </h1>
+        <p class="text-sm text-zinc-500 mt-1">
+          Gestiona los cupones de descuento
+        </p>
+      </div>
+      <button id="btn-new-coupon" class="admin-btn admin-btn-primary">
+        <svg
+          class="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 4v16m8-8H4"></path>
+        </svg>
+        Nuevo Cupón
+      </button>
+    </div>
+
+    <!-- Coupons Table -->
+    <div class="admin-card">
+      {
+        coupons && coupons.length > 0 ? (
+          <div class="overflow-x-auto -mx-6">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Descuento</th>
+                  <th>Mín. Compra</th>
+                  <th>Usos</th>
+                  <th>Válido</th>
+                  <th>Estado</th>
+                  <th class="text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {coupons.map((coupon: any) => (
+                  <tr>
+                    <td>
+                      <span class="font-mono font-bold text-primary">
+                        {coupon.code}
+                      </span>
+                    </td>
+                    <td class="font-medium">
+                      {formatDiscount(
+                        coupon.discount_type,
+                        coupon.discount_value
+                      )}
+                    </td>
+                    <td>
+                      {coupon.min_purchase_amount > 0 ? (
+                        `${coupon.min_purchase_amount}€`
+                      ) : (
+                        <span class="text-zinc-500">-</span>
+                      )}
+                    </td>
+                    <td>
+                      <span
+                        class={
+                          coupon.max_uses &&
+                          coupon.current_uses >= coupon.max_uses
+                            ? "text-red-400"
+                            : ""
+                        }
+                      >
+                        {coupon.current_uses}
+                        {coupon.max_uses ? `/${coupon.max_uses}` : ""}
+                      </span>
+                    </td>
+                    <td class="text-sm text-zinc-400">
+                      <div>{formatDate(coupon.start_date)}</div>
+                      <div>→ {formatDate(coupon.end_date)}</div>
+                    </td>
+                    <td>
+                      <button
+                        class="toggle-status-btn"
+                        data-id={coupon.id}
+                        data-active={coupon.is_active}
+                      >
+                        <span
+                          class={`badge ${coupon.is_active ? "badge-success" : "badge-muted"}`}
+                        >
+                          {coupon.is_active ? "Activo" : "Inactivo"}
+                        </span>
+                      </button>
+                    </td>
+                    <td class="text-right">
+                      <button
+                        class="delete-coupon-btn admin-btn-icon text-red-400 hover:bg-red-500/10"
+                        data-id={coupon.id}
+                        title="Eliminar"
+                      >
+                        <svg
+                          class="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div class="text-center py-12 text-zinc-500">
+            <svg
+              class="w-16 h-16 mx-auto mb-4 opacity-50"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+              />
+            </svg>
+            <p class="font-medium">No hay cupones creados</p>
+            <p class="text-sm mt-1">Crea tu primer código promocional</p>
+          </div>
+        )
+      }
+    </div>
+  </div>
+
+  <!-- Create Coupon Modal -->
+  <div
+    id="coupon-modal"
+    class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4"
+  >
+    <div
+      class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+    >
+      <div class="p-6 border-b border-zinc-800">
+        <h2 class="font-heading text-xl">Nuevo Cupón</h2>
+      </div>
+
+      <form id="coupon-form" class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-2">Código *</label>
+          <input
+            type="text"
+            name="code"
+            required
+            placeholder="Ej: VERANO20"
+            class="admin-input w-full uppercase"
+          />
+          <p class="text-xs text-zinc-500 mt-1">
+            El código que los clientes introducirán
+          </p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2"
+              >Tipo de descuento *</label
+            >
+            <select name="discount_type" required class="admin-input w-full">
+              <option value="percentage">Porcentaje (%)</option>
+              <option value="fixed">Cantidad fija (€)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Valor *</label>
+            <input
+              type="number"
+              name="discount_value"
+              required
+              min="0.01"
+              step="0.01"
+              placeholder="10"
+              class="admin-input w-full"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2"
+              >Compra mínima (€)</label
+            >
+            <input
+              type="number"
+              name="min_purchase_amount"
+              min="0"
+              step="0.01"
+              placeholder="0"
+              class="admin-input w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2"
+              >Máx. descuento (€)</label
+            >
+            <input
+              type="number"
+              name="max_discount_amount"
+              min="0"
+              step="0.01"
+              placeholder="Sin límite"
+              class="admin-input w-full"
+            />
+            <p class="text-xs text-zinc-500 mt-1">Solo para % de descuento</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Fecha inicio</label>
+            <input
+              type="datetime-local"
+              name="start_date"
+              class="admin-input w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Fecha fin</label>
+            <input
+              type="datetime-local"
+              name="end_date"
+              class="admin-input w-full"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2"
+              >Máx. usos totales</label
+            >
+            <input
+              type="number"
+              name="max_uses"
+              min="1"
+              placeholder="Ilimitado"
+              class="admin-input w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2"
+              >Máx. por cliente</label
+            >
+            <input
+              type="number"
+              name="max_uses_per_customer"
+              min="1"
+              value="1"
+              class="admin-input w-full"
+            />
+          </div>
+        </div>
+
+        <div
+          id="form-error"
+          class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm"
+        >
+        </div>
+      </form>
+
+      <div class="p-6 border-t border-zinc-800 flex gap-3 justify-end">
+        <button type="button" id="btn-cancel" class="admin-btn">
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          form="coupon-form"
+          id="btn-submit"
+          class="admin-btn admin-btn-primary"
+        >
+          <span id="btn-text">Crear Cupón</span>
+          <svg
+            id="btn-spinner"
+            class="hidden animate-spin w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</AdminLayout>
+
+<script>
+  const modal = document.getElementById("coupon-modal") as HTMLElement;
+  const form = document.getElementById("coupon-form") as HTMLFormElement;
+  const btnNew = document.getElementById("btn-new-coupon");
+  const btnCancel = document.getElementById("btn-cancel");
+  const formError = document.getElementById("form-error") as HTMLElement;
+  const btnSubmit = document.getElementById("btn-submit") as HTMLButtonElement;
+  const btnText = document.getElementById("btn-text") as HTMLElement;
+  const btnSpinner = document.getElementById("btn-spinner") as HTMLElement;
+
+  // Open modal
+  btnNew?.addEventListener("click", () => {
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+    form.reset();
+    formError.classList.add("hidden");
+  });
+
+  // Close modal
+  btnCancel?.addEventListener("click", () => {
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+  });
+
+  modal?.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+  });
+
+  // Submit form
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    btnSubmit.disabled = true;
+    btnText.classList.add("hidden");
+    btnSpinner.classList.remove("hidden");
+    formError.classList.add("hidden");
+
+    const formData = new FormData(form);
+    const data: Record<string, any> = {};
+
+    formData.forEach((value, key) => {
+      if (value !== "") {
+        data[key] = value;
+      }
+    });
+
+    try {
+      const response = await fetch("/api/admin/cupones", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Error al crear el cupón");
+      }
+
+      window.location.reload();
+    } catch (error: any) {
+      formError.textContent = error.message;
+      formError.classList.remove("hidden");
+      btnSubmit.disabled = false;
+      btnText.classList.remove("hidden");
+      btnSpinner.classList.add("hidden");
+    }
+  });
+
+  // Toggle status
+  document.querySelectorAll(".toggle-status-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-id");
+      const isActive = btn.getAttribute("data-active") === "true";
+
+      try {
+        const response = await fetch("/api/admin/cupones", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, is_active: !isActive }),
+        });
+
+        if (response.ok) {
+          window.location.reload();
+        }
+      } catch (error) {
+        console.error("Error toggling status:", error);
+      }
+    });
+  });
+
+  // Delete coupon
+  document.querySelectorAll(".delete-coupon-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-id");
+
+      if (
+        !confirm(
+          "¿Estás seguro de eliminar este cupón? Esta acción no se puede deshacer."
+        )
+      ) {
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/admin/cupones", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id }),
+        });
+
+        if (response.ok) {
+          window.location.reload();
+        }
+      } catch (error) {
+        console.error("Error deleting coupon:", error);
+      }
+    });
+  });
+</script>

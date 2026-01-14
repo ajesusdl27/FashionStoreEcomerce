@@ -1,7 +1,7 @@
 import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead } from '../../chunks/astro/server_DutnL9ib.mjs';
 import 'piccolore';
-import { $ as $$BaseLayout } from '../../chunks/BaseLayout_Dcuu9bgV.mjs';
-import { A as AuthForm } from '../../chunks/AuthForm_C070tbNk.mjs';
+import { $ as $$BaseLayout } from '../../chunks/BaseLayout_ynO9Hn9s.mjs';
+import { A as AuthForm } from '../../chunks/AuthForm_g5xO-x88.mjs';
 /* empty css                                    */
 export { renderers } from '../../renderers.mjs';
 

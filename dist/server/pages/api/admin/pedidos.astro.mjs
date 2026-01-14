@@ -1,4 +1,5 @@
-import { c as createAuthenticatedClient, s as supabase } from '../../../chunks/supabase_DtlKUSBa.mjs';
+import { c as createAuthenticatedClient } from '../../../chunks/supabase_COljrJv9.mjs';
+import { v as validateToken } from '../../../chunks/auth-utils_t8hhucI8.mjs';
 import { s as sendOrderShipped } from '../../../chunks/email_CMNVW2Q8.mjs';
 export { renderers } from '../../../renderers.mjs';
 
@@ -13,7 +14,7 @@ const PUT = async ({ request, cookies }) => {
       });
     }
     const authClient = createAuthenticatedClient(accessToken, refreshToken);
-    const { data: { user } } = await supabase.auth.getUser(accessToken);
+    const user = await validateToken(accessToken);
     if (!user?.user_metadata?.is_admin) {
       return new Response(JSON.stringify({ error: "No autorizado" }), {
         status: 403,

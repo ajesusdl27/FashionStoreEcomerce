@@ -1,6 +1,6 @@
 import { renderers } from './renderers.mjs';
 import { c as createExports, s as serverEntrypointModule } from './chunks/_@astrojs-ssr-adapter_nD5lfEeD.mjs';
-import { manifest } from './manifest_vFMPX0hC.mjs';
+import { manifest } from './manifest_CqfReazi.mjs';
 
 const serverIslandMap = new Map();;
 
@@ -26,32 +26,35 @@ const _page18 = () => import('./pages/api/admin/newsletter/send-chunk.astro.mjs'
 const _page19 = () => import('./pages/api/admin/newsletter/toggle-subscriber.astro.mjs');
 const _page20 = () => import('./pages/api/admin/pedidos.astro.mjs');
 const _page21 = () => import('./pages/api/admin/productos.astro.mjs');
-const _page22 = () => import('./pages/api/auth/login.astro.mjs');
-const _page23 = () => import('./pages/api/auth/logout.astro.mjs');
-const _page24 = () => import('./pages/api/auth/set-session.astro.mjs');
-const _page25 = () => import('./pages/api/checkout/create-session.astro.mjs');
-const _page26 = () => import('./pages/api/customer/profile.astro.mjs');
-const _page27 = () => import('./pages/api/newsletter/subscribe.astro.mjs');
-const _page28 = () => import('./pages/api/upload.astro.mjs');
-const _page29 = () => import('./pages/api/webhooks/stripe.astro.mjs');
-const _page30 = () => import('./pages/carrito.astro.mjs');
-const _page31 = () => import('./pages/categoria/_slug_.astro.mjs');
-const _page32 = () => import('./pages/checkout/cancelado.astro.mjs');
-const _page33 = () => import('./pages/checkout/exito.astro.mjs');
-const _page34 = () => import('./pages/checkout.astro.mjs');
-const _page35 = () => import('./pages/contacto.astro.mjs');
-const _page36 = () => import('./pages/cuenta/login.astro.mjs');
-const _page37 = () => import('./pages/cuenta/pedidos/_id_.astro.mjs');
-const _page38 = () => import('./pages/cuenta/pedidos.astro.mjs');
-const _page39 = () => import('./pages/cuenta/perfil.astro.mjs');
-const _page40 = () => import('./pages/cuenta/registro.astro.mjs');
-const _page41 = () => import('./pages/cuenta.astro.mjs');
-const _page42 = () => import('./pages/envios.astro.mjs');
-const _page43 = () => import('./pages/privacidad.astro.mjs');
-const _page44 = () => import('./pages/productos/_slug_.astro.mjs');
-const _page45 = () => import('./pages/productos.astro.mjs');
-const _page46 = () => import('./pages/terminos.astro.mjs');
-const _page47 = () => import('./pages/index.astro.mjs');
+const _page22 = () => import('./pages/api/auth/get-session.astro.mjs');
+const _page23 = () => import('./pages/api/auth/login.astro.mjs');
+const _page24 = () => import('./pages/api/auth/logout.astro.mjs');
+const _page25 = () => import('./pages/api/auth/set-session.astro.mjs');
+const _page26 = () => import('./pages/api/checkout/create-session.astro.mjs');
+const _page27 = () => import('./pages/api/customer/profile.astro.mjs');
+const _page28 = () => import('./pages/api/newsletter/subscribe.astro.mjs');
+const _page29 = () => import('./pages/api/upload.astro.mjs');
+const _page30 = () => import('./pages/api/webhooks/stripe.astro.mjs');
+const _page31 = () => import('./pages/carrito.astro.mjs');
+const _page32 = () => import('./pages/categoria/_slug_.astro.mjs');
+const _page33 = () => import('./pages/checkout/cancelado.astro.mjs');
+const _page34 = () => import('./pages/checkout/exito.astro.mjs');
+const _page35 = () => import('./pages/checkout.astro.mjs');
+const _page36 = () => import('./pages/contacto.astro.mjs');
+const _page37 = () => import('./pages/cuenta/login.astro.mjs');
+const _page38 = () => import('./pages/cuenta/pedidos/_id_.astro.mjs');
+const _page39 = () => import('./pages/cuenta/pedidos.astro.mjs');
+const _page40 = () => import('./pages/cuenta/perfil.astro.mjs');
+const _page41 = () => import('./pages/cuenta/recuperar-password.astro.mjs');
+const _page42 = () => import('./pages/cuenta/registro.astro.mjs');
+const _page43 = () => import('./pages/cuenta/reset-password.astro.mjs');
+const _page44 = () => import('./pages/cuenta.astro.mjs');
+const _page45 = () => import('./pages/envios.astro.mjs');
+const _page46 = () => import('./pages/privacidad.astro.mjs');
+const _page47 = () => import('./pages/productos/_slug_.astro.mjs');
+const _page48 = () => import('./pages/productos.astro.mjs');
+const _page49 = () => import('./pages/terminos.astro.mjs');
+const _page50 = () => import('./pages/index.astro.mjs');
 const pageMap = new Map([
     ["node_modules/astro/dist/assets/endpoint/node.js", _page0],
     ["src/pages/admin/categorias/index.astro", _page1],
@@ -75,32 +78,35 @@ const pageMap = new Map([
     ["src/pages/api/admin/newsletter/toggle-subscriber.ts", _page19],
     ["src/pages/api/admin/pedidos.ts", _page20],
     ["src/pages/api/admin/productos.ts", _page21],
-    ["src/pages/api/auth/login.ts", _page22],
-    ["src/pages/api/auth/logout.ts", _page23],
-    ["src/pages/api/auth/set-session.ts", _page24],
-    ["src/pages/api/checkout/create-session.ts", _page25],
-    ["src/pages/api/customer/profile.ts", _page26],
-    ["src/pages/api/newsletter/subscribe.ts", _page27],
-    ["src/pages/api/upload.ts", _page28],
-    ["src/pages/api/webhooks/stripe.ts", _page29],
-    ["src/pages/carrito.astro", _page30],
-    ["src/pages/categoria/[slug].astro", _page31],
-    ["src/pages/checkout/cancelado.astro", _page32],
-    ["src/pages/checkout/exito.astro", _page33],
-    ["src/pages/checkout.astro", _page34],
-    ["src/pages/contacto.astro", _page35],
-    ["src/pages/cuenta/login.astro", _page36],
-    ["src/pages/cuenta/pedidos/[id].astro", _page37],
-    ["src/pages/cuenta/pedidos/index.astro", _page38],
-    ["src/pages/cuenta/perfil.astro", _page39],
-    ["src/pages/cuenta/registro.astro", _page40],
-    ["src/pages/cuenta/index.astro", _page41],
-    ["src/pages/envios.astro", _page42],
-    ["src/pages/privacidad.astro", _page43],
-    ["src/pages/productos/[slug].astro", _page44],
-    ["src/pages/productos/index.astro", _page45],
-    ["src/pages/terminos.astro", _page46],
-    ["src/pages/index.astro", _page47]
+    ["src/pages/api/auth/get-session.ts", _page22],
+    ["src/pages/api/auth/login.ts", _page23],
+    ["src/pages/api/auth/logout.ts", _page24],
+    ["src/pages/api/auth/set-session.ts", _page25],
+    ["src/pages/api/checkout/create-session.ts", _page26],
+    ["src/pages/api/customer/profile.ts", _page27],
+    ["src/pages/api/newsletter/subscribe.ts", _page28],
+    ["src/pages/api/upload.ts", _page29],
+    ["src/pages/api/webhooks/stripe.ts", _page30],
+    ["src/pages/carrito.astro", _page31],
+    ["src/pages/categoria/[slug].astro", _page32],
+    ["src/pages/checkout/cancelado.astro", _page33],
+    ["src/pages/checkout/exito.astro", _page34],
+    ["src/pages/checkout.astro", _page35],
+    ["src/pages/contacto.astro", _page36],
+    ["src/pages/cuenta/login.astro", _page37],
+    ["src/pages/cuenta/pedidos/[id].astro", _page38],
+    ["src/pages/cuenta/pedidos/index.astro", _page39],
+    ["src/pages/cuenta/perfil.astro", _page40],
+    ["src/pages/cuenta/recuperar-password.astro", _page41],
+    ["src/pages/cuenta/registro.astro", _page42],
+    ["src/pages/cuenta/reset-password.astro", _page43],
+    ["src/pages/cuenta/index.astro", _page44],
+    ["src/pages/envios.astro", _page45],
+    ["src/pages/privacidad.astro", _page46],
+    ["src/pages/productos/[slug].astro", _page47],
+    ["src/pages/productos/index.astro", _page48],
+    ["src/pages/terminos.astro", _page49],
+    ["src/pages/index.astro", _page50]
 ]);
 
 const _manifest = Object.assign(manifest, {
@@ -114,7 +120,7 @@ const _args = {
     "mode": "standalone",
     "client": "file:///C:/Users/anton/Desktop/Development/VictoriaFPII/Sistema%20de%20Gesti%C3%B3n%20Empresarial/SegundoTrimestre/Proyectos/FashionStore/dist/client/",
     "server": "file:///C:/Users/anton/Desktop/Development/VictoriaFPII/Sistema%20de%20Gesti%C3%B3n%20Empresarial/SegundoTrimestre/Proyectos/FashionStore/dist/server/",
-    "host": false,
+    "host": true,
     "port": 4321,
     "assets": "_astro",
     "experimentalStaticHeaders": false

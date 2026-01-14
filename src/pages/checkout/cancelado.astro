@@ -1,6 +1,65 @@
 ---
 import PublicLayout from "@/layouts/PublicLayout.astro";
 import Button from "@/components/ui/Button.astro";
+import { stripe } from "@/lib/stripe";
+import { supabase } from "@/lib/supabase";
+
+const orderId = Astro.url.searchParams.get("order_id");
+let isProcessed = false;
+
+if (orderId) {
+  try {
+    // 1. Get order details to check status and getting stripe session
+    const { data: order } = await supabase
+      .from("orders")
+      .select("stripe_session_id, status")
+      .eq("id", orderId)
+      .single();
+
+    if (order && order.status === "pending" && order.stripe_session_id) {
+      // 2. Expire Stripe Session to prevent future payment
+      try {
+        await stripe.checkout.sessions.expire(order.stripe_session_id);
+      } catch (stripeError: any) {
+        // Prepare for "resource_missing" if already expired/closed, which is fine
+        if (
+          stripeError?.code !== "resource_missing" &&
+          stripeError?.raw?.code !== "resource_missing"
+        ) {
+          console.log(
+            "Stripe session might already be expired or invalid:",
+            stripeError.message
+          );
+        }
+      }
+
+      // 3. Restore stock using RPC (same as webhook)
+      const { data: orderItems } = await supabase.rpc("get_order_items", {
+        p_order_id: orderId,
+      });
+
+      if (orderItems) {
+        for (const item of orderItems) {
+          await supabase.rpc("restore_stock", {
+            p_variant_id: item.variant_id,
+            p_quantity: item.quantity,
+          });
+        }
+      }
+
+      // 4. Update order status to cancelled
+      await supabase.rpc("update_order_status", {
+        p_stripe_session_id: order.stripe_session_id,
+        p_status: "cancelled",
+      });
+
+      console.log(`Order ${orderId} cancelled via cancelado page`);
+      isProcessed = true;
+    }
+  } catch (error) {
+    console.error("Error processing cancellation:", error);
+  }
+}
 ---
 
 <PublicLayout title="Pago Cancelado - FashionStore">
@@ -26,8 +85,11 @@ import Button from "@/components/ui/Button.astro";
 
       <h1 class="font-display text-4xl md:text-5xl mb-4">Pago cancelado</h1>
       <p class="text-xl text-muted-foreground mb-8">
-        No te preocupes, tu carrito sigue intacto. Puedes volver a intentarlo
-        cuando quieras.
+        {
+          isProcessed
+            ? "Hemos cancelado tu pedido y restaurado el stock. Puedes volver a intentarlo cuando quieras."
+            : "No te preocupes, tu carrito sigue intacto. Puedes volver a intentarlo cuando quieras."
+        }
       </p>
 
       <div class="bg-card border border-border rounded-xl p-6 mb-8">

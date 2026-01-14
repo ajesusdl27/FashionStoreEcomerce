@@ -1,8 +1,8 @@
 import { f as createComponent, k as renderComponent, r as renderTemplate, l as renderScript, n as defineScriptVars, h as addAttribute, m as maybeRenderHead } from '../../../chunks/astro/server_DutnL9ib.mjs';
 import 'piccolore';
-import { $ as $$AdminLayout } from '../../../chunks/AdminLayout_D2ja8uRB.mjs';
+import { $ as $$AdminLayout } from '../../../chunks/AdminLayout_dMhfTFqq.mjs';
 import { I as ImageUploader } from '../../../chunks/ImageUploader_CBXR3Zym.mjs';
-import { s as supabase } from '../../../chunks/supabase_DtlKUSBa.mjs';
+import { s as supabase } from '../../../chunks/supabase_COljrJv9.mjs';
 export { renderers } from '../../../renderers.mjs';
 
 var __freeze = Object.freeze;
