@@ -1,4 +1,4 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 // Get environment variables - these are exposed to the client because they start with PUBLIC_
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL as string;
@@ -16,7 +16,13 @@ export function getSupabase(): SupabaseClient {
     throw new Error('Missing Supabase environment variables');
   }
 
-  supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
+  supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: false,        // Don't save to localStorage - we use httpOnly cookies
+      autoRefreshToken: false,      // Server middleware handles token refresh
+      detectSessionInUrl: true,     // Keep enabled for password recovery flows
+    }
+  });
   return supabaseInstance;
 }
 

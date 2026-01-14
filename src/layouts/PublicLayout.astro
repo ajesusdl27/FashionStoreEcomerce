@@ -5,7 +5,7 @@ import CartSlideOver from "@/components/islands/CartSlideOver";
 import HeaderSearch from "@/components/islands/HeaderSearch";
 import NewsletterForm from "@/components/islands/NewsletterForm";
 import AnnouncementBar from "@/components/islands/AnnouncementBar";
-import UserMenu from "@/components/islands/UserMenu";
+import UserMenuWithAuth from "@/components/islands/UserMenuWithAuth";
 import HeaderNavigation from "@/components/islands/HeaderNavigation";
 
 interface Props {
@@ -65,7 +65,7 @@ const currentPath = Astro.url.pathname + Astro.url.search;
           <HeaderSearch client:idle />
 
           <!-- User Menu (React Island) -->
-          <UserMenu client:load />
+          <UserMenuWithAuth client:load />
 
           <!-- Cart (React Island) -->
           <CartIcon client:load />

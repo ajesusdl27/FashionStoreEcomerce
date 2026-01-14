@@ -6,40 +6,50 @@ export default function ResetPasswordForm() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [sessionChecked, setSessionChecked] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
 
   useEffect(() => {
     let mounted = true;
 
-    // Listen for auth state changes - more reliable than polling getSession
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state:', event, session ? 'has session' : 'no session');
+    // Listen for PASSWORD_RECOVERY event - this fires when user clicks recovery link
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('ResetPasswordForm auth event:', event);
       
       if (!mounted) return;
 
-      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-        if (session) {
-          setSessionChecked(true);
-        } else if (event === 'INITIAL_SESSION') {
-          // No session on initial load
-          setMessage({
-            type: 'error',
-            text: 'Enlace inválido o expirado. Por favor solicita uno nuevo.',
+      if (event === 'PASSWORD_RECOVERY' && session) {
+        // Sync the recovery session to server cookies
+        try {
+          await fetch('/api/auth/set-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              access_token: session.access_token,
+              refresh_token: session.refresh_token,
+            }),
           });
-          setSessionChecked(true);
+        } catch (error) {
+          console.warn('Failed to sync recovery session:', error);
+        }
+        setSessionReady(true);
+      } else if (event === 'INITIAL_SESSION') {
+        // Check if we have a session (user might have refreshed the page)
+        if (session) {
+          setSessionReady(true);
+        } else {
+          // No session - show error after a short delay
+          // (give time for PASSWORD_RECOVERY event to fire)
+          setTimeout(() => {
+            if (mounted && !sessionReady) {
+              setMessage({
+                type: 'error',
+                text: 'Enlace inválido o expirado. Por favor solicita uno nuevo.',
+              });
+              setSessionReady(true); // Show form anyway so user sees the error
+            }
+          }, 2000);
         }
       }
-    });
-
-    // Also check immediately in case the session is already established
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!mounted) return;
-      if (session) {
-        setSessionChecked(true);
-      }
-    }).catch((err) => {
-      console.warn('getSession error (non-fatal):', err);
-      // Don't block on this error, wait for onAuthStateChange
     });
 
     return () => {
@@ -66,43 +76,24 @@ export default function ResetPasswordForm() {
     }
 
     try {
-      console.log('Starting password update...');
-      
-      // Add timeout to prevent infinite hanging
-      const updatePromise = supabase.auth.updateUser({ password });
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('La operación tardó demasiado. Por favor, intenta de nuevo.')), 15000)
-      );
+      // Update password
+      const { error } = await supabase.auth.updateUser({ password });
 
-      console.log('Calling updateUser...');
-      const result = await Promise.race([updatePromise, timeoutPromise]) as { error: any };
-      console.log('updateUser completed:', result);
-
-      if (result.error) {
-        throw result.error;
+      if (error) {
+        throw error;
       }
 
-      console.log('Password updated successfully');
-
-      // Sync new session to server cookies
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log('Session after update:', session ? 'exists' : 'null');
-        
-        if (session) {
-          const response = await fetch('/api/auth/set-session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              access_token: session.access_token,
-              refresh_token: session.refresh_token,
-            }),
-          });
-          console.log('set-session response:', response.status);
-        }
-      } catch (syncError) {
-        console.warn('Session sync failed (non-critical):', syncError);
-        // Don't block on session sync failure
+      // Sync updated session to server
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await fetch('/api/auth/set-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+          }),
+        });
       }
 
       setLoading(false);
@@ -119,14 +110,24 @@ export default function ResetPasswordForm() {
     } catch (err: any) {
       console.error('Password update error:', err);
       setLoading(false);
+
+      let errorMessage = err.message || 'Error al actualizar la contraseña.';
+
+      // Translate common Supabase errors
+      if (errorMessage.includes('New password should be different from the old password')) {
+        errorMessage = 'La nueva contraseña debe ser diferente a la anterior.';
+      } else if (errorMessage.includes('Password should be at least')) {
+        errorMessage = 'La contraseña debe tener al menos 6 caracteres.';
+      }
+
       setMessage({
         type: 'error',
-        text: err.message || 'Error al actualizar la contraseña.',
+        text: errorMessage,
       });
     }
   };
 
-  if (!sessionChecked) {
+  if (!sessionReady) {
     return (
       <div className="flex justify-center py-12">
         <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
@@ -155,10 +156,12 @@ export default function ResetPasswordForm() {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
+            disabled={message?.type === 'error' && message.text.includes('Enlace')}
             className="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all duration-300
               placeholder:text-muted-foreground
               focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
-              hover:border-muted-foreground"
+              hover:border-muted-foreground
+              disabled:opacity-50 disabled:cursor-not-allowed"
             placeholder="••••••••"
           />
         </div>
@@ -174,10 +177,12 @@ export default function ResetPasswordForm() {
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
             minLength={6}
+            disabled={message?.type === 'error' && message.text.includes('Enlace')}
             className="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all duration-300
               placeholder:text-muted-foreground
               focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
-              hover:border-muted-foreground"
+              hover:border-muted-foreground
+              disabled:opacity-50 disabled:cursor-not-allowed"
             placeholder="••••••••"
           />
         </div>
