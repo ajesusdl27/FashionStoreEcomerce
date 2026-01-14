@@ -28,7 +28,9 @@ const formatDate = (date: string) => {
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-bold text-foreground">Newsletter</h1>
-        <p class="text-zinc-500">Gestiona tus campañas y suscriptores</p>
+        <p class="text-muted-foreground">
+          Gestiona tus campañas y suscriptores
+        </p>
       </div>
       <a href="/admin/newsletter/new" class="admin-btn-primary">
         + Nueva Campaña
@@ -38,17 +40,17 @@ const formatDate = (date: string) => {
     <!-- Stats -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div class="admin-card">
-        <p class="text-sm text-zinc-500">Suscriptores Activos</p>
+        <p class="text-sm text-muted-foreground">Suscriptores Activos</p>
         <p class="text-3xl font-bold text-primary">{subscriberCount || 0}</p>
       </div>
       <div class="admin-card">
-        <p class="text-sm text-zinc-500">Campañas Enviadas</p>
+        <p class="text-sm text-muted-foreground">Campañas Enviadas</p>
         <p class="text-3xl font-bold text-foreground">
           {campaigns?.filter((c) => c.status === "sent").length || 0}
         </p>
       </div>
       <div class="admin-card">
-        <p class="text-sm text-zinc-500">Borradores</p>
+        <p class="text-sm text-muted-foreground">Borradores</p>
         <p class="text-3xl font-bold text-foreground">
           {campaigns?.filter((c) => c.status === "draft").length || 0}
         </p>
@@ -67,13 +69,13 @@ const formatDate = (date: string) => {
 
     <!-- Campaigns List -->
     <div class="admin-card p-0">
-      <div class="p-5 border-b border-zinc-800">
+      <div class="p-5 border-b border-border">
         <h2 class="font-semibold text-lg">Campañas</h2>
       </div>
 
       {
         !campaigns || campaigns.length === 0 ? (
-          <div class="p-8 text-center text-zinc-500">
+          <div class="p-8 text-center text-muted-foreground">
             <p>No hay campañas todavía.</p>
             <a
               href="/admin/newsletter/new"
@@ -83,14 +85,14 @@ const formatDate = (date: string) => {
             </a>
           </div>
         ) : (
-          <div class="divide-y divide-zinc-800">
+          <div class="divide-y divide-border">
             {campaigns.map((campaign) => (
-              <div class="p-5 flex items-center justify-between hover:bg-zinc-800/30 transition-colors">
+              <div class="p-5 flex items-center justify-between hover:bg-muted/50 transition-colors">
                 <div class="flex-1">
                   <h3 class="font-medium text-foreground">
                     {campaign.subject}
                   </h3>
-                  <p class="text-sm text-zinc-500">
+                  <p class="text-sm text-muted-foreground">
                     {formatDate(campaign.created_at)}
                     {campaign.status === "sent" && campaign.sent_count && (
                       <span class="ml-2">
@@ -106,7 +108,7 @@ const formatDate = (date: string) => {
                         ? "bg-green-500/20 text-green-400"
                         : campaign.status === "sending"
                           ? "bg-yellow-500/20 text-yellow-400"
-                          : "bg-zinc-700 text-zinc-300"
+                          : "bg-muted text-muted-foreground"
                     }`}
                   >
                     {campaign.status === "sent"

@@ -47,7 +47,7 @@ const uniqueCategories = categories || [];
     <div
       class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
     >
-      <p class="text-zinc-400" id="products-count">
+      <p class="text-muted-foreground" id="products-count">
         {products?.length || 0} productos en total
       </p>
       <a href="/admin/productos/nuevo" class="admin-btn-primary">
@@ -73,7 +73,7 @@ const uniqueCategories = categories || [];
         <!-- Search -->
         <div class="relative flex-1">
           <svg
-            class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500"
+            class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -115,7 +115,7 @@ const uniqueCategories = categories || [];
 
     {
       error && (
-        <div class="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400">
+        <div class="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-600 dark:text-red-400">
           Error cargando productos: {error.message}
         </div>
       )
@@ -129,7 +129,7 @@ const uniqueCategories = categories || [];
             const totalStock = getTotalStock(product.variants);
             return (
               <div
-                class="product-row bg-zinc-900/50 hover:bg-zinc-800/70 border border-zinc-800 rounded-lg p-4 transition-all"
+                class="product-row bg-card hover:bg-muted/50 border border-border rounded-lg p-4 transition-all"
                 data-name={product.name.toLowerCase()}
                 data-slug={product.slug.toLowerCase()}
                 data-category-id={product.category?.id || ""}
@@ -143,7 +143,7 @@ const uniqueCategories = categories || [];
                     <img
                       src={getFirstImage(product.images)}
                       alt={product.name}
-                      class="w-16 h-16 object-cover rounded-lg bg-zinc-800 ring-1 ring-zinc-700"
+                      class="w-16 h-16 object-cover rounded-lg bg-muted ring-1 ring-border"
                     />
                   </div>
 
@@ -154,14 +154,14 @@ const uniqueCategories = categories || [];
                       <p class="font-semibold text-foreground truncate">
                         {product.name}
                       </p>
-                      <p class="text-xs text-zinc-500 truncate">
+                      <p class="text-xs text-muted-foreground truncate">
                         {product.slug}
                       </p>
                     </div>
 
                     {/* Category */}
                     <div>
-                      <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-zinc-700 text-zinc-200">
+                      <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-muted text-muted-foreground">
                         {product.category?.name || "Sin categoría"}
                       </span>
                     </div>
@@ -170,10 +170,10 @@ const uniqueCategories = categories || [];
                     <div class="text-right">
                       {product.is_offer && product.offer_price ? (
                         <div>
-                          <p class="text-xs text-zinc-500 line-through">
+                          <p class="text-xs text-muted-foreground line-through">
                             {formatPrice(product.price)}
                           </p>
-                          <p class="font-bold text-red-400">
+                          <p class="font-bold text-red-600 dark:text-red-400">
                             {formatPrice(product.offer_price)}
                           </p>
                         </div>
@@ -189,25 +189,25 @@ const uniqueCategories = categories || [];
                       <span
                         class={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold ${
                           totalStock === 0
-                            ? "bg-red-500/20 text-red-400"
+                            ? "bg-red-500/20 text-red-600 dark:text-red-400"
                             : totalStock < 10
-                              ? "bg-yellow-500/20 text-yellow-400"
-                              : "bg-green-500/20 text-green-400"
+                              ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
+                              : "bg-green-500/20 text-green-600 dark:text-green-400"
                         }`}
                       >
                         {totalStock} uds
                       </span>
                       {product.active ? (
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-green-500/20 text-green-400">
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-green-500/20 text-green-600 dark:text-green-400">
                           Activo
                         </span>
                       ) : (
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-zinc-600/50 text-zinc-400">
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-muted text-muted-foreground">
                           Inactivo
                         </span>
                       )}
                       {product.is_offer && (
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-red-500/20 text-red-400">
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-red-500/20 text-red-600 dark:text-red-400">
                           Oferta
                         </span>
                       )}
@@ -218,11 +218,11 @@ const uniqueCategories = categories || [];
                   <div class="flex items-center gap-1 flex-shrink-0">
                     <a
                       href={`/admin/productos/${product.id}`}
-                      class="p-2 rounded-lg hover:bg-zinc-700 transition-colors"
+                      class="p-2 rounded-lg hover:bg-muted transition-colors"
                       title="Editar"
                     >
                       <svg
-                        class="w-5 h-5 text-zinc-400 hover:text-foreground"
+                        class="w-5 h-5 text-muted-foreground hover:text-foreground"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -238,11 +238,11 @@ const uniqueCategories = categories || [];
                     <a
                       href={`/productos/${product.slug}`}
                       target="_blank"
-                      class="p-2 rounded-lg hover:bg-zinc-700 transition-colors"
+                      class="p-2 rounded-lg hover:bg-muted transition-colors"
                       title="Ver en tienda"
                     >
                       <svg
-                        class="w-5 h-5 text-zinc-400 hover:text-foreground"
+                        class="w-5 h-5 text-muted-foreground hover:text-foreground"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -261,7 +261,7 @@ const uniqueCategories = categories || [];
             );
           })
         ) : (
-          <div class="text-center py-12 text-zinc-500">
+          <div class="text-center py-12 text-muted-foreground">
             <svg
               class="w-16 h-16 mx-auto mb-4 opacity-30"
               fill="none"
@@ -290,7 +290,7 @@ const uniqueCategories = categories || [];
     <!-- No results message (hidden by default) -->
     <div
       id="no-results"
-      class="hidden p-12 text-center text-zinc-500 bg-zinc-900/50 rounded-lg border border-zinc-800"
+      class="hidden p-12 text-center text-muted-foreground bg-muted/30 rounded-lg border border-border"
     >
       <svg
         class="w-16 h-16 mx-auto mb-4 opacity-30"

@@ -172,8 +172,10 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
       <div class="stat-card group">
         <div>
           <p class="stat-label">Ingresos Totales</p>
-          <p class="stat-value text-green-400">{formatPrice(totalRevenue)}</p>
-          <p class="text-xs text-zinc-500 mt-1">
+          <p class="stat-value text-green-600 dark:text-green-400">
+            {formatPrice(totalRevenue)}
+          </p>
+          <p class="text-xs text-muted-foreground mt-1">
             {revenueData?.length || 0} pedidos pagados
           </p>
         </div>
@@ -181,7 +183,7 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
           class="stat-icon bg-green-500/10 group-hover:bg-green-500/20 transition-colors"
         >
           <svg
-            class="w-7 h-7 text-green-400"
+            class="w-7 h-7 text-green-600 dark:text-green-400"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -200,14 +202,16 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
       <div class="stat-card group">
         <div>
           <p class="stat-label">Productos</p>
-          <p class="stat-value text-blue-400">{productsCount || 0}</p>
-          <p class="text-xs text-zinc-500 mt-1">en catálogo</p>
+          <p class="stat-value text-blue-600 dark:text-blue-400">
+            {productsCount || 0}
+          </p>
+          <p class="text-xs text-muted-foreground mt-1">en catálogo</p>
         </div>
         <div
           class="stat-icon bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors"
         >
           <svg
-            class="w-7 h-7 text-blue-400"
+            class="w-7 h-7 text-blue-600 dark:text-blue-400"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -226,14 +230,16 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
       <div class="stat-card group">
         <div>
           <p class="stat-label">Categorías</p>
-          <p class="stat-value text-purple-400">{categoriesCount || 0}</p>
-          <p class="text-xs text-zinc-500 mt-1">activas</p>
+          <p class="stat-value text-purple-600 dark:text-purple-400">
+            {categoriesCount || 0}
+          </p>
+          <p class="text-xs text-muted-foreground mt-1">activas</p>
         </div>
         <div
           class="stat-icon bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors"
         >
           <svg
-            class="w-7 h-7 text-purple-400"
+            class="w-7 h-7 text-purple-600 dark:text-purple-400"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -252,8 +258,10 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
       <div class="stat-card group">
         <div>
           <p class="stat-label">Suscriptores</p>
-          <p class="stat-value text-amber-400">{subscribersCount || 0}</p>
-          <p class="text-xs text-zinc-500 mt-1">newsletter</p>
+          <p class="stat-value text-amber-600 dark:text-amber-400">
+            {subscribersCount || 0}
+          </p>
+          <p class="text-xs text-muted-foreground mt-1">newsletter</p>
         </div>
         <div
           class="stat-icon bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors"
@@ -336,7 +344,7 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
                           {statusConfig[order.status]?.label || order.status}
                         </span>
                       </td>
-                      <td class="text-right text-zinc-400 text-sm">
+                      <td class="text-right text-muted-foreground text-sm">
                         {formatDate(order.created_at)}
                       </td>
                     </tr>
@@ -345,7 +353,7 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
               </table>
             </div>
           ) : (
-            <div class="text-center py-8 text-zinc-500">
+            <div class="text-center py-8 text-muted-foreground">
               <svg
                 class="w-12 h-12 mx-auto mb-3 opacity-50"
                 fill="none"
@@ -402,12 +410,14 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
           lowStockVariants && lowStockVariants.length > 0 ? (
             <div class="space-y-3">
               {lowStockVariants.map((variant: any) => (
-                <div class="flex items-center justify-between p-3 rounded-lg bg-zinc-800/50 hover:bg-zinc-800 transition-colors">
+                <div class="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors border border-transparent hover:border-border">
                   <div>
                     <p class="font-medium text-foreground">
                       {variant.product?.name}
                     </p>
-                    <p class="text-sm text-zinc-500">Talla: {variant.size}</p>
+                    <p class="text-sm text-muted-foreground">
+                      Talla: {variant.size}
+                    </p>
                   </div>
                   <div class="flex items-center gap-3">
                     <span
@@ -441,7 +451,7 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
               ))}
             </div>
           ) : (
-            <div class="text-center py-8 text-zinc-500">
+            <div class="text-center py-8 text-muted-foreground">
               <svg
                 class="w-12 h-12 mx-auto mb-3 text-green-400 opacity-50"
                 fill="none"
@@ -470,7 +480,7 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
       <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
         <a
           href="/admin/productos/nuevo"
-          class="flex flex-col items-center gap-3 p-6 rounded-xl bg-zinc-800/50 border border-zinc-700/50 hover:border-primary/50 hover:bg-primary/5 transition-all group"
+          class="flex flex-col items-center gap-3 p-6 rounded-xl bg-muted/30 border border-border hover:border-primary/50 hover:bg-primary/5 transition-all group"
         >
           <div
             class="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform"
@@ -493,13 +503,13 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
 
         <a
           href="/admin/categorias"
-          class="flex flex-col items-center gap-3 p-6 rounded-xl bg-zinc-800/50 border border-zinc-700/50 hover:border-purple-500/50 hover:bg-purple-500/5 transition-all group"
+          class="flex flex-col items-center gap-3 p-6 rounded-xl bg-muted/30 border border-border hover:border-purple-500/50 hover:bg-purple-500/5 transition-all group"
         >
           <div
             class="w-14 h-14 rounded-xl bg-purple-500/10 flex items-center justify-center group-hover:scale-110 transition-transform"
           >
             <svg
-              class="w-7 h-7 text-purple-400"
+              class="w-7 h-7 text-purple-600 dark:text-purple-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -517,13 +527,13 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
 
         <a
           href="/admin/pedidos"
-          class="flex flex-col items-center gap-3 p-6 rounded-xl bg-zinc-800/50 border border-zinc-700/50 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group"
+          class="flex flex-col items-center gap-3 p-6 rounded-xl bg-muted/30 border border-border hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group"
         >
           <div
             class="w-14 h-14 rounded-xl bg-blue-500/10 flex items-center justify-center group-hover:scale-110 transition-transform"
           >
             <svg
-              class="w-7 h-7 text-blue-400"
+              class="w-7 h-7 text-blue-600 dark:text-blue-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -541,13 +551,13 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
 
         <a
           href="/admin/configuracion"
-          class="flex flex-col items-center gap-3 p-6 rounded-xl bg-zinc-800/50 border border-zinc-700/50 hover:border-green-500/50 hover:bg-green-500/5 transition-all group"
+          class="flex flex-col items-center gap-3 p-6 rounded-xl bg-muted/30 border border-border hover:border-green-500/50 hover:bg-green-500/5 transition-all group"
         >
           <div
             class="w-14 h-14 rounded-xl bg-green-500/10 flex items-center justify-center group-hover:scale-110 transition-transform"
           >
             <svg
-              class="w-7 h-7 text-green-400"
+              class="w-7 h-7 text-green-600 dark:text-green-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -570,13 +580,13 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
 
         <a
           href="/admin/newsletter"
-          class="flex flex-col items-center gap-3 p-6 rounded-xl bg-zinc-800/50 border border-zinc-700/50 hover:border-amber-500/50 hover:bg-amber-500/5 transition-all group"
+          class="flex flex-col items-center gap-3 p-6 rounded-xl bg-muted/30 border border-border hover:border-amber-500/50 hover:bg-amber-500/5 transition-all group"
         >
           <div
             class="w-14 h-14 rounded-xl bg-amber-500/10 flex items-center justify-center group-hover:scale-110 transition-transform"
           >
             <svg
-              class="w-7 h-7 text-amber-400"
+              class="w-7 h-7 text-amber-600 dark:text-amber-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

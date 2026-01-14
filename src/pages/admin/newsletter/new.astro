@@ -8,7 +8,7 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
     <div class="flex items-center gap-4">
       <a
         href="/admin/newsletter"
-        class="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+        class="p-2 hover:bg-muted rounded-lg transition-colors"
       >
         <svg
           class="w-5 h-5"
@@ -25,7 +25,9 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
       </a>
       <div>
         <h1 class="text-2xl font-bold text-foreground">Nueva Campaña</h1>
-        <p class="text-zinc-500">Crea un nuevo email para tus suscriptores</p>
+        <p class="text-muted-foreground">
+          Crea un nuevo email para tus suscriptores
+        </p>
       </div>
     </div>
 
@@ -33,7 +35,7 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
     <form id="campaign-form" class="space-y-6">
       <div class="admin-card space-y-4">
         <div>
-          <label class="block text-sm font-medium text-zinc-300 mb-2"
+          <label class="block text-sm font-medium text-foreground mb-2"
             >Asunto *</label
           >
           <input
@@ -47,7 +49,7 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-zinc-300 mb-2"
+          <label class="block text-sm font-medium text-foreground mb-2"
             >Contenido *</label
           >
           <textarea
@@ -63,7 +65,7 @@ Puedes usar HTML básico como:
 <a href='https://...'>Enlace</a>
 <img src='https://...' alt='Imagen' />"
             required></textarea>
-          <p class="text-xs text-zinc-500 mt-2">
+          <p class="text-xs text-muted-foreground mt-2">
             Puedes usar HTML para formatear el contenido.
           </p>
         </div>
@@ -73,7 +75,7 @@ Puedes usar HTML básico como:
         <button
           type="button"
           id="save-draft"
-          class="flex-1 py-3 px-4 bg-zinc-700 text-foreground rounded-lg font-medium hover:bg-zinc-600 transition-colors"
+          class="flex-1 py-3 px-4 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/80 transition-colors"
         >
           💾 Guardar Borrador
         </button>
@@ -142,7 +144,7 @@ Puedes usar HTML básico como:
       messageDiv.className = `p-4 rounded-lg text-sm ${
         type === "success"
           ? "bg-green-500/20 text-green-400"
-          : "bg-red-500/20 text-red-400"
+          : "bg-destructive/10 text-destructive"
       }`;
     }
 

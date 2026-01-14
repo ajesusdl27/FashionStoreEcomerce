@@ -5,31 +5,31 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#0a0a0a',
-        foreground: '#fafafa',
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: '#CCFF00',
-          foreground: '#0a0a0a',
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
         },
         accent: {
-          DEFAULT: '#FF4757',
-          foreground: '#fafafa',
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
         },
         electric: {
           DEFAULT: '#3b82f6',
           foreground: '#fafafa',
         },
-        muted: {
-          DEFAULT: '#27272a',
-          foreground: '#a1a1aa',
-        },
-        card: {
-          DEFAULT: '#18181b',
-          foreground: '#fafafa',
-        },
-        border: '#27272a',
-        input: '#27272a',
-        ring: '#CCFF00',
       },
       fontFamily: {
         display: ['Bebas Neue', 'sans-serif'],

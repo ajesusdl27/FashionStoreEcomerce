@@ -27,14 +27,14 @@ const { count: subscriberCount } = await supabase
     <!-- Header -->
     <div class="text-center">
       <h1 class="text-2xl font-bold text-foreground">Enviar Campaña</h1>
-      <p class="text-zinc-500 mt-2">"{campaign.subject}"</p>
+      <p class="text-muted-foreground mt-2">"{campaign.subject}"</p>
     </div>
 
     <!-- Info Card -->
     <div class="admin-card text-center">
-      <p class="text-sm text-zinc-400 mb-2">Se enviará a</p>
+      <p class="text-sm text-muted-foreground mb-2">Se enviará a</p>
       <p class="text-4xl font-bold text-primary">{subscriberCount || 0}</p>
-      <p class="text-sm text-zinc-400 mt-1">suscriptores activos</p>
+      <p class="text-sm text-muted-foreground mt-1">suscriptores activos</p>
     </div>
 
     <!-- Warning -->
@@ -49,12 +49,12 @@ const { count: subscriberCount } = await supabase
     <!-- Progress Section -->
     <div id="progress-section" class="hidden admin-card">
       <div class="flex justify-between text-sm mb-2">
-        <span class="text-zinc-400">Progreso</span>
+        <span class="text-muted-foreground">Progreso</span>
         <span id="progress-text" class="text-foreground"
           >0 / {subscriberCount}</span
         >
       </div>
-      <div class="w-full h-3 bg-zinc-800 rounded-full overflow-hidden">
+      <div class="w-full h-3 bg-secondary rounded-full overflow-hidden">
         <div
           id="progress-bar"
           class="h-full bg-gradient-to-r from-primary to-lime-400 transition-all duration-300"
@@ -62,7 +62,10 @@ const { count: subscriberCount } = await supabase
         >
         </div>
       </div>
-      <p id="status-text" class="text-sm text-zinc-500 mt-3 text-center">
+      <p
+        id="status-text"
+        class="text-sm text-muted-foreground mt-3 text-center"
+      >
         Preparando envío...
       </p>
     </div>
@@ -71,7 +74,7 @@ const { count: subscriberCount } = await supabase
     <div id="result-section" class="hidden admin-card text-center">
       <div class="text-5xl mb-4">✅</div>
       <h2 class="text-xl font-bold text-foreground">¡Campaña enviada!</h2>
-      <p id="result-text" class="text-zinc-400 mt-2"></p>
+      <p id="result-text" class="text-muted-foreground mt-2"></p>
       <a
         href="/admin/newsletter"
         class="inline-block mt-6 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
@@ -84,7 +87,7 @@ const { count: subscriberCount } = await supabase
     <div id="action-buttons" class="flex gap-4">
       <a
         href="/admin/newsletter"
-        class="flex-1 py-3 px-4 bg-zinc-700 text-foreground rounded-lg font-medium text-center hover:bg-zinc-600 transition-colors"
+        class="flex-1 py-3 px-4 bg-secondary text-secondary-foreground rounded-lg font-medium text-center hover:bg-secondary/80 transition-colors"
       >
         Cancelar
       </a>

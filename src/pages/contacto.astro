@@ -2,10 +2,7 @@
 import PublicLayout from "@/layouts/PublicLayout.astro";
 ---
 
-<PublicLayout
-  title="Contacto - FashionStore"
-  description="Ponte en contacto con nosotros para cualquier duda o consulta."
->
+<PublicLayout title="Contacto | FashionStore">
   <div class="relative overflow-hidden">
     <!-- Background Gradient -->
     <div class="absolute inset-0 bg-primary/5 -z-10 pointer-events-none"></div>
@@ -30,10 +27,10 @@ import PublicLayout from "@/layouts/PublicLayout.astro";
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
         <!-- Email Card -->
         <div
-          class="glass border border-border p-8 rounded-3xl text-center group hover:border-primary/50 hover:bg-zinc-900/40 transition-all duration-300"
+          class="glass border border-border p-8 rounded-3xl text-center group hover:border-primary/50 hover:bg-muted/50 transition-all duration-300"
         >
           <div
-            class="w-16 h-16 mx-auto bg-zinc-900 border border-border rounded-2xl flex items-center justify-center text-primary mb-6 group-hover:scale-110 group-hover:border-primary/50 transition-all"
+            class="w-16 h-16 mx-auto bg-card border border-border rounded-2xl flex items-center justify-center text-primary mb-6 group-hover:scale-110 group-hover:border-primary/50 transition-all"
           >
             <svg
               class="w-8 h-8"
@@ -53,15 +50,17 @@ import PublicLayout from "@/layouts/PublicLayout.astro";
             Email
           </h3>
           <p class="text-primary font-medium mb-1">soporte@fashionstore.com</p>
-          <p class="text-sm text-zinc-500">Respondemos en menos de 24h</p>
+          <p class="text-sm text-muted-foreground">
+            Respondemos en menos de 24h
+          </p>
         </div>
 
         <!-- Phone Card -->
         <div
-          class="glass border border-border p-8 rounded-3xl text-center group hover:border-primary/50 hover:bg-zinc-900/40 transition-all duration-300"
+          class="glass border border-border p-8 rounded-3xl text-center group hover:border-primary/50 hover:bg-muted/50 transition-all duration-300"
         >
           <div
-            class="w-16 h-16 mx-auto bg-zinc-900 border border-border rounded-2xl flex items-center justify-center text-primary mb-6 group-hover:scale-110 group-hover:border-primary/50 transition-all"
+            class="w-16 h-16 mx-auto bg-card border border-border rounded-2xl flex items-center justify-center text-primary mb-6 group-hover:scale-110 group-hover:border-primary/50 transition-all"
           >
             <svg
               class="w-8 h-8"
@@ -81,15 +80,17 @@ import PublicLayout from "@/layouts/PublicLayout.astro";
             Teléfono
           </h3>
           <p class="text-primary font-medium mb-1">+34 900 123 456</p>
-          <p class="text-sm text-zinc-500">Lunes a Viernes, 9:00 - 18:00</p>
+          <p class="text-sm text-muted-foreground">
+            Lunes a Viernes, 9:00 - 18:00
+          </p>
         </div>
 
         <!-- Office Card -->
         <div
-          class="glass border border-border p-8 rounded-3xl text-center group hover:border-primary/50 hover:bg-zinc-900/40 transition-all duration-300"
+          class="glass border border-border p-8 rounded-3xl text-center group hover:border-primary/50 hover:bg-muted/50 transition-all duration-300"
         >
           <div
-            class="w-16 h-16 mx-auto bg-zinc-900 border border-border rounded-2xl flex items-center justify-center text-primary mb-6 group-hover:scale-110 group-hover:border-primary/50 transition-all"
+            class="w-16 h-16 mx-auto bg-card border border-border rounded-2xl flex items-center justify-center text-primary mb-6 group-hover:scale-110 group-hover:border-primary/50 transition-all"
           >
             <svg
               class="w-8 h-8"
@@ -114,13 +115,13 @@ import PublicLayout from "@/layouts/PublicLayout.astro";
             Oficinas
           </h3>
           <p class="text-primary font-medium mb-1">Calle de la Moda 123</p>
-          <p class="text-sm text-zinc-500">28001 Madrid, España</p>
+          <p class="text-sm text-muted-foreground">28001 Madrid, España</p>
         </div>
       </div>
 
       <!-- FAQ / Note Section -->
       <div
-        class="glass border border-border rounded-3xl p-8 md:p-12 text-center bg-zinc-900/30"
+        class="glass border border-border rounded-3xl p-8 md:p-12 text-center bg-card/30"
       >
         <div
           class="inline-flex items-center justify-center p-3 bg-primary/10 rounded-full text-primary mb-6"
@@ -138,7 +139,9 @@ import PublicLayout from "@/layouts/PublicLayout.astro";
             ></path></svg
           >
         </div>
-        <h2 class="font-heading text-2xl mb-4">¿Preguntas sobre tu pedido?</h2>
+        <h2 class="font-heading text-2xl mb-4 text-foreground">
+          ¿Preguntas sobre tu pedido?
+        </h2>
         <p class="text-muted-foreground max-w-2xl mx-auto mb-8">
           Para agilizar cualquier gestión relacionada con una compra, por favor
           ten a mano tu número de pedido (ej. #A1B2C3D4). Puedes encontrarlo en
@@ -147,13 +150,13 @@ import PublicLayout from "@/layouts/PublicLayout.astro";
         <div class="flex flex-wrap justify-center gap-4">
           <a
             href="/cuenta/pedidos"
-            class="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-foreground font-medium rounded-xl transition-colors"
+            class="px-6 py-3 bg-muted hover:bg-muted/80 text-foreground font-medium rounded-xl transition-colors border border-border"
           >
             Ver mis pedidos
           </a>
           <a
             href="/envios"
-            class="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-foreground font-medium rounded-xl transition-colors"
+            class="px-6 py-3 bg-muted hover:bg-muted/80 text-foreground font-medium rounded-xl transition-colors border border-border"
           >
             Política de envíos
           </a>

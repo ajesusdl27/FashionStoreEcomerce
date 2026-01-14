@@ -90,7 +90,7 @@ const statusOptions = [
     <div
       class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
     >
-      <p class="text-zinc-400">{count || 0} pedidos en total</p>
+      <p class="text-muted-foreground">{count || 0} pedidos en total</p>
 
       <!-- Status Filter -->
       <select
@@ -116,12 +116,12 @@ const statusOptions = [
             const status = statusConfig[order.status] || statusConfig.pending;
             return (
               <div
-                class={`bg-zinc-900/50 hover:bg-zinc-800/70 border border-zinc-800 rounded-lg p-4 transition-all border-l-4 ${status.borderColor}`}
+                class={`bg-card hover:bg-muted/50 border border-border rounded-lg p-4 transition-all border-l-4 ${status.borderColor}`}
               >
                 <div class="flex items-center gap-4">
                   {/* Order ID */}
                   <div class="flex-shrink-0 w-24">
-                    <span class="font-mono text-sm text-zinc-400">
+                    <span class="font-mono text-sm text-muted-foreground">
                       #{order.id.slice(0, 8)}
                     </span>
                   </div>
@@ -133,13 +133,13 @@ const statusOptions = [
                       <p class="font-semibold text-foreground truncate">
                         {order.customer_name}
                       </p>
-                      <p class="text-xs text-zinc-500 truncate">
+                      <p class="text-xs text-muted-foreground truncate">
                         {order.customer_email}
                       </p>
                     </div>
 
                     {/* Date */}
-                    <div class="text-sm text-zinc-400">
+                    <div class="text-sm text-muted-foreground">
                       {formatDate(order.created_at)}
                     </div>
 
@@ -164,7 +164,7 @@ const statusOptions = [
                   <div class="flex-shrink-0">
                     <a
                       href={`/admin/pedidos/${order.id}`}
-                      class="inline-flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-sm font-medium transition-colors"
+                      class="inline-flex items-center gap-2 px-4 py-2 bg-muted hover:bg-muted/80 border border-border rounded-lg text-sm font-medium transition-colors"
                     >
                       Ver detalles
                       <svg
@@ -187,7 +187,7 @@ const statusOptions = [
             );
           })
         ) : (
-          <div class="text-center py-12 text-zinc-500 bg-zinc-900/50 rounded-lg border border-zinc-800">
+          <div class="text-center py-12 text-muted-foreground bg-muted/30 rounded-lg border border-border">
             <svg
               class="w-16 h-16 mx-auto mb-4 opacity-30"
               fill="none"
@@ -210,15 +210,15 @@ const statusOptions = [
     {/* Pagination */}
     {
       totalPages > 1 && (
-        <div class="flex items-center justify-between p-4 bg-zinc-900/50 rounded-lg border border-zinc-800">
-          <p class="text-sm text-zinc-500">
+        <div class="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border">
+          <p class="text-sm text-muted-foreground">
             Página {page} de {totalPages}
           </p>
           <div class="flex gap-2">
             {page > 1 && (
               <a
                 href={`/admin/pedidos?page=${page - 1}${statusFilter ? `&status=${statusFilter}` : ""}`}
-                class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-sm transition-colors"
+                class="px-4 py-2 bg-muted hover:bg-muted/80 border border-border rounded-lg text-sm transition-colors"
               >
                 Anterior
               </a>
@@ -226,7 +226,7 @@ const statusOptions = [
             {page < totalPages && (
               <a
                 href={`/admin/pedidos?page=${page + 1}${statusFilter ? `&status=${statusFilter}` : ""}`}
-                class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-sm transition-colors"
+                class="px-4 py-2 bg-muted hover:bg-muted/80 border border-border rounded-lg text-sm transition-colors"
               >
                 Siguiente
               </a>
