@@ -26,12 +26,65 @@ const { data: order, error } = await supabase
         images:product_images(image_url)
       ),
       variant:product_variants(id, size)
+    ),
+    coupon_usages(
+      coupons(
+        code,
+        discount_type,
+        discount_value
+      )
     )
   `
   )
   .eq("id", id)
   .eq("customer_email", user.email) // Security check
   .single();
+
+if (error) {
+  console.error("Error fetching order:", error);
+  // Only for debugging, remove in production
+  // return new Response(`Error: ${JSON_stringify(error)}`, { status: 500 });
+  return Astro.redirect("/cuenta/pedidos");
+}
+
+if (!order) {
+  return Astro.redirect("/cuenta/pedidos");
+}
+
+// Calculate totals
+const subtotal = order.items.reduce(
+  (sum: number, item: any) => sum + item.price_at_purchase * item.quantity,
+  0
+);
+
+// Get coupon info if any
+// Supabase returns an array for one-to-many, even if we expect one
+const couponUsage = order.coupon_usages?.[0];
+const coupon = couponUsage?.coupons;
+
+// Calculate discount
+let discountAmount = 0;
+if (coupon) {
+  if (coupon.discount_type === "percentage") {
+    discountAmount = subtotal * (coupon.discount_value / 100);
+  } else {
+    // Fixed amount
+    discountAmount = Number(coupon.discount_value);
+  }
+}
+
+// Ensure discount doesn't exceed subtotal
+discountAmount = Math.min(discountAmount, subtotal);
+
+// Calculate shipping (re-calculate logic to be safe, though usually 50 is threshold)
+// Assuming logic: Free shipping if SUBTOTAL (pre-discount) >= 50?
+// Or post-discount? Usually pre-discount for "spend X to get free shipping".
+// Looking at create-session.ts: `subtotalCents >= FREE_SHIPPING_THRESHOLD * 100` (which is 50).
+// So it based on Subtotal.
+const shippingCost = subtotal >= 50 ? 0 : 4.99;
+
+// Final total
+const finalTotal = subtotal + shippingCost - discountAmount;
 
 if (error) {
   console.error("Error fetching order:", error);
@@ -220,27 +273,34 @@ const currentStatus = statusConfig[order.status] || statusConfig.pending;
           <div class="space-y-3 text-sm">
             <div class="flex justify-between text-muted-foreground">
               <span>Subtotal</span>
-              <span
-                >{
-                  formatPrice(
-                    order.total_amount < 50
-                      ? order.total_amount - 4.99
-                      : order.total_amount
-                  )
-                }</span
-              >
+              <span>{formatPrice(subtotal)}</span>
             </div>
+            {
+              discountAmount > 0 && coupon && (
+                <div class="flex justify-between text-emerald-500">
+                  <span>
+                    Descuento ({coupon.code})
+                    {coupon.discount_type === "percentage" && (
+                      <span class="text-xs ml-1">
+                        (-{coupon.discount_value}%)
+                      </span>
+                    )}
+                  </span>
+                  <span>-{formatPrice(discountAmount)}</span>
+                </div>
+              )
+            }
             <div class="flex justify-between text-muted-foreground">
               <span>Envío</span>
-              <span
-                >{order.total_amount >= 50 ? "Gratis" : formatPrice(4.99)}</span
-              >
+              <span>
+                {shippingCost === 0 ? "Gratis" : formatPrice(shippingCost)}
+              </span>
             </div>
             <div
               class="border-t border-border pt-3 mt-3 flex justify-between font-bold text-lg text-foreground"
             >
               <span>Total</span>
-              <span>{formatPrice(order.total_amount)}</span>
+              <span>{formatPrice(finalTotal)}</span>
             </div>
           </div>
         </div>

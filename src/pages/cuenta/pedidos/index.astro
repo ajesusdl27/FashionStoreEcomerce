@@ -12,7 +12,22 @@ if (!user) {
 // Fetch orders for this user's email
 const { data: orders } = await supabase
   .from("orders")
-  .select("*")
+  .select(
+    `
+    *,
+    coupon_usages(
+      coupons(
+        code,
+        discount_type,
+        discount_value
+      )
+    ),
+    order_items(
+      price_at_purchase,
+      quantity
+    )
+  `
+  )
   .eq("customer_email", user.email)
   .order("created_at", { ascending: false });
 
@@ -21,6 +36,36 @@ function formatPrice(price: number): string {
     style: "currency",
     currency: "EUR",
   }).format(price);
+}
+
+function calculateOrderTotal(order: any) {
+  const items = order.order_items || [];
+  const couponUsage = order.coupon_usages?.[0];
+  const coupon = couponUsage?.coupons;
+
+  // Calculate subtotal
+  const subtotal = items.reduce(
+    (sum: number, item: any) => sum + item.price_at_purchase * item.quantity,
+    0
+  );
+
+  // Calculate discount
+  let discountAmount = 0;
+  if (coupon) {
+    if (coupon.discount_type === "percentage") {
+      discountAmount = subtotal * (coupon.discount_value / 100);
+    } else {
+      discountAmount = Number(coupon.discount_value);
+    }
+  }
+
+  // Cap discount
+  discountAmount = Math.min(discountAmount, subtotal);
+
+  // Calculate shipping (replicate logic: >= 50 free)
+  const shippingCost = subtotal >= 50 ? 0 : 4.99;
+
+  return subtotal + shippingCost - discountAmount;
 }
 
 function formatDate(date: string): string {
@@ -62,6 +107,10 @@ function getStatusBadge(status: string) {
         <div class="space-y-4">
           {orders.map((order) => {
             const badge = getStatusBadge(order.status);
+            const finalTotal = calculateOrderTotal(order);
+            const hasCoupon =
+              order.coupon_usages && order.coupon_usages.length > 0;
+
             return (
               <a
                 href={`/cuenta/pedidos/${order.id}`}
@@ -86,6 +135,11 @@ function getStatusBadge(status: string) {
                           d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
                         />
                       </svg>
+                      {hasCoupon && (
+                        <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded ml-2">
+                          Cupón aplicado
+                        </span>
+                      )}
                     </div>
                     <p class="text-sm text-muted-foreground mt-1">
                       {formatDate(order.created_at)}
@@ -98,7 +152,7 @@ function getStatusBadge(status: string) {
                       {badge.text}
                     </span>
                     <span class="font-bold text-lg">
-                      {formatPrice(order.total_amount)}
+                      {formatPrice(finalTotal)}
                     </span>
                   </div>
                 </div>

@@ -48,39 +48,75 @@ export const POST: APIRoute = async ({ request }) => {
         .eq('id', orderId)
         .single();
 
-      if (existingOrder?.status === 'paid') {
-        console.log(`Order ${orderId} already marked as paid - skipping (idempotency)`);
-        break;
+      let isNewPayment = false;
+
+      if (existingOrder?.status !== 'paid') {
+        // Update order status to paid using RPC function
+        const { error } = await supabase.rpc('update_order_status', {
+          p_stripe_session_id: session.id,
+          p_status: 'paid'
+        });
+
+        if (error) {
+          console.error('Error updating order status:', error);
+        } else {
+          console.log(`Order ${orderId} marked as paid`);
+          isNewPayment = true;
+        }
+      } else {
+        console.log(`Order ${orderId} already marked as paid - checking side effects`);
       }
 
-      // Update order status to paid using RPC function
-      const { error } = await supabase.rpc('update_order_status', {
-        p_stripe_session_id: session.id,
-        p_status: 'paid'
-      });
-
-      if (error) {
-        console.error('Error updating order status:', error);
-      } else {
-        console.log(`Order ${orderId} marked as paid`);
-
-        // Record coupon usage if present
-        const couponId = session.metadata?.coupon_id;
-        if (couponId) {
-          const { error: couponError } = await supabase.rpc('use_coupon', {
+      // Record coupon usage if present (regardless of whether we just updated the status or it was already paid)
+      // The unique constraint on coupon_usages(coupon_id, customer_email, order_id) handles idempotency
+      const couponId = session.metadata?.coupon_id;
+      if (couponId && couponId.trim() !== '') {
+        const customerEmail = session.customer_details?.email || session.customer_email || '';
+        
+        if (!customerEmail) {
+          console.error(`Cannot record coupon usage: missing customer email for order ${orderId}`);
+        } else {
+          // We use a separate try/catch block or just handle the error to avoid crashing the whole webhook if this fails (e.g. already recorded)
+          const { data: couponUsed, error: couponError } = await supabase.rpc('use_coupon', {
             p_coupon_id: couponId,
-            p_customer_email: session.customer_details?.email || session.customer_email || '',
+            p_customer_email: customerEmail,
             p_order_id: orderId
           });
 
           if (couponError) {
-            console.error('Error recording coupon usage:', couponError);
+            // Ignore unique constraint errors (code 23505 in Postgres) which mean it was already recorded
+            if (couponError.code === '23505') {
+              console.log(`Coupon ${couponId} already recorded for order ${orderId}`);
+            } else {
+              // Log detailed error information for debugging
+              console.error('Error recording coupon usage:', {
+                couponId,
+                orderId,
+                customerEmail,
+                errorCode: couponError.code,
+                errorMessage: couponError.message,
+                errorDetails: couponError.details,
+                errorHint: couponError.hint
+              });
+            }
+          } else if (couponUsed === false) {
+            // Function returned FALSE (validation failed)
+            console.error(`Coupon ${couponId} validation failed for order ${orderId}`);
           } else {
-            console.log(`Coupon ${couponId} usage recorded for order ${orderId}`);
+            console.log(`Coupon ${couponId} usage recorded successfully for order ${orderId}`);
           }
         }
-        
-        // Send order confirmation email
+      }
+      
+      // Send order confirmation email only if we just marked it as paid (to avoid duplicate emails)
+      // OR if we want to be safe, we could check if an email was sent, but we don't track that easily.
+      // The success page also sends emails. To be safe, we usually prefer the webhook to be the source of truth, 
+      // but if the success page beat us, the user might get two emails if we are not careful.
+      // However, the success page checks `!wasAlreadyPaid` before sending.
+      // If the webhook runs AFTER success page, `isNewPayment` will be false, so we SKIP email.
+      // If the webhook runs BEFORE success page, `isNewPayment` will be true, so we SEND email.
+      // This seems correct to prevent duplicates.
+      if (isNewPayment) {
         try {
           // Fetch order details
           const { data: order, error: orderError } = await supabase

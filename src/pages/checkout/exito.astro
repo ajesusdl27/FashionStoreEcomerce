@@ -25,12 +25,50 @@ if (sessionId) {
         .single();
 
       const wasAlreadyPaid = existingOrder?.status === "paid";
+      
+      console.log(`Order status before update: ${existingOrder?.status}, wasAlreadyPaid: ${wasAlreadyPaid}`);
 
       // Update order status to paid (backup in case webhook didn't fire)
-      await supabase.rpc("update_order_status", {
+      const { error: updateError } = await supabase.rpc("update_order_status", {
         p_stripe_session_id: sessionId,
         p_status: "paid",
       });
+
+      if (updateError) {
+        console.error(
+          "Error updating order status in success page:",
+          updateError
+        );
+      } else {
+        console.log("Order status updated to paid via success page");
+      }
+
+      // Record coupon usage if present (backup for webhook)
+      if (session.metadata?.coupon_id) {
+        const couponId = session.metadata.coupon_id;
+        console.log("Attempting to record coupon usage:", couponId);
+
+        const { error: couponError } = await supabase.rpc("use_coupon", {
+          p_coupon_id: couponId,
+          p_customer_email:
+            session.customer_details?.email || session.customer_email || "",
+          p_order_id: session.metadata.order_id,
+        });
+
+        if (couponError) {
+          // Ignore unique constraint violation (already recorded by webhook)
+          if (couponError.code !== "23505") {
+            console.error(
+              "Error recording coupon usage in success page:",
+              couponError
+            );
+          } else {
+            console.log("Coupon already recorded (likely by webhook)");
+          }
+        } else {
+          console.log("Coupon usage recorded via success page");
+        }
+      }
 
       // Get order details
       const { data: orderData } = await supabase
@@ -58,7 +96,11 @@ if (sessionId) {
 
         // Send confirmation email if webhook didn't already do it
         // (check if order was already paid before we updated it)
+        console.log(`Checking email sending: wasAlreadyPaid=${wasAlreadyPaid}, customerEmail=${order.customer_email}`);
+        
         if (!wasAlreadyPaid && order.customer_email) {
+          console.log("Attempting to send confirmation email from success page...");
+          
           try {
             const emailItems = orderItems.map((item: any) => ({
               productName: item.products?.name || "Producto",
@@ -66,6 +108,8 @@ if (sessionId) {
               quantity: item.quantity,
               price: Number(item.price_at_purchase),
             }));
+
+            console.log("Email items prepared:", emailItems.length);
 
             const result = await sendOrderConfirmation({
               orderId: order.id,
@@ -83,11 +127,13 @@ if (sessionId) {
             if (!result.success) {
               console.error("Failed to send confirmation email:", result.error);
             } else {
-              console.log("Confirmation email sent from success page");
+              console.log("✅ Confirmation email sent successfully from success page");
             }
           } catch (emailError) {
-            console.error("Error sending confirmation email:", emailError);
+            console.error("Exception sending confirmation email:", emailError);
           }
+        } else {
+          console.log(`Email NOT sent: wasAlreadyPaid=${wasAlreadyPaid}, has email=${!!order.customer_email}`);
         }
       }
     }

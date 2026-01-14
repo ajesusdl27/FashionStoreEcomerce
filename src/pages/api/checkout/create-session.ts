@@ -182,7 +182,7 @@ export const POST: APIRoute = async ({ request, url }) => {
     // Payment methods are automatically determined from Stripe Dashboard settings
     let session;
     try {
-      session = await stripe.checkout.sessions.create({
+      const sessionConfig: any = {
         mode: 'payment',
         line_items: lineItems,
         success_url: `${url.origin}/checkout/exito?session_id={CHECKOUT_SESSION_ID}`,
@@ -191,12 +191,19 @@ export const POST: APIRoute = async ({ request, url }) => {
         customer_email: customerEmail,
         metadata: {
           order_id: orderId,
+          // Always include coupon_id in metadata, even if empty string for consistency
           coupon_id: validatedCoupon?.id || ''
         },
         locale: 'es',
-        billing_address_collection: 'auto',
-        ...(validatedCoupon && { discounts: [{ coupon: validatedCoupon.stripeCouponId }] })
-      });
+        billing_address_collection: 'auto'
+      };
+
+      // Add Stripe discount if coupon is validated
+      if (validatedCoupon) {
+        sessionConfig.discounts = [{ coupon: validatedCoupon.stripeCouponId }];
+      }
+
+      session = await stripe.checkout.sessions.create(sessionConfig);
     } catch (stripeError) {
       // Stripe session creation failed - rollback stock and delete order
       console.error('Error creating Stripe session:', stripeError);
