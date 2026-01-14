@@ -1,0 +1,341 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import ImageUploader from "@/components/islands/ImageUploader";
+import { createAuthenticatedClient } from "@/lib/supabase";
+
+// Get authenticated client
+const accessToken = Astro.cookies.get("sb-access-token")?.value;
+const refreshToken = Astro.cookies.get("sb-refresh-token")?.value;
+const authClient = createAuthenticatedClient(accessToken, refreshToken);
+
+// Fetch coupons for search/select
+const { data: coupons } = await authClient
+  .from("coupons")
+  .select("id, code, discount_type, discount_value")
+  .eq("is_active", true)
+  .order("code", { ascending: true });
+
+const zones = [
+  { id: "home_hero", label: "Home: Banner Principal (Hero)" },
+  { id: "announcement_top", label: "Global: Barra Superior (Aviso)" },
+  { id: "cart_sidebar", label: "Carrito: Banner Lateral" },
+  { id: "product_page", label: "Producto: Debajo de añadir al carrito" },
+];
+---
+
+<AdminLayout title="Nueva Promoción">
+  <div class="max-w-4xl mx-auto">
+    <div class="mb-6">
+      <a
+        href="/admin/promociones"
+        class="text-sm text-zinc-500 hover:text-foreground flex items-center gap-2 mb-2"
+      >
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+        Volver al listado
+      </a>
+      <h1 class="font-heading text-2xl text-foreground">Nueva Promoción</h1>
+    </div>
+
+    <form id="promo-form" class="space-y-8">
+      <!-- Section 1: Visuals -->
+      <div class="admin-card p-6 space-y-6">
+        <h2 class="text-lg font-medium border-b border-zinc-800 pb-2">
+          1. Diseño Visual
+        </h2>
+
+        <div>
+          <label class="block text-sm font-medium mb-2"
+            >Imagen del Banner *</label
+          >
+          <ImageUploader
+            client:load
+            inputName="images"
+            inputId="images-input"
+          />
+          <p class="text-xs text-zinc-500 mt-1">
+            Se usará la primera imagen como fondo.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium mb-2">Título</label>
+              <input
+                type="text"
+                name="title"
+                required
+                placeholder="Ej: REBAJAS DE VERANO"
+                class="admin-input w-full"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-2">Descripción</label>
+              <textarea
+                name="description"
+                rows="3"
+                placeholder="Hasta 50% de descuento en seleccionados..."
+                class="admin-input w-full"></textarea>
+            </div>
+          </div>
+
+          <div
+            class="space-y-4 bg-zinc-900/50 p-4 rounded-lg border border-zinc-800"
+          >
+            <label class="block text-sm font-medium text-zinc-400 mb-2"
+              >Estilos Texto</label
+            >
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs text-zinc-500 mb-1">Color</label>
+                <select name="style_text_color" class="admin-input w-full">
+                  <option value="white">Blanco</option>
+                  <option value="black">Negro</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs text-zinc-500 mb-1"
+                  >Alineación</label
+                >
+                <select name="style_text_align" class="admin-input w-full">
+                  <option value="left">Izquierda</option>
+                  <option value="center">Centro</option>
+                  <option value="right">Derecha</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Configuration -->
+      <div class="admin-card p-6 space-y-6">
+        <h2 class="text-lg font-medium border-b border-zinc-800 pb-2">
+          2. Configuración
+        </h2>
+
+        <div>
+          <label class="block text-sm font-medium mb-3">Ubicación *</label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {
+              zones.map((zone) => (
+                <label class="flex items-start gap-3 p-3 rounded border border-zinc-800 hover:border-zinc-700 bg-zinc-900/30 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="locations"
+                    value={zone.id}
+                    class="mt-1 rounded border-zinc-700 bg-zinc-900 text-primary focus:ring-primary"
+                  />
+                  <div>
+                    <span class="block text-sm font-medium text-zinc-200">
+                      {zone.id}
+                    </span>
+                    <span class="block text-xs text-zinc-500">
+                      {zone.label}
+                    </span>
+                  </div>
+                </label>
+              ))
+            }
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label class="block text-sm font-medium mb-2">Prioridad</label>
+            <input
+              type="number"
+              name="priority"
+              value="10"
+              min="1"
+              class="admin-input w-full"
+            />
+            <p class="text-xs text-zinc-500 mt-1">Menor número = Más arriba</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Fecha Inicio</label>
+            <input
+              type="datetime-local"
+              name="start_date"
+              class="admin-input w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Fecha Fin</label>
+            <input
+              type="datetime-local"
+              name="end_date"
+              class="admin-input w-full"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Logic -->
+      <div class="admin-card p-6 space-y-6">
+        <h2 class="text-lg font-medium border-b border-zinc-800 pb-2">
+          3. Enlace (Opcional)
+        </h2>
+
+        <div>
+          <label class="block text-sm font-medium mb-2">Vincular Cupón</label>
+          <select name="coupon_id" class="admin-input w-full">
+            <option value="">-- Sin cupón vinculado --</option>
+            {
+              coupons?.map((coupon: any) => (
+                <option value={coupon.id}>
+                  {coupon.code} -{" "}
+                  {coupon.discount_type === "percentage"
+                    ? `${coupon.discount_value}%`
+                    : `${coupon.discount_value}€`}
+                </option>
+              ))
+            }
+          </select>
+          <p class="text-xs text-zinc-500 mt-1">
+            Si se selecciona, el banner mostrará el código y permitirá copiarlo
+            o aplicarlo.
+          </p>
+        </div>
+      </div>
+
+      <!-- Submit Actions -->
+      <div
+        class="flex items-center justify-end gap-4 border-t border-zinc-800 pt-6"
+      >
+        <a href="/admin/promociones" class="admin-btn">Cancelar</a>
+        <button
+          type="submit"
+          id="btn-submit"
+          class="admin-btn admin-btn-primary"
+        >
+          <span id="btn-text">Crear Promoción</span>
+          <svg
+            id="btn-spinner"
+            class="hidden animate-spin w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+        </button>
+      </div>
+
+      <div
+        id="form-error"
+        class="hidden p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400"
+      >
+      </div>
+    </form>
+  </div>
+</AdminLayout>
+
+<script>
+  const form = document.getElementById("promo-form") as HTMLFormElement;
+  const btnSubmit = document.getElementById("btn-submit") as HTMLButtonElement;
+  const btnText = document.getElementById("btn-text") as HTMLElement;
+  const btnSpinner = document.getElementById("btn-spinner") as HTMLElement;
+  const formError = document.getElementById("form-error") as HTMLElement;
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    btnSubmit.disabled = true;
+    btnText.classList.add("hidden");
+    btnSpinner.classList.remove("hidden");
+    formError.classList.add("hidden");
+
+    const formData = new FormData(form);
+    const data: Record<string, any> = {};
+    const locations: string[] = [];
+
+    // Process FormData
+    formData.forEach((value, key) => {
+      if (key === "locations") {
+        locations.push(value as string);
+      } else if (key === "images") {
+        // Images come as JSON string from ImageUploader
+        try {
+          const urls = JSON.parse(value as string);
+          if (urls && urls.length > 0) {
+            data["image_url"] = urls[0];
+          }
+        } catch (e) {
+          console.error("Error parsing images", e);
+        }
+      } else if (key.startsWith("style_")) {
+        // Group styles
+        if (!data["style_config"]) data["style_config"] = {};
+        const styleKey = key.replace("style_", "");
+        data["style_config"][styleKey] = value;
+      } else if (value !== "") {
+        data[key] = value;
+      }
+    });
+
+    data["locations"] = locations;
+
+    // Default manual validations
+    if (!data["image_url"]) {
+      formError.textContent = "Debes subir al menos una imagen para el banner.";
+      formError.classList.remove("hidden");
+      btnSubmit.disabled = false;
+      btnText.classList.remove("hidden");
+      btnSpinner.classList.add("hidden");
+      return;
+    }
+
+    if (locations.length === 0) {
+      formError.textContent = "Debes seleccionar al menos una ubicación.";
+      formError.classList.remove("hidden");
+      btnSubmit.disabled = false;
+      btnText.classList.remove("hidden");
+      btnSpinner.classList.add("hidden");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/admin/promociones", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Error al crear la promoción");
+      }
+
+      window.location.href = "/admin/promociones";
+    } catch (error: any) {
+      formError.textContent = error.message;
+      formError.classList.remove("hidden");
+      btnSubmit.disabled = false;
+      btnText.classList.remove("hidden");
+      btnSpinner.classList.add("hidden");
+    }
+  });
+</script>

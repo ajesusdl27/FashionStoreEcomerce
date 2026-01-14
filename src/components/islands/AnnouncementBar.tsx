@@ -1,29 +1,57 @@
 import { useState, useEffect } from "react";
-import { X, Truck } from "lucide-react";
+import { X, Truck, Tag } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
-const STORAGE_KEY = "announcement-bar-dismissed";
+const STORAGE_KEY = "announcement-dismissed-v2";
 
 interface AnnouncementBarProps {
   message?: string;
 }
 
 export default function AnnouncementBar({
-  message = "🚚 Envío GRATIS en pedidos superiores a 50€",
+  message: initialMessage = "🚚 Envío GRATIS en pedidos superiores a 50€",
 }: AnnouncementBarProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [promoMessage, setPromoMessage] = useState<string>(initialMessage);
+  const [promoCoupon, setPromoCoupon] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if user has dismissed the bar before
+    // 1. Check dismiss state
     const isDismissed = localStorage.getItem(STORAGE_KEY);
-    if (!isDismissed) {
+    if (isDismissed) return;
+
+    // 2. Fetch active promotion for announcement_top
+    const fetchPromo = async () => {
+      const { data: allPromos } = await supabase
+        .from('promotions')
+        .select('title, coupons(code), locations')
+        .eq('is_active', true)
+        .order('priority', { ascending: true });
+
+      const topPromo = allPromos?.find(p => 
+        Array.isArray(p.locations) && p.locations.includes('announcement_top')
+      );
+
+      if (topPromo) {
+        setPromoMessage(topPromo.title);
+        
+        // Handle coupons as object or array (Supabase join quirk)
+        const couponData = topPromo.coupons;
+        if (Array.isArray(couponData) && couponData.length > 0) {
+           setPromoCoupon(couponData[0].code);
+        } else if (couponData && typeof couponData === 'object' && 'code' in couponData) {
+           // @ts-ignore
+           setPromoCoupon(couponData.code);
+        }
+      }
+
       setIsVisible(true);
-      // Trigger animation after mount
-      requestAnimationFrame(() => {
-        setIsAnimating(true);
-      });
-    }
-  }, []);
+      requestAnimationFrame(() => setIsAnimating(true));
+    };
+
+    fetchPromo();
+  }, [initialMessage]);
 
   const handleDismiss = () => {
     setIsAnimating(false);
@@ -33,19 +61,39 @@ export default function AnnouncementBar({
     }, 300);
   };
 
+  const copyCoupon = () => {
+    if (promoCoupon) {
+      navigator.clipboard.writeText(promoCoupon);
+      alert(`¡Cupón ${promoCoupon} copiado!`);
+    }
+  };
+
   if (!isVisible) return null;
 
   return (
     <div
-      className={`bg-gradient-to-r from-primary via-primary/90 to-primary text-primary-foreground text-center py-2 px-4 relative transition-all duration-300 ${
+      className={`bg-gradient-to-r from-primary via-primary/90 to-primary text-primary-foreground text-center py-2 px-4 relative transition-all duration-300 z-50 ${
         isAnimating
           ? "opacity-100 translate-y-0"
           : "opacity-0 -translate-y-full"
       }`}
     >
-      <div className="container mx-auto flex items-center justify-center gap-2">
-        <Truck className="w-4 h-4 hidden sm:block" />
-        <span className="text-sm font-medium">{message}</span>
+      <div className="container mx-auto flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-2">
+          {promoCoupon ? <Tag className="w-4 h-4" /> : <Truck className="w-4 h-4 hidden sm:block" />}
+          <span className="text-sm font-medium tracking-wide">{promoMessage}</span>
+        </div>
+
+        {promoCoupon && (
+          <button 
+            onClick={copyCoupon}
+            className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 px-3 py-0.5 rounded-full text-xs font-mono font-bold transition-colors cursor-pointer"
+            title="Clic para copiar"
+          >
+            <span>{promoCoupon}</span>
+            <span className="opacity-70 font-sans font-normal text-[10px] hidden sm:inline">COPIAR</span>
+          </button>
+        )}
       </div>
 
       <button
