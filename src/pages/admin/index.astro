@@ -27,14 +27,28 @@ const { count: ordersYesterday } = await authClient
   .gte("created_at", yesterday.toISOString())
   .lt("created_at", today.toISOString());
 
-// Revenue (paid + shipped + delivered orders) - optimized
+// Revenue (paid + shipped + delivered + return-related orders) - optimized
 const { data: revenueData } = await authClient
   .from("orders")
-  .select("total_amount")
-  .in("status", ["paid", "shipped", "delivered"]);
+  .select("total_amount, refunded_amount")
+  .in("status", [
+    "paid",
+    "shipped",
+    "delivered",
+    "return_requested",
+    "return_approved",
+    "return_shipped",
+    "return_received",
+    "return_completed",
+    "partially_refunded",
+  ]);
 
 const totalRevenue =
-  revenueData?.reduce((sum, order) => sum + Number(order.total_amount), 0) || 0;
+  revenueData?.reduce((sum, order) => {
+    const orderTotal = Number(order.total_amount) || 0;
+    const refunded = Number(order.refunded_amount) || 0;
+    return sum + (orderTotal - refunded);
+  }, 0) || 0;
 
 // Low stock products (variants with stock < 5)
 const { data: lowStockVariants } = await authClient
@@ -72,7 +86,7 @@ const { count: categoriesCount } = await authClient
 const { count: subscribersCount } = await authClient
   .from("newsletter_subscribers")
   .select("*", { count: "exact", head: true })
-  .eq("active", true);
+  .eq("is_active", true);
 
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat("es-ES", {
