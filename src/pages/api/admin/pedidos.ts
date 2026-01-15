@@ -42,27 +42,10 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
         });
       }
 
-      // Get order details before updating with items and images
+      // Get order details before updating
       const { data: order, error: orderError } = await authClient
         .from('orders')
-        .select(`
-          id, 
-          order_number, 
-          customer_name, 
-          customer_email, 
-          shipping_address, 
-          shipping_city, 
-          shipping_postal_code, 
-          shipping_country,
-          items:order_items(
-            quantity,
-            product:products(
-              name,
-              images:product_images(image_url)
-            ),
-            variant:product_variants(size)
-          )
-        `)
+        .select('id, order_number, customer_name, customer_email, shipping_address, shipping_city, shipping_postal_code, shipping_country')
         .eq('id', id)
         .single();
 
@@ -71,14 +54,6 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
           status: 404, headers: { 'Content-Type': 'application/json' } 
         });
       }
-
-      // Format items for email
-      const emailItems = order.items.map((item: any) => ({
-        productName: item.product?.name || 'Producto desconocido',
-        size: item.variant?.size || 'N/A',
-        quantity: item.quantity,
-        image_url: item.product?.images?.[0]?.image_url // Get first image
-      }));
 
       // Insert shipment record
       const { error: shipmentError } = await authClient
@@ -122,8 +97,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
         shippingAddress: order.shipping_address,
         shippingCity: order.shipping_city,
         shippingPostalCode: order.shipping_postal_code,
-        shippingCountry: order.shipping_country,
-        items: emailItems
+        shippingCountry: order.shipping_country
       });
 
       if (!emailResult.success) {

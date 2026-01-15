@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabase';
-import { Select } from '../ui/Select';
 
 interface OrderItem {
   id: string;
@@ -343,7 +341,7 @@ export default function OrderActions({
         )}
 
         {/* Return Modal */}
-        {showReturnModal && createPortal(
+        {showReturnModal && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
             <div 
               className="absolute inset-0 bg-black/70 backdrop-blur-sm"
@@ -444,24 +442,29 @@ export default function OrderActions({
                                   <label className="block text-xs font-medium text-muted-foreground mb-1">
                                     Cantidad a devolver
                                   </label>
-                                  <Select
+                                  <select
                                     value={selectedItems[item.id]?.quantity || 1}
-                                    onChange={(val) => handleItemChange(item.id, 'quantity', val)}
-                                    options={Array.from({ length: item.quantity }, (_, i) => i + 1).map(n => ({
-                                      value: n,
-                                      label: n.toString()
-                                    }))}
-                                  />
+                                    onChange={(e) => handleItemChange(item.id, 'quantity', parseInt(e.target.value))}
+                                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:ring-2 focus:ring-primary focus:border-primary relative z-10"
+                                  >
+                                    {Array.from({ length: item.quantity }, (_, i) => i + 1).map(n => (
+                                      <option key={n} value={n}>{n}</option>
+                                    ))}
+                                  </select>
                                 </div>
                                 <div>
                                   <label className="block text-xs font-medium text-muted-foreground mb-1">
                                     Motivo
                                   </label>
-                                  <Select
+                                  <select
                                     value={selectedItems[item.id]?.reason || 'size_mismatch'}
-                                    onChange={(val) => handleItemChange(item.id, 'reason', val)}
-                                    options={RETURN_REASONS}
-                                  />
+                                    onChange={(e) => handleItemChange(item.id, 'reason', e.target.value)}
+                                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:ring-2 focus:ring-primary focus:border-primary relative z-10"
+                                  >
+                                    {RETURN_REASONS.map(r => (
+                                      <option key={r.value} value={r.value}>{r.label}</option>
+                                    ))}
+                                  </select>
                                 </div>
                               </div>
                               
@@ -520,8 +523,7 @@ export default function OrderActions({
                 </div>
               </form>
             </div>
-          </div>,
-          document.body
+          </div>
         )}
       </div>
     </div>

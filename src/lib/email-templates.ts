@@ -148,7 +148,7 @@ export function generateOrderConfirmationHTML(order: OrderEmailData, formattedOr
 // Datos para el email de envío
 export interface OrderShippedData {
   orderId: string;
-  orderNumber?: number;
+  orderNumber?: number;  // Número secuencial (opcional para compatibilidad)
   customerName: string;
   customerEmail: string;
   carrier: string;
@@ -158,12 +158,6 @@ export interface OrderShippedData {
   shippingCity: string;
   shippingPostalCode: string;
   shippingCountry: string;
-  items: {
-    productName: string;
-    size: string;
-    quantity: number;
-    image_url?: string;
-  }[];
 }
 
 // Genera el HTML del email de pedido enviado
@@ -190,19 +184,6 @@ export function generateOrderShippedHTML(data: OrderShippedData): string {
       <p style="margin: 5px 0 0; color: #0a0a0a; font-size: 16px; font-weight: bold; font-family: monospace;">${data.trackingNumber}</p>
     </div>
   ` : '';
-
-  const itemsHtml = data.items.map(item => `
-    <tr>
-      <td style="padding: 12px; border-bottom: 1px solid #e5e5e5; width: 60px;">
-        ${item.image_url ? `<img src="${item.image_url}" alt="${item.productName}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">` : '<div style="width: 50px; height: 50px; background-color: #eee; border-radius: 4px;"></div>'}
-      </td>
-      <td style="padding: 12px; border-bottom: 1px solid #e5e5e5;">
-        <strong>${item.productName}</strong><br>
-        <span style="color: #666; font-size: 14px;">Talla: ${item.size}</span>
-      </td>
-      <td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: center;">x${item.quantity}</td>
-    </tr>
-  `).join('');
 
   return `
 <!DOCTYPE html>
@@ -250,16 +231,6 @@ export function generateOrderShippedHTML(data: OrderShippedData): string {
                 
                 ${trackingInfoSection}
               </div>
-            </td>
-          </tr>
-
-          <!-- Items -->
-          <tr>
-            <td style="padding: 0 30px 30px;">
-              <h3 style="margin: 0 0 15px; color: #0a0a0a; font-size: 18px;">Contenido del envío</h3>
-              <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden;">
-                ${itemsHtml}
-              </table>
             </td>
           </tr>
           
