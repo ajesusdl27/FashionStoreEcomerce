@@ -169,7 +169,8 @@ export const POST: APIRoute = async ({ request }) => {
             shippingPostalCode: order.shipping_postal_code,
             shippingCountry: order.shipping_country || 'España',
             totalAmount: Number(order.total_amount),
-            items: emailItems
+            items: emailItems,
+            orderDate: new Date(order.created_at) // Pass creation date for ticket
           });
           
           if (emailResult.success) {

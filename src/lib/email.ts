@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { generateOrderConfirmationHTML, generateOrderShippedHTML } from './email-templates';
+import { generateTicketPDF } from './pdf-generator';
 
 const resendApiKey = import.meta.env.RESEND_API_KEY;
 
@@ -25,9 +26,10 @@ export interface OrderEmailData {
     quantity: number;
     price: number;
   }[];
+  orderDate?: Date; // Añadido para el ticket
 }
 
-// Envía el email de confirmación de pedido
+// Envía el email de confirmación de pedido con ticket PDF adjunto
 export async function sendOrderConfirmation(order: OrderEmailData): Promise<{ success: boolean; error?: string }> {
   if (!resend) {
     console.warn('Resend not configured - skipping order confirmation email');
@@ -37,12 +39,48 @@ export async function sendOrderConfirmation(order: OrderEmailData): Promise<{ su
   try {
     const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
     
-    const { data, error } = await resend.emails.send({
+    // Generar ticket PDF
+    let ticketBuffer: Buffer | null = null;
+    try {
+      ticketBuffer = await generateTicketPDF({
+        orderId: order.orderId,
+        orderDate: order.orderDate || new Date(),
+        customerName: order.customerName,
+        customerEmail: order.customerEmail,
+        shippingAddress: order.shippingAddress,
+        shippingCity: order.shippingCity,
+        shippingPostalCode: order.shippingPostalCode,
+        shippingCountry: order.shippingCountry,
+        items: order.items,
+        totalAmount: order.totalAmount,
+      });
+      console.log('Ticket PDF generated successfully');
+    } catch (pdfError) {
+      console.error('Error generating ticket PDF:', pdfError);
+      // Continuamos sin adjunto si falla la generación
+    }
+    
+    const shortOrderId = order.orderId.slice(0, 8).toUpperCase();
+    
+    // Construir opciones de email
+    const emailOptions: Parameters<typeof resend.emails.send>[0] = {
       from: fromEmail,
       to: order.customerEmail,
-      subject: `✓ Pedido confirmado #${order.orderId.slice(0, 8).toUpperCase()} - FashionStore`,
+      subject: `✓ Pedido confirmado #${shortOrderId} - FashionStore`,
       html: generateOrderConfirmationHTML(order),
-    });
+    };
+    
+    // Añadir adjunto solo si se generó correctamente
+    if (ticketBuffer) {
+      emailOptions.attachments = [
+        {
+          filename: `ticket-${shortOrderId}.pdf`,
+          content: ticketBuffer.toString('base64'),
+        }
+      ];
+    }
+    
+    const { data, error } = await resend.emails.send(emailOptions);
 
     if (error) {
       console.error('Error sending order confirmation email:', error);
@@ -57,6 +95,7 @@ export async function sendOrderConfirmation(order: OrderEmailData): Promise<{ su
     return { success: false, error: errorMessage };
   }
 }
+
 
 // Re-export interface for convenience
 export type { OrderShippedData } from './email-templates';

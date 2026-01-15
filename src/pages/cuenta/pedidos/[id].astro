@@ -2,6 +2,7 @@
 import PublicLayout from "@/layouts/PublicLayout.astro";
 import { supabase } from "@/lib/supabase";
 import OrderActions from "@/components/orders/OrderActions";
+import InvoiceButton from "@/components/InvoiceButton";
 
 const { id } = Astro.params;
 const user = Astro.locals.user;
@@ -408,6 +409,14 @@ const currentStatus = statusConfig[order.status] || statusConfig.pending;
             product: item.product,
             variant: item.variant,
           })) || []}
+        />
+
+        <!-- Invoice Button -->
+        <InvoiceButton
+          client:load
+          orderId={order.id}
+          orderNumber={order.id.slice(0, 8).toUpperCase()}
+          orderStatus={order.status}
         />
 
         <div class="text-center">

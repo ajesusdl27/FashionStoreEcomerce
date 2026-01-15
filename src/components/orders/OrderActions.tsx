@@ -214,304 +214,308 @@ export default function OrderActions({
   };
 
   return (
-    <div className="space-y-4">
-      {error && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
-          {error}
-        </div>
-      )}
-
-      {success && !showReturnModal && (
-        <div className="bg-primary/10 border border-primary/30 rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
-              <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <p className="text-primary font-medium">{success}</p>
+    <div className="glass border border-border rounded-2xl p-6">
+      <h2 className="font-heading text-lg mb-4">Gestión del Pedido</h2>
+      
+      <div className="space-y-4">
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
+            {error}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Existing Return Status with Shipping Instructions */}
-      {existingReturn && (
-        <div className={`${getReturnStatusBadge(existingReturn.status).bg} border border-current/20 rounded-xl overflow-hidden`}>
-          <div className="p-4">
+        {success && !showReturnModal && (
+          <div className="bg-primary/10 border border-primary/30 rounded-xl p-4">
             <div className="flex items-center gap-3">
-              <svg className={`w-5 h-5 ${getReturnStatusBadge(existingReturn.status).text}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-              </svg>
-              <div>
-                <p className={`font-medium ${getReturnStatusBadge(existingReturn.status).text}`}>
-                  Devolución {getReturnStatusBadge(existingReturn.status).label}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {existingReturn.status === 'requested' 
-                    ? 'Esperando aprobación del administrador'
-                    : existingReturn.status === 'approved'
-                    ? 'Envía el paquete a la dirección indicada'
-                    : 'Tu solicitud está en proceso'}
-                </p>
+              <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
               </div>
+              <p className="text-primary font-medium">{success}</p>
             </div>
           </div>
-          
-          {/* Shipping Instructions (show when approved or requested) */}
-          {(existingReturn.status === 'approved' || existingReturn.status === 'requested') && (
-            <div className="bg-muted/30 border-t border-current/10 p-4 space-y-3">
-              <div className="flex items-start gap-2">
-                <svg className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+        )}
+
+        {/* Existing Return Status with Shipping Instructions */}
+        {existingReturn && (
+          <div className={`${getReturnStatusBadge(existingReturn.status).bg} border border-current/20 rounded-xl overflow-hidden`}>
+            <div className="p-4">
+              <div className="flex items-center gap-3">
+                <svg className={`w-5 h-5 ${getReturnStatusBadge(existingReturn.status).text}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                 </svg>
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Dirección de envío</p>
-                  <p className="text-sm text-foreground font-medium">
-                    FashionStore Devoluciones<br />
-                    Calle de la Moda 123<br />
-                    28001 Madrid, España
+                  <p className={`font-medium ${getReturnStatusBadge(existingReturn.status).text}`}>
+                    Devolución {getReturnStatusBadge(existingReturn.status).label}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {existingReturn.status === 'requested' 
+                      ? 'Esperando aprobación del administrador'
+                      : existingReturn.status === 'approved'
+                      ? 'Envía el paquete a la dirección indicada'
+                      : 'Tu solicitud está en proceso'}
                   </p>
                 </div>
               </div>
-              <div className="flex items-start gap-2">
-                <svg className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <p className="text-xs text-muted-foreground">
-                  Incluye el número de pedido en el paquete. El reembolso se procesará en 5-7 días hábiles tras recibir el artículo.
-                </p>
-              </div>
             </div>
-          )}
-        </div>
-      )}
-
-      {/* Cancel Order Button */}
-      {canCancel && (
-        <button
-          onClick={handleCancelOrder}
-          disabled={isCancelling}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-600 dark:text-red-400 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isCancelling ? (
-            <>
-              <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Cancelando...
-            </>
-          ) : (
-            <>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              Cancelar Pedido
-            </>
-          )}
-        </button>
-      )}
-
-      {/* Request Return Button */}
-      {canRequestReturn && (
-        <button
-          onClick={() => setShowReturnModal(true)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 rounded-lg font-medium transition-all"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-          </svg>
-          Solicitar Devolución
-        </button>
-      )}
-
-      {/* Return Window Expired */}
-      {orderStatus === 'delivered' && !isReturnWindowValid() && !existingReturn && (
-        <div className="bg-muted/50 border border-border rounded-xl p-4 text-center">
-          <p className="text-sm text-muted-foreground">
-            El plazo de 30 días para devoluciones ha expirado
-          </p>
-        </div>
-      )}
-
-      {/* Return Modal */}
-      {showReturnModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div 
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            onClick={() => !success && setShowReturnModal(false)}
-          />
-          
-          <div className="relative bg-card border border-border rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            {/* Success Overlay */}
-            {success && (
-              <div className="absolute inset-0 z-20 bg-card/95 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center p-8">
-                <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mb-4 animate-bounce">
-                  <svg className="w-10 h-10 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            
+            {/* Shipping Instructions (show when approved or requested) */}
+            {(existingReturn.status === 'approved' || existingReturn.status === 'requested') && (
+              <div className="bg-muted/30 border-t border-current/10 p-4 space-y-3">
+                <div className="flex items-start gap-2">
+                  <svg className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Dirección de envío</p>
+                    <p className="text-sm text-foreground font-medium">
+                      FashionStore Devoluciones<br />
+                      Calle de la Moda 123<br />
+                      28001 Madrid, España
+                    </p>
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-2">¡Solicitud Enviada!</h3>
-                <p className="text-muted-foreground text-center">Tu devolución ha sido registrada correctamente.</p>
+                <div className="flex items-start gap-2">
+                  <svg className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-xs text-muted-foreground">
+                    Incluye el número de pedido en el paquete. El reembolso se procesará en 5-7 días hábiles tras recibir el artículo.
+                  </p>
+                </div>
               </div>
             )}
+          </div>
+        )}
 
-            <button
-              onClick={() => setShowReturnModal(false)}
-              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors z-10"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+        {/* Cancel Order Button */}
+        {canCancel && (
+          <button
+            onClick={handleCancelOrder}
+            disabled={isCancelling}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-600 dark:text-red-400 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isCancelling ? (
+              <>
+                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Cancelando...
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Cancelar Pedido
+              </>
+            )}
+          </button>
+        )}
 
-            <div className="p-6 border-b border-border">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                  </svg>
+        {/* Request Return Button */}
+        {canRequestReturn && (
+          <button
+            onClick={() => setShowReturnModal(true)}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 rounded-lg font-medium transition-all"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+            </svg>
+            Solicitar Devolución
+          </button>
+        )}
+
+        {/* Return Window Expired */}
+        {orderStatus === 'delivered' && !isReturnWindowValid() && !existingReturn && (
+          <div className="bg-muted/50 border border-border rounded-xl p-4 text-center">
+            <p className="text-sm text-muted-foreground">
+              El plazo de 30 días para devoluciones ha expirado
+            </p>
+          </div>
+        )}
+
+        {/* Return Modal */}
+        {showReturnModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div 
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={() => !success && setShowReturnModal(false)}
+            />
+            
+            <div className="relative bg-card border border-border rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+              {/* Success Overlay */}
+              {success && (
+                <div className="absolute inset-0 z-20 bg-card/95 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center p-8">
+                  <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mb-4 animate-bounce">
+                    <svg className="w-10 h-10 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground mb-2">¡Solicitud Enviada!</h3>
+                  <p className="text-muted-foreground text-center">Tu devolución ha sido registrada correctamente.</p>
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">Solicitar Devolución</h2>
-                  <p className="text-sm text-muted-foreground">Selecciona los artículos que deseas devolver</p>
+              )}
+
+              <button
+                onClick={() => setShowReturnModal(false)}
+                className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors z-10"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              <div className="p-6 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-foreground">Solicitar Devolución</h2>
+                    <p className="text-sm text-muted-foreground">Selecciona los artículos que deseas devolver</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <form onSubmit={handleSubmitReturn} className="p-6 space-y-6">
-              {/* Items Selection */}
-              <div className="space-y-4">
-                <h3 className="font-medium text-foreground">Artículos del pedido</h3>
-                
-                {orderItems.map(item => (
-                  <div 
-                    key={item.id}
-                    className={`border rounded-xl p-4 transition-all ${
-                      selectedItems[item.id]?.selected 
-                        ? 'border-primary bg-primary/5' 
-                        : 'border-border'
-                    }`}
-                  >
-                    <div className="flex gap-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedItems[item.id]?.selected || false}
-                        onChange={(e) => handleItemSelect(item.id, e.target.checked)}
-                        className="mt-1 w-5 h-5 rounded border-border text-primary focus:ring-primary"
-                      />
-                      
-                      <div className="flex-1">
-                        <div className="flex gap-3">
-                          {item.product?.images?.[0]?.image_url && (
-                            <img 
-                              src={item.product.images[0].image_url} 
-                              alt={item.product?.name}
-                              className="w-16 h-16 object-cover rounded-lg"
-                            />
-                          )}
-                          <div>
-                            <p className="font-medium text-foreground">{item.product?.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              Talla: {item.variant?.size} · Cantidad: {item.quantity}
-                            </p>
-                            <p className="text-sm font-medium text-foreground">
-                              {(item.price_at_purchase * item.quantity).toFixed(2)} €
-                            </p>
-                          </div>
-                        </div>
+              <form onSubmit={handleSubmitReturn} className="p-6 space-y-6">
+                {/* Items Selection */}
+                <div className="space-y-4">
+                  <h3 className="font-medium text-foreground">Artículos del pedido</h3>
+                  
+                  {orderItems.map(item => (
+                    <div 
+                      key={item.id}
+                      className={`border rounded-xl p-4 transition-all ${
+                        selectedItems[item.id]?.selected 
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-border'
+                      }`}
+                    >
+                      <div className="flex gap-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedItems[item.id]?.selected || false}
+                          onChange={(e) => handleItemSelect(item.id, e.target.checked)}
+                          className="mt-1 w-5 h-5 rounded border-border text-primary focus:ring-primary"
+                        />
                         
-                        {selectedItems[item.id]?.selected && (
-                          <div className="mt-4 space-y-3 pl-0">
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-xs font-medium text-muted-foreground mb-1">
-                                  Cantidad a devolver
-                                </label>
-                                <select
-                                  value={selectedItems[item.id]?.quantity || 1}
-                                  onChange={(e) => handleItemChange(item.id, 'quantity', parseInt(e.target.value))}
-                                  className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-sm text-foreground"
-                                >
-                                  {Array.from({ length: item.quantity }, (_, i) => i + 1).map(n => (
-                                    <option key={n} value={n}>{n}</option>
-                                  ))}
-                                </select>
-                              </div>
-                              <div>
-                                <label className="block text-xs font-medium text-muted-foreground mb-1">
-                                  Motivo
-                                </label>
-                                <select
-                                  value={selectedItems[item.id]?.reason || 'size_mismatch'}
-                                  onChange={(e) => handleItemChange(item.id, 'reason', e.target.value)}
-                                  className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-sm text-foreground"
-                                >
-                                  {RETURN_REASONS.map(r => (
-                                    <option key={r.value} value={r.value}>{r.label}</option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                            
-                            {(selectedItems[item.id]?.reason === 'defective' || 
-                              selectedItems[item.id]?.reason === 'other') && (
-                              <div>
-                                <label className="block text-xs font-medium text-muted-foreground mb-1">
-                                  Describe el problema
-                                </label>
-                                <textarea
-                                  value={selectedItems[item.id]?.reason_details || ''}
-                                  onChange={(e) => handleItemChange(item.id, 'reason_details', e.target.value)}
-                                  placeholder="Describe el defecto o problema..."
-                                  className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-sm text-foreground min-h-[80px]"
-                                  required={selectedItems[item.id]?.reason === 'defective'}
-                                />
-                              </div>
+                        <div className="flex-1">
+                          <div className="flex gap-3">
+                            {item.product?.images?.[0]?.image_url && (
+                              <img 
+                                src={item.product.images[0].image_url} 
+                                alt={item.product?.name}
+                                className="w-16 h-16 object-cover rounded-lg"
+                              />
                             )}
+                            <div>
+                              <p className="font-medium text-foreground">{item.product?.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                Talla: {item.variant?.size} · Cantidad: {item.quantity}
+                              </p>
+                              <p className="text-sm font-medium text-foreground">
+                                {(item.price_at_purchase * item.quantity).toFixed(2)} €
+                              </p>
+                            </div>
                           </div>
-                        )}
+                          
+                          {selectedItems[item.id]?.selected && (
+                            <div className="mt-4 space-y-3 pl-0">
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-xs font-medium text-muted-foreground mb-1">
+                                    Cantidad a devolver
+                                  </label>
+                                  <select
+                                    value={selectedItems[item.id]?.quantity || 1}
+                                    onChange={(e) => handleItemChange(item.id, 'quantity', parseInt(e.target.value))}
+                                    className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-sm text-foreground"
+                                  >
+                                    {Array.from({ length: item.quantity }, (_, i) => i + 1).map(n => (
+                                      <option key={n} value={n}>{n}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-muted-foreground mb-1">
+                                    Motivo
+                                  </label>
+                                  <select
+                                    value={selectedItems[item.id]?.reason || 'size_mismatch'}
+                                    onChange={(e) => handleItemChange(item.id, 'reason', e.target.value)}
+                                    className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-sm text-foreground"
+                                  >
+                                    {RETURN_REASONS.map(r => (
+                                      <option key={r.value} value={r.value}>{r.label}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                              
+                              {(selectedItems[item.id]?.reason === 'defective' || 
+                                selectedItems[item.id]?.reason === 'other') && (
+                                <div>
+                                  <label className="block text-xs font-medium text-muted-foreground mb-1">
+                                    Describe el problema
+                                  </label>
+                                  <textarea
+                                    value={selectedItems[item.id]?.reason_details || ''}
+                                    onChange={(e) => handleItemChange(item.id, 'reason_details', e.target.value)}
+                                    placeholder="Describe el defecto o problema..."
+                                    className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-sm text-foreground min-h-[80px]"
+                                    required={selectedItems[item.id]?.reason === 'defective'}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
 
-              {/* Additional Notes */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Notas adicionales (opcional)
-                </label>
-                <textarea
-                  value={customerNotes}
-                  onChange={(e) => setCustomerNotes(e.target.value)}
-                  placeholder="¿Hay algo más que debamos saber?"
-                  className="w-full px-4 py-3 bg-muted border border-border rounded-xl text-foreground min-h-[80px]"
-                />
-              </div>
+                {/* Additional Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Notas adicionales (opcional)
+                  </label>
+                  <textarea
+                    value={customerNotes}
+                    onChange={(e) => setCustomerNotes(e.target.value)}
+                    placeholder="¿Hay algo más que debamos saber?"
+                    className="w-full px-4 py-3 bg-muted border border-border rounded-xl text-foreground min-h-[80px]"
+                  />
+                </div>
 
-              {/* Submit */}
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowReturnModal(false)}
-                  className="flex-1 px-4 py-3 bg-muted text-foreground font-medium rounded-lg hover:bg-muted/80 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 px-4 py-3 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
-                >
-                  {isSubmitting ? 'Enviando...' : 'Enviar Solicitud'}
-                </button>
-              </div>
-            </form>
+                {/* Submit */}
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowReturnModal(false)}
+                    className="flex-1 px-4 py-3 bg-muted text-foreground font-medium rounded-lg hover:bg-muted/80 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 px-4 py-3 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  >
+                    {isSubmitting ? 'Enviando...' : 'Enviar Solicitud'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
