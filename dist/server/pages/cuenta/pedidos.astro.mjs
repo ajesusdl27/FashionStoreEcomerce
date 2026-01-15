@@ -1,6 +1,6 @@
-import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead, h as addAttribute } from '../../chunks/astro/server_DutnL9ib.mjs';
+import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead, h as addAttribute } from '../../chunks/astro/server_IieVUzOo.mjs';
 import 'piccolore';
-import { $ as $$PublicLayout } from '../../chunks/PublicLayout_BtMQN1yW.mjs';
+import { $ as $$PublicLayout } from '../../chunks/PublicLayout_DhyhF04e.mjs';
 import { s as supabase } from '../../chunks/supabase_COljrJv9.mjs';
 export { renderers } from '../../renderers.mjs';
 
@@ -12,12 +12,47 @@ const $$Index = createComponent(async ($$result, $$props, $$slots) => {
   if (!user) {
     return Astro2.redirect("/cuenta/login");
   }
-  const { data: orders } = await supabase.from("orders").select("*").eq("customer_email", user.email).order("created_at", { ascending: false });
+  const { data: orders } = await supabase.from("orders").select(
+    `
+    *,
+    coupon_usages(
+      coupons(
+        code,
+        discount_type,
+        discount_value
+      )
+    ),
+    order_items(
+      price_at_purchase,
+      quantity
+    )
+  `
+  ).eq("customer_email", user.email).order("created_at", { ascending: false });
   function formatPrice(price) {
     return new Intl.NumberFormat("es-ES", {
       style: "currency",
       currency: "EUR"
     }).format(price);
+  }
+  function calculateOrderTotal(order) {
+    const items = order.order_items || [];
+    const couponUsage = order.coupon_usages?.[0];
+    const coupon = couponUsage?.coupons;
+    const subtotal = items.reduce(
+      (sum, item) => sum + item.price_at_purchase * item.quantity,
+      0
+    );
+    let discountAmount = 0;
+    if (coupon) {
+      if (coupon.discount_type === "percentage") {
+        discountAmount = subtotal * (coupon.discount_value / 100);
+      } else {
+        discountAmount = Number(coupon.discount_value);
+      }
+    }
+    discountAmount = Math.min(discountAmount, subtotal);
+    const shippingCost = subtotal >= 50 ? 0 : 4.99;
+    return subtotal + shippingCost - discountAmount;
   }
   function formatDate(date) {
     return new Intl.DateTimeFormat("es-ES", {
@@ -38,8 +73,12 @@ const $$Index = createComponent(async ($$result, $$props, $$slots) => {
 ← Volver a mi cuenta
 </a> </div> ${orders && orders.length > 0 ? renderTemplate`<div class="space-y-4"> ${orders.map((order) => {
     const badge = getStatusBadge(order.status);
+    const finalTotal = calculateOrderTotal(order);
+    const hasCoupon = order.coupon_usages && order.coupon_usages.length > 0;
     return renderTemplate`<a${addAttribute(`/cuenta/pedidos/${order.id}`, "href")} class="block glass border border-border rounded-2xl p-6 hover:border-primary/50 hover:bg-zinc-900/50 transition-all cursor-pointer group"> <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4"> <div> <div class="flex items-center gap-2"> <p class="font-mono text-sm text-muted-foreground group-hover:text-primary transition-colors">
-Pedido #${order.id?.slice(0, 8).toUpperCase()} </p> <svg class="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path> </svg> </div> <p class="text-sm text-muted-foreground mt-1"> ${formatDate(order.created_at)} </p> </div> <div class="flex items-center gap-4"> <span${addAttribute(`px-3 py-1 rounded-full text-xs font-medium ${badge.class}`, "class")}> ${badge.text} </span> <span class="font-bold text-lg"> ${formatPrice(order.total_amount)} </span> </div> </div> <div class="border-t border-border pt-4"> <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm"> <div> <p class="text-muted-foreground mb-1">
+Pedido #${order.id?.slice(0, 8).toUpperCase()} </p> <svg class="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path> </svg> ${hasCoupon && renderTemplate`<span class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded ml-2">
+Cupón aplicado
+</span>`} </div> <p class="text-sm text-muted-foreground mt-1"> ${formatDate(order.created_at)} </p> </div> <div class="flex items-center gap-4"> <span${addAttribute(`px-3 py-1 rounded-full text-xs font-medium ${badge.class}`, "class")}> ${badge.text} </span> <span class="font-bold text-lg"> ${formatPrice(finalTotal)} </span> </div> </div> <div class="border-t border-border pt-4"> <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm"> <div> <p class="text-muted-foreground mb-1">
 Dirección de envío
 </p> <p>${order.shipping_address}</p> <p> ${order.shipping_postal_code} ${order.shipping_city} </p> </div> <div class="text-right"> ${order.status === "paid" && renderTemplate`<p class="text-emerald-400 text-sm">
 ✓ Pago confirmado

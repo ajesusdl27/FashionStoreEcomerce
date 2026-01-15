@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { toast } from '@/components/ui/Toast';
 
 interface Promotion {
   id: string;
   title: string;
   description: string;
   image_url: string;
+  mobile_image_url?: string;
+  cta_text?: string;
+  cta_link?: string;
   style_config: {
     text_color?: 'white' | 'black';
     text_align?: 'left' | 'center' | 'right';
@@ -26,6 +28,17 @@ interface PromotionBannerProps {
 export default function PromotionBanner({ zone, className = '' }: PromotionBannerProps) {
   const [promotion, setPromotion] = useState<Promotion | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    // Check if mobile on mount and resize
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     const fetchPromotion = async () => {
@@ -62,8 +75,23 @@ export default function PromotionBanner({ zone, className = '' }: PromotionBanne
 
   if (loading || !promotion) return null;
 
-  const { title, description, image_url, style_config, coupons } = promotion;
-  const textColor = style_config?.text_color === 'black' ? 'text-black' : 'text-white';
+  const { title, description, image_url, mobile_image_url, cta_text, cta_link, style_config, coupons } = promotion;
+  
+  // Use mobile image if available and on mobile device
+  const displayImage = (isMobile && mobile_image_url) ? mobile_image_url : image_url;
+  
+  // Extended color support
+  const getTextColorClass = (color?: string) => {
+    switch (color) {
+      case 'black': return 'text-black';
+      case 'gold': return 'text-amber-400';
+      case 'red': return 'text-red-500';
+      case 'gray': return 'text-gray-300';
+      default: return 'text-white';
+    }
+  };
+  
+  const textColor = getTextColorClass(style_config?.text_color);
   const textAlign = style_config?.text_align === 'center' 
     ? 'text-center items-center' 
     : style_config?.text_align === 'right' 
@@ -73,16 +101,21 @@ export default function PromotionBanner({ zone, className = '' }: PromotionBanne
   const copyCoupon = () => {
     if (coupons?.code) {
       navigator.clipboard.writeText(coupons.code);
-      toast.success(`Código ${coupons.code} copiado`, 'bottom-right');
+      // Simple feedback - could be enhanced with a proper toast component later
+      alert(`✓ Código ${coupons.code} copiado al portapapeles`);
     }
   };
+
+  // Default CTA values
+  const ctaButtonText = cta_text || 'Comprar Ahora';
+  const ctaButtonLink = cta_link || '/productos';
 
   return (
     <div className={`relative w-full overflow-hidden group ${className}`}>
       {/* Background Image */}
       <div className="absolute inset-0">
         <img 
-          src={image_url} 
+          src={displayImage} 
           alt={title} 
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
@@ -106,19 +139,30 @@ export default function PromotionBanner({ zone, className = '' }: PromotionBanne
           </p>
         )}
 
-        {coupons && (
-          <div className="flex flex-col sm:flex-row items-center gap-4 mt-2">
-            <div className="bg-white/90 backdrop-blur text-black px-4 py-2 rounded-lg font-mono font-bold border border-zinc-200 shadow-lg">
-              {coupons.code}
-            </div>
-            <button 
-              onClick={copyCoupon}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-2 rounded-lg font-medium transition-colors shadow-lg active:scale-95 transform duration-100"
-            >
-              Copiar Código
-            </button>
-          </div>
-        )}
+        <div className="flex flex-col sm:flex-row items-center gap-4 mt-2">
+          {/* CTA Button */}
+          <a 
+            href={ctaButtonLink}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 rounded-lg font-medium transition-all shadow-lg hover:shadow-xl active:scale-95 transform duration-100"
+          >
+            {ctaButtonText}
+          </a>
+
+          {/* Coupon Display */}
+          {coupons && (
+            <>
+              <div className="bg-white/90 backdrop-blur text-black px-4 py-2 rounded-lg font-mono font-bold border border-zinc-200 shadow-lg">
+                {coupons.code}
+              </div>
+              <button 
+                onClick={copyCoupon}
+                className="text-sm underline opacity-80 hover:opacity-100 transition-opacity"
+              >
+                Copiar Código
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

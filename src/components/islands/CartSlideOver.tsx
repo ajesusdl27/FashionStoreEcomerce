@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useStore } from '@nanostores/react';
 import { $cart, $cartSubtotal, removeFromCart, updateQuantity, $isCartOpen, closeCart } from '@/stores/cart';
 import QuantitySelector from '@/components/islands/QuantitySelector';
+import PromotionBanner from '@/components/ui/PromotionBanner';
 
 interface CartSlideOverProps {
   freeShippingThreshold?: number;
@@ -170,6 +171,16 @@ export default function CartSlideOver({
             </ul>
           )}
         </div>
+
+        {/* Cart Sidebar Promotion */}
+        {items.length > 0 && (
+          <div className="px-6 py-3 border-t border-border">
+            <PromotionBanner 
+              zone="cart_sidebar" 
+              className="rounded-lg aspect-[4/1] max-h-[80px] text-sm"
+            />
+          </div>
+        )}
 
         {/* Footer */}
         {items.length > 0 && (

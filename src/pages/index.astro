@@ -88,17 +88,29 @@ const heroPromotion = allPromotions?.find(p =>
 
 // Promotion Styles Helper
 const getPromoStyles = (styleConfig: any) => {
-    const textColor = styleConfig?.text_color === 'black' ? 'text-black' : 'text-white';
+    // Extended color support
+    const getTextColor = (color?: string) => {
+        switch (color) {
+            case 'black': return 'text-black';
+            case 'gold': return 'text-amber-400';
+            case 'red': return 'text-red-500';
+            case 'gray': return 'text-gray-300';
+            default: return 'text-white';
+        }
+    };
+    
+    const textColor = getTextColor(styleConfig?.text_color);
     const textAlign = styleConfig?.text_align === 'center' 
         ? 'text-center items-center' 
         : styleConfig?.text_align === 'right' 
         ? 'text-right items-end' 
         : 'text-left items-start';
     
-    // Gradient for readability
-    const gradient = styleConfig?.text_color === 'black'
-        ? 'bg-gradient-to-r from-white/90 via-white/50 to-transparent'
-        : 'bg-gradient-to-b from-black/60 via-transparent to-black/60';
+    // Gradient for readability - dark overlay for light text, light for dark text
+    const needsDarkOverlay = !styleConfig?.text_color || styleConfig?.text_color === 'white' || styleConfig?.text_color === 'gold' || styleConfig?.text_color === 'gray';
+    const gradient = needsDarkOverlay
+        ? 'bg-gradient-to-b from-black/60 via-transparent to-black/60'
+        : 'bg-gradient-to-r from-white/90 via-white/50 to-transparent';
 
     return { textColor, textAlign, gradient };
 };
@@ -111,14 +123,22 @@ const promoStyles = heroPromotion ? getPromoStyles(heroPromotion.style_config) :
   {/* DYNAMIC HERO SECTION (If Promotion Exists) */}
   {heroPromotion ? (
     <section class="relative h-[85vh] min-h-[600px] w-full flex items-center overflow-hidden">
-        {/* Background Image with Parallax-like effect */}
+        {/* Background Image with Parallax-like effect - Responsive images */}
         <div class="absolute inset-0 z-0 select-none">
-            <img 
-                src={heroPromotion.image_url} 
-                alt={heroPromotion.title} 
-                class="w-full h-full object-cover object-center scale-105 animate-zoom-slow"
-                loading="eager"
-            />
+            <picture>
+                {heroPromotion.mobile_image_url && (
+                    <source 
+                        media="(max-width: 767px)" 
+                        srcset={heroPromotion.mobile_image_url}
+                    />
+                )}
+                <img 
+                    src={heroPromotion.image_url} 
+                    alt={heroPromotion.title} 
+                    class="w-full h-full object-cover object-center scale-105 animate-zoom-slow"
+                    loading="eager"
+                />
+            </picture>
             {/* Intelligent Gradient Overlay - Enhanced for readability */}
             <div class={`absolute inset-0 ${
                 promoStyles?.textColor.includes('white') 
@@ -155,11 +175,11 @@ const promoStyles = heroPromotion ? getPromoStyles(heroPromotion.style_config) :
                 {/* Coupon & CTA Block - Better mobile stacking */}
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-6 animate-fade-up-delay-3 w-full sm:w-auto">
                     <a
-                        href="/productos"
+                        href={heroPromotion.cta_link || "/productos"}
                         class="group relative inline-flex items-center justify-center px-8 py-4 text-base sm:text-lg font-bold tracking-wider uppercase text-black bg-primary border-2 border-transparent hover:border-primary rounded-none overflow-hidden transition-all hover:bg-transparent hover:text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
                     >
                         <span class="relative z-10 flex items-center gap-2">
-                           Comprar Ahora
+                           {heroPromotion.cta_text || "Comprar Ahora"}
                            <svg class="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
                         </span>
                     </a>

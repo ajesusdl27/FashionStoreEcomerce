@@ -1,6 +1,6 @@
-import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead } from '../chunks/astro/server_DutnL9ib.mjs';
+import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead } from '../chunks/astro/server_IieVUzOo.mjs';
 import 'piccolore';
-import { a as $cart, b as $cartSubtotal, $ as $$PublicLayout } from '../chunks/PublicLayout_BtMQN1yW.mjs';
+import { a as $cart, b as $cartSubtotal, $ as $$PublicLayout } from '../chunks/PublicLayout_DhyhF04e.mjs';
 import { jsxs, jsx, Fragment } from 'react/jsx-runtime';
 import { useState, useEffect } from 'react';
 import { useStore } from '@nanostores/react';
@@ -31,8 +31,13 @@ function CheckoutForm({ userData }) {
   const [formData, setFormData] = useState(initialFormData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState(null);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
   const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
-  const total = subtotal + shipping;
+  const discount = appliedCoupon?.calculatedDiscount || 0;
+  const total = subtotal + shipping - discount;
   useEffect(() => {
     if (userData) {
       setFormData((prev) => ({
@@ -70,6 +75,44 @@ function CheckoutForm({ userData }) {
       setStep(3);
     }
   };
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    setCouponError(null);
+    try {
+      const response = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: couponCode.trim().toUpperCase(),
+          cartTotal: subtotal,
+          customerEmail: formData.customerEmail || null
+        })
+      });
+      const data = await response.json();
+      if (!data.valid) {
+        setCouponError(data.error || "Código no válido");
+        setAppliedCoupon(null);
+      } else {
+        setAppliedCoupon({
+          code: couponCode.trim().toUpperCase(),
+          discountType: data.coupon.discountType,
+          discountValue: data.coupon.discountValue,
+          calculatedDiscount: data.coupon.calculatedDiscount
+        });
+        setCouponError(null);
+      }
+    } catch (err) {
+      setCouponError("Error al validar el cupón");
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setCouponError(null);
+  };
   const handleSubmit = async () => {
     setLoading(true);
     setError(null);
@@ -97,7 +140,8 @@ function CheckoutForm({ userData }) {
           customerPhone: formData.customerPhone,
           shippingAddress: formData.shippingAddress,
           shippingCity: formData.shippingCity,
-          shippingPostalCode: formData.shippingPostalCode
+          shippingPostalCode: formData.shippingPostalCode,
+          couponCode: appliedCoupon?.code || void 0
         })
       });
       const data = await response.json();
@@ -319,8 +363,56 @@ function CheckoutForm({ userData }) {
         /* @__PURE__ */ jsxs("div", { className: "flex justify-between text-sm", children: [
           /* @__PURE__ */ jsx("span", { className: "text-muted-foreground", children: "Envío" }),
           /* @__PURE__ */ jsx("span", { children: shipping === 0 ? "Gratis" : formatPrice(shipping) })
+        ] }),
+        appliedCoupon && /* @__PURE__ */ jsxs("div", { className: "flex justify-between text-sm text-green-500", children: [
+          /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-1", children: [
+            /* @__PURE__ */ jsx("svg", { className: "w-4 h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" }) }),
+            appliedCoupon.code
+          ] }),
+          /* @__PURE__ */ jsxs("span", { children: [
+            "-",
+            formatPrice(discount)
+          ] })
         ] })
       ] }),
+      /* @__PURE__ */ jsx("div", { className: "py-4 border-t border-border", children: !appliedCoupon ? /* @__PURE__ */ jsxs("div", { className: "space-y-2", children: [
+        /* @__PURE__ */ jsx("label", { className: "text-sm font-medium", children: "Código promocional" }),
+        /* @__PURE__ */ jsxs("div", { className: "flex gap-2", children: [
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "text",
+              value: couponCode,
+              onChange: (e) => setCouponCode(e.target.value.toUpperCase()),
+              placeholder: "Ej: VERANO20",
+              className: "flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+            }
+          ),
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              onClick: handleApplyCoupon,
+              disabled: couponLoading || !couponCode.trim(),
+              className: "px-4 py-2 bg-secondary text-foreground rounded-lg text-sm font-medium hover:bg-secondary/80 transition-colors disabled:opacity-50",
+              children: couponLoading ? "..." : "Aplicar"
+            }
+          )
+        ] }),
+        couponError && /* @__PURE__ */ jsx("p", { className: "text-xs text-accent", children: couponError })
+      ] }) : /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+          /* @__PURE__ */ jsx("svg", { className: "w-5 h-5 text-green-500", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M5 13l4 4L19 7" }) }),
+          /* @__PURE__ */ jsx("span", { className: "text-sm font-medium text-green-500", children: appliedCoupon.code })
+        ] }),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            onClick: handleRemoveCoupon,
+            className: "text-muted-foreground hover:text-foreground transition-colors",
+            children: /* @__PURE__ */ jsx("svg", { className: "w-4 h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M6 18L18 6M6 6l12 12" }) })
+          }
+        )
+      ] }) }),
       /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-end pt-4 border-t border-border", children: [
         /* @__PURE__ */ jsx("span", { className: "font-heading text-lg", children: "Total" }),
         /* @__PURE__ */ jsxs("div", { className: "text-right", children: [

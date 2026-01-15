@@ -1,7 +1,7 @@
-import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead, l as renderScript } from '../../chunks/astro/server_DutnL9ib.mjs';
+import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead, l as renderScript } from '../../chunks/astro/server_IieVUzOo.mjs';
 import 'piccolore';
-import { $ as $$PublicLayout } from '../../chunks/PublicLayout_BtMQN1yW.mjs';
-import { $ as $$Button } from '../../chunks/Button_CqeZ6wvD.mjs';
+import { $ as $$PublicLayout } from '../../chunks/PublicLayout_DhyhF04e.mjs';
+import { $ as $$Button } from '../../chunks/Button_CL8ukol7.mjs';
 import { s as supabase } from '../../chunks/supabase_COljrJv9.mjs';
 import { s as stripe } from '../../chunks/stripe_B3_Fgp7U.mjs';
 import { a as sendOrderConfirmation } from '../../chunks/email_CMNVW2Q8.mjs';
@@ -22,10 +22,40 @@ const $$Exito = createComponent(async ($$result, $$props, $$slots) => {
       if (session.payment_status === "paid" && session.metadata?.order_id) {
         const { data: existingOrder } = await supabase.from("orders").select("status").eq("id", session.metadata.order_id).single();
         const wasAlreadyPaid = existingOrder?.status === "paid";
-        await supabase.rpc("update_order_status", {
+        console.log(`Order status before update: ${existingOrder?.status}, wasAlreadyPaid: ${wasAlreadyPaid}`);
+        const { error: updateError } = await supabase.rpc("update_order_status", {
           p_stripe_session_id: sessionId,
           p_status: "paid"
         });
+        if (updateError) {
+          console.error(
+            "Error updating order status in success page:",
+            updateError
+          );
+        } else {
+          console.log("Order status updated to paid via success page");
+        }
+        if (session.metadata?.coupon_id) {
+          const couponId = session.metadata.coupon_id;
+          console.log("Attempting to record coupon usage:", couponId);
+          const { error: couponError } = await supabase.rpc("use_coupon", {
+            p_coupon_id: couponId,
+            p_customer_email: session.customer_details?.email || session.customer_email || "",
+            p_order_id: session.metadata.order_id
+          });
+          if (couponError) {
+            if (couponError.code !== "23505") {
+              console.error(
+                "Error recording coupon usage in success page:",
+                couponError
+              );
+            } else {
+              console.log("Coupon already recorded (likely by webhook)");
+            }
+          } else {
+            console.log("Coupon usage recorded via success page");
+          }
+        }
         const { data: orderData } = await supabase.from("orders").select("*").eq("id", session.metadata.order_id).single();
         order = orderData;
         if (order) {
@@ -37,7 +67,9 @@ const $$Exito = createComponent(async ($$result, $$props, $$slots) => {
           `
           ).eq("order_id", order.id);
           orderItems = items || [];
+          console.log(`Checking email sending: wasAlreadyPaid=${wasAlreadyPaid}, customerEmail=${order.customer_email}`);
           if (!wasAlreadyPaid && order.customer_email) {
+            console.log("Attempting to send confirmation email from success page...");
             try {
               const emailItems = orderItems.map((item) => ({
                 productName: item.products?.name || "Producto",
@@ -45,6 +77,7 @@ const $$Exito = createComponent(async ($$result, $$props, $$slots) => {
                 quantity: item.quantity,
                 price: Number(item.price_at_purchase)
               }));
+              console.log("Email items prepared:", emailItems.length);
               const result = await sendOrderConfirmation({
                 orderId: order.id,
                 customerName: order.customer_name,
@@ -60,11 +93,13 @@ const $$Exito = createComponent(async ($$result, $$props, $$slots) => {
               if (!result.success) {
                 console.error("Failed to send confirmation email:", result.error);
               } else {
-                console.log("Confirmation email sent from success page");
+                console.log("\u2705 Confirmation email sent successfully from success page");
               }
             } catch (emailError) {
-              console.error("Error sending confirmation email:", emailError);
+              console.error("Exception sending confirmation email:", emailError);
             }
+          } else {
+            console.log(`Email NOT sent: wasAlreadyPaid=${wasAlreadyPaid}, has email=${!!order.customer_email}`);
           }
         }
       }

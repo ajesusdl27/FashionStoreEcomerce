@@ -8,11 +8,22 @@ const refreshToken = Astro.cookies.get("sb-refresh-token")?.value;
 const authClient = createAuthenticatedClient(accessToken, refreshToken);
 
 // Fetch promotions
-const { data: promotions, error } = await authClient
+const { data: promotions } = await authClient
   .from("promotions")
   .select("*, coupons(code)")
   .order("priority", { ascending: true })
   .order("created_at", { ascending: false });
+
+// Current date for status calculations
+const now = new Date();
+
+// Zone icons mapping
+const zoneIcons: Record<string, string> = {
+  home_hero: "🏠",
+  announcement_top: "📢",
+  cart_sidebar: "🛒",
+  product_page: "📦",
+};
 
 const formatDate = (date: string | null) => {
   if (!date) return "-";
@@ -33,6 +44,43 @@ const formatZone = (locations: string[]) => {
   };
   return locations.map((loc) => zones[loc] || loc).join(", ");
 };
+
+// Helper to calculate promotion status
+const getPromoStatus = (promo: any) => {
+  const startDate = promo.start_date ? new Date(promo.start_date) : null;
+  const endDate = promo.end_date ? new Date(promo.end_date) : null;
+
+  if (!promo.is_active) {
+    return {
+      status: "inactive",
+      label: "Inactivo",
+      color: "bg-muted",
+      textColor: "text-muted-foreground",
+    };
+  }
+  if (endDate && endDate < now) {
+    return {
+      status: "expired",
+      label: "Expirada",
+      color: "bg-red-500",
+      textColor: "text-red-400",
+    };
+  }
+  if (startDate && startDate > now) {
+    return {
+      status: "scheduled",
+      label: "Programada",
+      color: "bg-yellow-500",
+      textColor: "text-yellow-400",
+    };
+  }
+  return {
+    status: "active",
+    label: "Activo",
+    color: "bg-green-500",
+    textColor: "text-green-400",
+  };
+};
 ---
 
 <AdminLayout title="Promociones">
@@ -45,13 +93,13 @@ const formatZone = (locations: string[]) => {
         <h1 class="font-heading text-2xl text-foreground">
           Gestión de Promociones
         </h1>
-        <p class="text-sm text-zinc-500 mt-1">
+        <p class="text-sm text-muted-foreground mt-1">
           Banners y campañas visuales en la tienda
         </p>
       </div>
       <a href="/admin/promociones/nueva" class="admin-btn admin-btn-primary">
         <svg
-          class="w-5 h-5"
+          class="w-4 h-4 mr-2"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -66,6 +114,96 @@ const formatZone = (locations: string[]) => {
       </a>
     </div>
 
+    <!-- Quick Stats -->
+    {
+      promotions && promotions.length > 0 && (
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div class="bg-card border border-border rounded-lg p-4">
+            <div class="text-2xl font-bold text-foreground">
+              {promotions.length}
+            </div>
+            <div class="text-xs text-muted-foreground">Total</div>
+          </div>
+          <div class="bg-card border border-border rounded-lg p-4">
+            <div class="text-2xl font-bold text-green-500">
+              {
+                promotions.filter(
+                  (p: any) => getPromoStatus(p).status === "active"
+                ).length
+              }
+            </div>
+            <div class="text-xs text-muted-foreground">Activas</div>
+          </div>
+          <div class="bg-card border border-border rounded-lg p-4">
+            <div class="text-2xl font-bold text-yellow-500">
+              {
+                promotions.filter(
+                  (p: any) => getPromoStatus(p).status === "scheduled"
+                ).length
+              }
+            </div>
+            <div class="text-xs text-muted-foreground">Programadas</div>
+          </div>
+          <div class="bg-card border border-border rounded-lg p-4">
+            <div class="text-2xl font-bold text-red-500">
+              {
+                promotions.filter(
+                  (p: any) => getPromoStatus(p).status === "expired"
+                ).length
+              }
+            </div>
+            <div class="text-xs text-muted-foreground">Expiradas</div>
+          </div>
+        </div>
+      )
+    }
+
+    <!-- Filters Bar -->
+    <div
+      class="flex flex-wrap items-center gap-3 bg-card border border-border rounded-lg p-4"
+    >
+      <span class="text-sm text-muted-foreground font-medium">Filtrar por:</span
+      >
+
+      <select
+        id="filter-status"
+        class="admin-input text-sm py-1.5 px-3 pr-8 min-w-[120px]"
+      >
+        <option value="">Estado</option>
+        <option value="active">🟢 Activo</option>
+        <option value="scheduled">🟡 Programada</option>
+        <option value="expired">🔴 Expirada</option>
+        <option value="inactive">⚫ Inactivo</option>
+      </select>
+
+      <select
+        id="filter-zone"
+        class="admin-input text-sm py-1.5 px-3 pr-8 min-w-[140px]"
+      >
+        <option value="">Ubicación</option>
+        <option value="home_hero">🏠 Home Hero</option>
+        <option value="announcement_top">📢 Barra Superior</option>
+        <option value="cart_sidebar">🛒 Carrito</option>
+        <option value="product_page">📦 Ficha Producto</option>
+      </select>
+
+      <select
+        id="filter-coupon"
+        class="admin-input text-sm py-1.5 px-3 pr-8 min-w-[120px]"
+      >
+        <option value="">Cupón</option>
+        <option value="with">Con cupón</option>
+        <option value="without">Sin cupón</option>
+      </select>
+
+      <button
+        id="clear-filters"
+        class="text-sm text-primary hover:underline hidden"
+      >
+        Limpiar filtros
+      </button>
+    </div>
+
     <!-- Promotions Table -->
     <div class="admin-card">
       {
@@ -74,117 +212,223 @@ const formatZone = (locations: string[]) => {
             <table class="admin-table">
               <thead>
                 <tr>
-                  <th class="w-24">Imagen</th>
-                  <th>Título / Zona</th>
+                  <th class="w-28">Vista previa</th>
+                  <th>Promoción</th>
+                  <th>Ubicación</th>
                   <th>Cupón</th>
-                  <th>Prioridad</th>
-                  <th>Fechas</th>
+                  <th class="text-center">Prioridad</th>
+                  <th>Periodo</th>
                   <th>Estado</th>
                   <th class="text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {promotions.map((promo: any) => (
-                  <tr>
-                    <td>
-                      <div class="w-16 h-10 rounded overflow-hidden bg-zinc-800">
-                        <img
-                          src={promo.image_url}
-                          alt={promo.title}
-                          class="w-full h-full object-cover"
-                        />
-                      </div>
-                    </td>
-                    <td>
-                      <div class="font-medium text-foreground">
-                        {promo.title}
-                      </div>
-                      <div class="text-xs text-zinc-500">
-                        {formatZone(promo.locations)}
-                      </div>
-                    </td>
-                    <td>
-                      {promo.coupons ? (
-                        <span class="font-mono text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                          {promo.coupons.code}
+                {promotions.map((promo: any) => {
+                  const promoStatus = getPromoStatus(promo);
+                  const endDate = promo.end_date
+                    ? new Date(promo.end_date)
+                    : null;
+                  const isExpired = endDate && endDate < now;
+
+                  return (
+                    <tr class="group">
+                      <td>
+                        <div class="w-24 h-14 rounded-lg overflow-hidden bg-muted relative group/img cursor-pointer">
+                          <img
+                            src={promo.image_url}
+                            alt={promo.title}
+                            class="w-full h-full object-cover transition-transform duration-300 group-hover/img:scale-110"
+                          />
+                          {/* Hover overlay for full preview */}
+                          <div class="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                            <svg
+                              class="w-5 h-5 text-white"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
+                              />
+                            </svg>
+                          </div>
+                          {/* Mobile indicator */}
+                          {promo.mobile_image_url && (
+                            <div
+                              class="absolute bottom-1 right-1 bg-primary/90 rounded p-0.5"
+                              title="Tiene imagen móvil"
+                            >
+                              <svg
+                                class="w-3 h-3 text-black"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <div class="font-medium text-foreground">
+                          {promo.title}
+                        </div>
+                        {promo.description && (
+                          <div class="text-xs text-muted-foreground line-clamp-1 max-w-[200px]">
+                            {promo.description}
+                          </div>
+                        )}
+                        {/* CTA indicator */}
+                        {promo.cta_text && (
+                          <div class="mt-1">
+                            <span class="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                              CTA: {promo.cta_text}
+                            </span>
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        <div class="flex flex-wrap gap-1">
+                          {promo.locations?.map((loc: string) => (
+                            <span
+                              class="inline-flex items-center gap-1 text-xs bg-muted px-2 py-1 rounded"
+                              title={formatZone([loc])}
+                            >
+                              <span>{zoneIcons[loc] || "📍"}</span>
+                              <span class="hidden sm:inline">
+                                {loc.split("_")[0]}
+                              </span>
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td>
+                        {promo.coupons ? (
+                          <span class="font-mono text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                            {promo.coupons.code}
+                          </span>
+                        ) : (
+                          <span class="text-muted-foreground text-xs">—</span>
+                        )}
+                      </td>
+                      <td class="text-center">
+                        <span class="inline-flex items-center justify-center w-7 h-7 text-xs font-mono bg-muted rounded-full font-bold">
+                          {promo.priority}
                         </span>
-                      ) : (
-                        <span class="text-zinc-500 text-xs">-</span>
-                      )}
-                    </td>
-                    <td>
-                      <span class="text-xs font-mono bg-zinc-800 px-2 py-1 rounded">
-                        {promo.priority}
-                      </span>
-                    </td>
-                    <td class="text-sm text-zinc-400">
-                      <div>{formatDate(promo.start_date)}</div>
-                      {promo.end_date && (
-                        <div>→ {formatDate(promo.end_date)}</div>
-                      )}
-                    </td>
-                    <td>
-                      <button
-                        class="toggle-status-btn"
-                        data-id={promo.id}
-                        data-active={promo.is_active}
-                      >
-                        <span
-                          class={`badge ${promo.is_active ? "badge-success" : "badge-muted"}`}
-                        >
-                          {promo.is_active ? "Activo" : "Inactivo"}
-                        </span>
-                      </button>
-                    </td>
-                    <td class="text-right">
-                      <div class="flex justify-end gap-2">
-                        <a
-                          href={`/admin/promociones/editar/${promo.id}`}
-                          class="admin-btn-icon text-blue-400 hover:bg-blue-500/10"
-                          title="Editar"
-                        >
-                          <svg
-                            class="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
-                          </svg>
-                        </a>
+                      </td>
+                      <td class="text-sm text-muted-foreground">
+                        <div class="flex flex-col gap-0.5">
+                          <span class="text-xs text-muted-foreground">
+                            Desde:
+                          </span>
+                          <span>{formatDate(promo.start_date)}</span>
+                          {promo.end_date && (
+                            <>
+                              <span class="text-xs text-muted-foreground mt-1">
+                                Hasta:
+                              </span>
+                              <span class={isExpired ? "text-red-400" : ""}>
+                                {formatDate(promo.end_date)}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                      <td>
                         <button
-                          class="delete-promo-btn admin-btn-icon text-red-400 hover:bg-red-500/10"
+                          class="toggle-status-btn flex items-center gap-2"
                           data-id={promo.id}
-                          title="Eliminar"
+                          data-active={promo.is_active}
                         >
-                          <svg
-                            class="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                          {/* LED indicator */}
+                          <span
+                            class={`w-2.5 h-2.5 rounded-full ${promoStatus.color} ${promoStatus.status === "active" ? "animate-pulse" : ""}`}
+                          />
+                          <span
+                            class={`text-xs font-medium ${promoStatus.textColor}`}
                           >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
+                            {promoStatus.label}
+                          </span>
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td class="text-right">
+                        <div class="flex justify-end gap-1">
+                          <a
+                            href={`/admin/promociones/editar/${promo.id}`}
+                            class="admin-btn-icon text-blue-400 hover:bg-blue-500/10"
+                            title="Editar"
+                          >
+                            <svg
+                              class="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                              />
+                            </svg>
+                          </a>
+                          <button
+                            class="duplicate-promo-btn admin-btn-icon text-purple-400 hover:bg-purple-500/10"
+                            data-id={promo.id}
+                            title="Duplicar"
+                          >
+                            <svg
+                              class="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                              />
+                            </svg>
+                          </button>
+                          <button
+                            class="delete-promo-btn admin-btn-icon text-red-400 hover:bg-red-500/10"
+                            data-id={promo.id}
+                            title="Eliminar"
+                          >
+                            <svg
+                              class="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         ) : (
-          <div class="text-center py-12 text-zinc-500">
+          <div class="text-center py-12 text-muted-foreground">
             <svg
               class="w-16 h-16 mx-auto mb-4 opacity-50"
               fill="none"
@@ -257,5 +501,153 @@ const formatZone = (locations: string[]) => {
         console.error("Error deleting promotion:", error);
       }
     });
+  });
+
+  // Duplicate promotion
+  document.querySelectorAll(".duplicate-promo-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-id");
+
+      if (!confirm("¿Quieres crear una copia de esta promoción?")) {
+        return;
+      }
+
+      try {
+        // First fetch the promotion data
+        const getResponse = await fetch("/api/admin/promociones");
+        const { promotions } = await getResponse.json();
+        const promo = promotions?.find((p: any) => p.id === id);
+
+        if (!promo) {
+          alert("No se pudo encontrar la promoción.");
+          return;
+        }
+
+        // Create duplicate with modified title
+        const duplicateData = {
+          title: promo.title + " (Copia)",
+          description: promo.description,
+          image_url: promo.image_url,
+          mobile_image_url: promo.mobile_image_url,
+          cta_text: promo.cta_text,
+          cta_link: promo.cta_link,
+          coupon_id: promo.coupon_id,
+          locations: promo.locations,
+          priority: promo.priority + 1,
+          style_config: promo.style_config,
+          start_date: new Date().toISOString(),
+          end_date: promo.end_date,
+        };
+
+        const response = await fetch("/api/admin/promociones", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(duplicateData),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          // Redirect to edit the new promotion
+          window.location.href = `/admin/promociones/editar/${result.promotion.id}`;
+        } else {
+          const error = await response.json();
+          alert("Error al duplicar: " + error.error);
+        }
+      } catch (error) {
+        console.error("Error duplicating promotion:", error);
+        alert("Error al duplicar la promoción");
+      }
+    });
+  });
+
+  // Client-side filtering
+  const filterStatus = document.getElementById(
+    "filter-status"
+  ) as HTMLSelectElement;
+  const filterZone = document.getElementById(
+    "filter-zone"
+  ) as HTMLSelectElement;
+  const filterCoupon = document.getElementById(
+    "filter-coupon"
+  ) as HTMLSelectElement;
+  const clearFiltersBtn = document.getElementById(
+    "clear-filters"
+  ) as HTMLButtonElement;
+  const tableRows = document.querySelectorAll(
+    "tbody tr"
+  ) as NodeListOf<HTMLTableRowElement>;
+
+  function applyFilters() {
+    const status = filterStatus?.value || "";
+    const zone = filterZone?.value || "";
+    const coupon = filterCoupon?.value || "";
+
+    let visibleCount = 0;
+
+    tableRows.forEach((row) => {
+      let show = true;
+
+      // Status filter - check the status text in the row
+      if (status) {
+        const statusCell = row.querySelector(
+          ".toggle-status-btn span:last-child"
+        );
+        const statusText = statusCell?.textContent?.toLowerCase() || "";
+        const statusMap: Record<string, string> = {
+          active: "activo",
+          scheduled: "programada",
+          expired: "expirada",
+          inactive: "inactivo",
+        };
+        if (!statusText.includes(statusMap[status] || status)) {
+          show = false;
+        }
+      }
+
+      // Zone filter - check data attribute or zone badges
+      if (zone && show) {
+        const zoneBadges = row.querySelectorAll("td:nth-child(3) span");
+        const hasZone = Array.from(zoneBadges).some(
+          (badge) =>
+            badge
+              .getAttribute("title")
+              ?.toLowerCase()
+              .includes(zone.replace("_", " ")) ||
+            badge.textContent?.includes(zone.split("_")[0])
+        );
+        if (!hasZone) {
+          show = false;
+        }
+      }
+
+      // Coupon filter
+      if (coupon && show) {
+        const couponCell = row.querySelector("td:nth-child(4)");
+        const hasCoupon = couponCell?.querySelector(".font-mono") !== null;
+        if (coupon === "with" && !hasCoupon) show = false;
+        if (coupon === "without" && hasCoupon) show = false;
+      }
+
+      row.style.display = show ? "" : "none";
+      if (show) visibleCount++;
+    });
+
+    // Show/hide clear button
+    const hasFilters = status || zone || coupon;
+    if (clearFiltersBtn) {
+      clearFiltersBtn.classList.toggle("hidden", !hasFilters);
+    }
+  }
+
+  // Attach filter listeners
+  filterStatus?.addEventListener("change", applyFilters);
+  filterZone?.addEventListener("change", applyFilters);
+  filterCoupon?.addEventListener("change", applyFilters);
+
+  clearFiltersBtn?.addEventListener("click", () => {
+    if (filterStatus) filterStatus.value = "";
+    if (filterZone) filterZone.value = "";
+    if (filterCoupon) filterCoupon.value = "";
+    applyFilters();
   });
 </script>

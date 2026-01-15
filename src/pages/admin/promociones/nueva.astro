@@ -14,13 +14,6 @@ const { data: coupons } = await authClient
   .select("id, code, discount_type, discount_value")
   .eq("is_active", true)
   .order("code", { ascending: true });
-
-const zones = [
-  { id: "home_hero", label: "Home: Banner Principal (Hero)" },
-  { id: "announcement_top", label: "Global: Barra Superior (Aviso)" },
-  { id: "cart_sidebar", label: "Carrito: Banner Lateral" },
-  { id: "product_page", label: "Producto: Debajo de añadir al carrito" },
-];
 ---
 
 <AdminLayout title="Nueva Promoción">
@@ -28,7 +21,7 @@ const zones = [
     <div class="mb-6">
       <a
         href="/admin/promociones"
-        class="text-sm text-zinc-500 hover:text-foreground flex items-center gap-2 mb-2"
+        class="text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 mb-2"
       >
         <svg
           class="w-4 h-4"
@@ -47,31 +40,188 @@ const zones = [
       <h1 class="font-heading text-2xl text-foreground">Nueva Promoción</h1>
     </div>
 
+    <!-- Live Preview Panel - At Top for Better UX -->
+    <div class="admin-card p-6 mb-8 sticky top-4 z-10 bg-card/95 backdrop-blur">
+      <h2
+        class="text-lg font-medium border-b border-border pb-2 mb-4 flex items-center gap-2"
+      >
+        <svg
+          class="w-5 h-5 text-primary"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+          ></path>
+        </svg>
+        Vista Previa en Vivo
+      </h2>
+
+      <div
+        id="live-preview"
+        class="relative aspect-[21/9] bg-muted rounded-lg overflow-hidden border border-border"
+      >
+        <!-- Placeholder when no image -->
+        <div
+          id="preview-placeholder"
+          class="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground"
+        >
+          <svg
+            class="w-16 h-16 mb-4 opacity-30"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+            ></path>
+          </svg>
+          <p class="text-sm">Sube una imagen para ver la vista previa</p>
+        </div>
+
+        <!-- Preview Image -->
+        <img
+          id="preview-image"
+          class="absolute inset-0 w-full h-full object-cover hidden"
+          src=""
+          alt="Preview"
+        />
+
+        <!-- Overlay Gradient -->
+        <div
+          id="preview-overlay"
+          class="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent hidden"
+        >
+        </div>
+
+        <!-- Preview Content -->
+        <div
+          id="preview-content"
+          class="absolute inset-0 flex flex-col justify-center p-8 hidden"
+          style="max-width: 60%;"
+        >
+          <h3
+            id="preview-title"
+            class="text-3xl md:text-4xl font-bold text-white mb-2 drop-shadow-lg"
+          >
+            Título de la Promoción
+          </h3>
+          <p
+            id="preview-description"
+            class="text-base text-white/90 mb-4 line-clamp-2"
+          >
+          </p>
+          <div class="flex items-center gap-4">
+            <button
+              id="preview-cta"
+              class="bg-primary text-primary-foreground px-6 py-2 rounded font-medium text-sm"
+            >
+              Comprar Ahora
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-xs text-muted-foreground mt-3">
+        💡 La vista previa se actualiza mientras rellenas el formulario.
+      </p>
+    </div>
+
     <form id="promo-form" class="space-y-8">
       <!-- Section 1: Visuals -->
       <div class="admin-card p-6 space-y-6">
-        <h2 class="text-lg font-medium border-b border-zinc-800 pb-2">
-          1. Diseño Visual
+        <h2 class="text-lg font-medium border-b border-border pb-2">
+          1. Imágenes del Banner
         </h2>
 
-        <div>
-          <label class="block text-sm font-medium mb-2"
-            >Imagen del Banner *</label
-          >
-          <ImageUploader
-            client:load
-            inputName="images"
-            inputId="images-input"
-          />
-          <p class="text-xs text-zinc-500 mt-1">
-            Se usará la primera imagen como fondo.
-          </p>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Desktop Image -->
+          <div>
+            <label
+              class="block text-sm font-medium mb-2 flex items-center gap-2"
+            >
+              <svg
+                class="w-4 h-4 text-muted-foreground"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                ></path>
+              </svg>
+              Imagen Desktop *
+            </label>
+            <ImageUploader
+              client:load
+              inputName="images"
+              inputId="images-input"
+            />
+            <p class="text-xs text-muted-foreground mt-1">
+              Imagen principal para pantallas grandes (recomendado: 1920x800)
+            </p>
+          </div>
+
+          <!-- Mobile Image -->
+          <div>
+            <label
+              class="block text-sm font-medium mb-2 flex items-center gap-2"
+            >
+              <svg
+                class="w-4 h-4 text-muted-foreground"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+                ></path>
+              </svg>
+              Imagen Móvil
+              <span class="text-xs text-muted-foreground font-normal"
+                >(opcional)</span
+              >
+            </label>
+            <ImageUploader
+              client:load
+              inputName="mobile_images"
+              inputId="mobile-images-input"
+            />
+            <p class="text-xs text-muted-foreground mt-1">
+              Versión optimizada para móviles (recomendado: 750x1000, vertical)
+            </p>
+          </div>
         </div>
+      </div>
+
+      <!-- Section 2: Content -->
+      <div class="admin-card p-6 space-y-6">
+        <h2 class="text-lg font-medium border-b border-border pb-2">
+          2. Contenido
+        </h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium mb-2">Título</label>
+              <label class="block text-sm font-medium mb-2">Título *</label>
               <input
                 type="text"
                 name="title"
@@ -91,21 +241,26 @@ const zones = [
           </div>
 
           <div
-            class="space-y-4 bg-zinc-900/50 p-4 rounded-lg border border-zinc-800"
+            class="space-y-4 bg-muted/50 p-4 rounded-lg border border-border"
           >
-            <label class="block text-sm font-medium text-zinc-400 mb-2"
+            <label class="block text-sm font-medium text-muted-foreground mb-2"
               >Estilos Texto</label
             >
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs text-zinc-500 mb-1">Color</label>
+                <label class="block text-xs text-muted-foreground mb-1"
+                  >Color del texto</label
+                >
                 <select name="style_text_color" class="admin-input w-full">
-                  <option value="white">Blanco</option>
-                  <option value="black">Negro</option>
+                  <option value="white">⚪ Blanco (fondos oscuros)</option>
+                  <option value="black">⚫ Negro (fondos claros)</option>
+                  <option value="gold">🟡 Dorado (premium)</option>
+                  <option value="red">🔴 Rojo (urgencia)</option>
+                  <option value="gray">⚪ Gris claro</option>
                 </select>
               </div>
               <div>
-                <label class="block text-xs text-zinc-500 mb-1"
+                <label class="block text-xs text-muted-foreground mb-1"
                   >Alineación</label
                 >
                 <select name="style_text_align" class="admin-input w-full">
@@ -117,75 +272,214 @@ const zones = [
             </div>
           </div>
         </div>
+
+        <!-- CTA Section -->
+        <div class="border-t border-border pt-6">
+          <label class="block text-sm font-medium mb-4 flex items-center gap-2">
+            <svg
+              class="w-4 h-4 text-primary"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"
+              ></path>
+            </svg>
+            Botón de Acción (CTA)
+          </label>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-muted-foreground mb-1"
+                >Texto del botón</label
+              >
+              <input
+                type="text"
+                name="cta_text"
+                placeholder="Ej: Comprar Ahora, Ver Ofertas..."
+                class="admin-input w-full"
+              />
+              <p class="text-xs text-muted-foreground mt-1">
+                Si está vacío, usará "Comprar Ahora" por defecto
+              </p>
+            </div>
+            <div>
+              <label class="block text-xs text-muted-foreground mb-1"
+                >Enlace del botón</label
+              >
+              <input
+                type="text"
+                name="cta_link"
+                placeholder="Ej: /productos, /categoria/ofertas..."
+                class="admin-input w-full"
+              />
+              <p class="text-xs text-muted-foreground mt-1">
+                Si está vacío, redirige a /productos
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- Section 2: Configuration -->
+      <!-- Section 3: Configuration -->
       <div class="admin-card p-6 space-y-6">
-        <h2 class="text-lg font-medium border-b border-zinc-800 pb-2">
-          2. Configuración
+        <h2 class="text-lg font-medium border-b border-border pb-2">
+          3. Configuración
         </h2>
 
         <div>
           <label class="block text-sm font-medium mb-3">Ubicación *</label>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {
-              zones.map((zone) => (
-                <label class="flex items-start gap-3 p-3 rounded border border-zinc-800 hover:border-zinc-700 bg-zinc-900/30 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="locations"
-                    value={zone.id}
-                    class="mt-1 rounded border-zinc-700 bg-zinc-900 text-primary focus:ring-primary"
-                  />
-                  <div>
-                    <span class="block text-sm font-medium text-zinc-200">
-                      {zone.id}
-                    </span>
-                    <span class="block text-xs text-zinc-500">
-                      {zone.label}
-                    </span>
-                  </div>
-                </label>
-              ))
-            }
-          </div>
-        </div>
+            <!-- home_hero -->
+            <label
+              class="group flex items-center gap-4 p-4 rounded-lg border border-border hover:border-primary/50 bg-muted/30 hover:bg-muted/50 cursor-pointer transition-all"
+            >
+              <input
+                type="checkbox"
+                name="locations"
+                value="home_hero"
+                class="mt-0.5 rounded border-border bg-background text-primary focus:ring-primary"
+              />
+              <div class="flex items-center gap-3 flex-1">
+                <div
+                  class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-xl"
+                >
+                  🏠
+                </div>
+                <div>
+                  <span class="block text-sm font-medium text-foreground"
+                    >Home Hero</span
+                  >
+                  <span class="block text-xs text-muted-foreground"
+                    >Banner principal de la página de inicio</span
+                  >
+                </div>
+              </div>
+            </label>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <label class="block text-sm font-medium mb-2">Prioridad</label>
-            <input
-              type="number"
-              name="priority"
-              value="10"
-              min="1"
-              class="admin-input w-full"
-            />
-            <p class="text-xs text-zinc-500 mt-1">Menor número = Más arriba</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-2">Fecha Inicio</label>
-            <input
-              type="datetime-local"
-              name="start_date"
-              class="admin-input w-full"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-2">Fecha Fin</label>
-            <input
-              type="datetime-local"
-              name="end_date"
-              class="admin-input w-full"
-            />
+            <!-- announcement_top -->
+            <label
+              class="group flex items-center gap-4 p-4 rounded-lg border border-border hover:border-primary/50 bg-muted/30 hover:bg-muted/50 cursor-pointer transition-all"
+            >
+              <input
+                type="checkbox"
+                name="locations"
+                value="announcement_top"
+                class="mt-0.5 rounded border-border bg-background text-primary focus:ring-primary"
+              />
+              <div class="flex items-center gap-3 flex-1">
+                <div
+                  class="w-10 h-10 rounded-lg bg-yellow-500/10 flex items-center justify-center text-xl"
+                >
+                  📢
+                </div>
+                <div>
+                  <span class="block text-sm font-medium text-foreground"
+                    >Barra Superior</span
+                  >
+                  <span class="block text-xs text-muted-foreground"
+                    >Aviso fijo en el header de la tienda</span
+                  >
+                </div>
+              </div>
+            </label>
+
+            <!-- cart_sidebar -->
+            <label
+              class="group flex items-center gap-4 p-4 rounded-lg border border-border hover:border-primary/50 bg-muted/30 hover:bg-muted/50 cursor-pointer transition-all"
+            >
+              <input
+                type="checkbox"
+                name="locations"
+                value="cart_sidebar"
+                class="mt-0.5 rounded border-border bg-background text-primary focus:ring-primary"
+              />
+              <div class="flex items-center gap-3 flex-1">
+                <div
+                  class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-xl"
+                >
+                  🛒
+                </div>
+                <div>
+                  <span class="block text-sm font-medium text-foreground"
+                    >Banner Carrito</span
+                  >
+                  <span class="block text-xs text-muted-foreground"
+                    >Banner lateral en el carrito de compras</span
+                  >
+                </div>
+              </div>
+            </label>
+
+            <!-- product_page -->
+            <label
+              class="group flex items-center gap-4 p-4 rounded-lg border border-border hover:border-primary/50 bg-muted/30 hover:bg-muted/50 cursor-pointer transition-all"
+            >
+              <input
+                type="checkbox"
+                name="locations"
+                value="product_page"
+                class="mt-0.5 rounded border-border bg-background text-primary focus:ring-primary"
+              />
+              <div class="flex items-center gap-3 flex-1">
+                <div
+                  class="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center text-xl"
+                >
+                  📦
+                </div>
+                <div>
+                  <span class="block text-sm font-medium text-foreground"
+                    >Ficha Producto</span
+                  >
+                  <span class="block text-xs text-muted-foreground"
+                    >Debajo del botón añadir al carrito</span
+                  >
+                </div>
+              </div>
+            </label>
           </div>
         </div>
       </div>
 
-      <!-- Section 3: Logic -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <label class="block text-sm font-medium mb-2">Prioridad</label>
+          <input
+            type="number"
+            name="priority"
+            value="10"
+            min="1"
+            class="admin-input w-full"
+          />
+          <p class="text-xs text-muted-foreground mt-1">
+            Menor número = Más arriba
+          </p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-2">Fecha Inicio</label>
+          <input
+            type="datetime-local"
+            name="start_date"
+            class="admin-input w-full"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-2">Fecha Fin</label>
+          <input
+            type="datetime-local"
+            name="end_date"
+            class="admin-input w-full"
+          />
+        </div>
+      </div>
+
+      <!-- Section 4: Coupon (Optional) -->
       <div class="admin-card p-6 space-y-6">
-        <h2 class="text-lg font-medium border-b border-zinc-800 pb-2">
-          3. Enlace (Opcional)
+        <h2 class="text-lg font-medium border-b border-border pb-2">
+          4. Cupón (Opcional)
         </h2>
 
         <div>
@@ -203,7 +497,7 @@ const zones = [
               ))
             }
           </select>
-          <p class="text-xs text-zinc-500 mt-1">
+          <p class="text-xs text-muted-foreground mt-1">
             Si se selecciona, el banner mostrará el código y permitirá copiarlo
             o aplicarlo.
           </p>
@@ -212,7 +506,7 @@ const zones = [
 
       <!-- Submit Actions -->
       <div
-        class="flex items-center justify-end gap-4 border-t border-zinc-800 pt-6"
+        class="flex items-center justify-end gap-4 border-t border-border pt-6"
       >
         <a href="/admin/promociones" class="admin-btn">Cancelar</a>
         <button
@@ -248,7 +542,125 @@ const zones = [
         class="hidden p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400"
       >
       </div>
+
+      <!-- Success Toast -->
+      <div
+        id="form-success"
+        class="hidden fixed bottom-6 right-6 p-4 bg-green-500/90 text-white rounded-lg shadow-xl flex items-center gap-3 animate-bounce z-50"
+      >
+        <svg
+          class="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span class="font-medium">¡Promoción creada correctamente!</span>
+      </div>
     </form>
+
+    <!-- Live Preview Panel -->
+    <div class="admin-card p-6 mt-8">
+      <h2
+        class="text-lg font-medium border-b border-border pb-2 mb-4 flex items-center gap-2"
+      >
+        <svg
+          class="w-5 h-5 text-primary"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+          ></path>
+        </svg>
+        Vista Previa en Vivo
+      </h2>
+
+      <div
+        id="live-preview"
+        class="relative aspect-[21/9] bg-muted rounded-lg overflow-hidden border border-border"
+      >
+        <!-- Placeholder when no image -->
+        <div
+          id="preview-placeholder"
+          class="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground"
+        >
+          <svg
+            class="w-16 h-16 mb-4 opacity-30"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+            ></path>
+          </svg>
+          <p class="text-sm">Sube una imagen para ver la vista previa</p>
+        </div>
+
+        <!-- Preview Image -->
+        <img
+          id="preview-image"
+          class="absolute inset-0 w-full h-full object-cover hidden"
+          src=""
+          alt="Preview"
+        />
+
+        <!-- Overlay Gradient -->
+        <div
+          id="preview-overlay"
+          class="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent hidden"
+        >
+        </div>
+
+        <!-- Preview Content -->
+        <div
+          id="preview-content"
+          class="absolute inset-0 flex flex-col justify-center p-8 hidden"
+          style="max-width: 60%;"
+        >
+          <h3
+            id="preview-title"
+            class="text-3xl md:text-4xl font-bold text-white mb-2 drop-shadow-lg"
+          >
+          </h3>
+          <p
+            id="preview-description"
+            class="text-base text-white/90 mb-4 line-clamp-2"
+          >
+          </p>
+          <div class="flex items-center gap-4">
+            <button
+              id="preview-cta"
+              class="bg-primary text-primary-foreground px-6 py-2 rounded font-medium text-sm"
+            >
+              Comprar Ahora
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-xs text-muted-foreground mt-3">
+        💡 Esta es una aproximación de cómo se verá el banner en el sitio.
+      </p>
+    </div>
   </div>
 </AdminLayout>
 
@@ -276,7 +688,7 @@ const zones = [
       if (key === "locations") {
         locations.push(value as string);
       } else if (key === "images") {
-        // Images come as JSON string from ImageUploader
+        // Desktop images come as JSON string from ImageUploader
         try {
           const urls = JSON.parse(value as string);
           if (urls && urls.length > 0) {
@@ -284,6 +696,16 @@ const zones = [
           }
         } catch (e) {
           console.error("Error parsing images", e);
+        }
+      } else if (key === "mobile_images") {
+        // Mobile images
+        try {
+          const urls = JSON.parse(value as string);
+          if (urls && urls.length > 0) {
+            data["mobile_image_url"] = urls[0];
+          }
+        } catch (e) {
+          console.error("Error parsing mobile images", e);
         }
       } else if (key.startsWith("style_")) {
         // Group styles
@@ -329,13 +751,110 @@ const zones = [
         throw new Error(result.error || "Error al crear la promoción");
       }
 
-      window.location.href = "/admin/promociones";
+      // Show success toast
+      const successToast = document.getElementById("form-success");
+      successToast?.classList.remove("hidden");
+
+      // Redirect after short delay
+      setTimeout(() => {
+        window.location.href = "/admin/promociones";
+      }, 1500);
     } catch (error: any) {
       formError.textContent = error.message;
       formError.classList.remove("hidden");
       btnSubmit.disabled = false;
       btnText.classList.remove("hidden");
       btnSpinner.classList.add("hidden");
+    }
+  });
+
+  // ========== LIVE PREVIEW FUNCTIONALITY ==========
+  const previewPlaceholder = document.getElementById("preview-placeholder");
+  const previewImage = document.getElementById(
+    "preview-image"
+  ) as HTMLImageElement;
+  const previewOverlay = document.getElementById("preview-overlay");
+  const previewContent = document.getElementById("preview-content");
+  const previewTitle = document.getElementById("preview-title");
+  const previewDescription = document.getElementById("preview-description");
+  const previewCta = document.getElementById("preview-cta");
+
+  // Watch for image changes via hidden input
+  const imagesInput = document.getElementById("images-input");
+
+  function updatePreviewImage() {
+    try {
+      const value = (imagesInput as HTMLInputElement)?.value;
+      if (value) {
+        const urls = JSON.parse(value);
+        if (urls && urls.length > 0) {
+          previewImage?.setAttribute("src", urls[0]);
+          previewImage?.classList.remove("hidden");
+          previewPlaceholder?.classList.add("hidden");
+          previewOverlay?.classList.remove("hidden");
+          previewContent?.classList.remove("hidden");
+          return;
+        }
+      }
+    } catch (e) {}
+
+    // No image - show placeholder
+    previewImage?.classList.add("hidden");
+    previewPlaceholder?.classList.remove("hidden");
+    previewOverlay?.classList.add("hidden");
+    previewContent?.classList.add("hidden");
+  }
+
+  // Use MutationObserver to watch for changes to hidden input value
+  if (imagesInput) {
+    const observer = new MutationObserver(updatePreviewImage);
+    observer.observe(imagesInput, {
+      attributes: true,
+      attributeFilter: ["value"],
+    });
+
+    // Also poll periodically as some changes might not trigger mutation
+    setInterval(updatePreviewImage, 1000);
+  }
+
+  // Watch title input
+  const titleInput = document.querySelector('input[name="title"]');
+  titleInput?.addEventListener("input", (e) => {
+    const value = (e.target as HTMLInputElement).value;
+    if (previewTitle)
+      previewTitle.textContent = value || "Título de la Promoción";
+  });
+
+  // Watch description input
+  const descInput = document.querySelector('textarea[name="description"]');
+  descInput?.addEventListener("input", (e) => {
+    const value = (e.target as HTMLTextAreaElement).value;
+    if (previewDescription) previewDescription.textContent = value || "";
+  });
+
+  // Watch CTA text input
+  const ctaTextInput = document.querySelector('input[name="cta_text"]');
+  ctaTextInput?.addEventListener("input", (e) => {
+    const value = (e.target as HTMLInputElement).value;
+    if (previewCta) previewCta.textContent = value || "Comprar Ahora";
+  });
+
+  // Watch text color select
+  const textColorSelect = document.querySelector(
+    'select[name="style_text_color"]'
+  );
+  textColorSelect?.addEventListener("change", (e) => {
+    const value = (e.target as HTMLSelectElement).value;
+    const isWhite = value === "white";
+
+    if (previewTitle) {
+      previewTitle.className = `text-3xl md:text-4xl font-bold mb-2 drop-shadow-lg ${isWhite ? "text-white" : "text-black"}`;
+    }
+    if (previewDescription) {
+      previewDescription.className = `text-base mb-4 line-clamp-2 ${isWhite ? "text-white/90" : "text-black/90"}`;
+    }
+    if (previewOverlay) {
+      previewOverlay.className = `absolute inset-0 ${isWhite ? "bg-gradient-to-r from-black/70 via-black/30 to-transparent" : "bg-gradient-to-r from-white/70 via-white/30 to-transparent"}`;
     }
   });
 </script>

@@ -3,6 +3,7 @@ import PublicLayout from "@/layouts/PublicLayout.astro";
 import Badge from "@/components/ui/Badge.astro";
 import CloudinaryImage from "@/components/ui/CloudinaryImage.astro";
 import ProductAddToCart from "@/components/islands/ProductAddToCart";
+import PromotionBanner from "@/components/ui/PromotionBanner";
 import { supabase } from "@/lib/supabase";
 import { getOptimizedUrl, isCloudinaryUrl } from "@/lib/cloudinary";
 
@@ -195,6 +196,15 @@ const getThumbnailUrl = (url: string) => {
           imageUrl={mainImage}
           variants={variantsForReact}
         />
+
+        <!-- Product Page Promotion Banner -->
+        <div class="mt-8">
+          <PromotionBanner
+            client:load
+            zone="product_page"
+            className="rounded-lg aspect-[3/1] max-h-[200px]"
+          />
+        </div>
       </div>
     </div>
   </div>

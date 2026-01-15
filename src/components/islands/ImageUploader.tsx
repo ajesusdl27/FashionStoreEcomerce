@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useId } from 'react';
 
 interface ImageUploaderProps {
   initialImages?: string[];
@@ -19,6 +19,10 @@ export default function ImageUploader({
   inputName,
   inputId,
 }: ImageUploaderProps) {
+  // Generate a unique ID for file input to avoid conflicts when multiple uploaders exist
+  const uniqueId = useId();
+  const fileInputId = inputId ? `file-input-${inputId}` : `file-input-${uniqueId}`;
+  
   const [images, setImages] = useState<UploadedImage[]>(
     initialImages.map(url => ({ url, uploading: false }))
   );
@@ -162,11 +166,11 @@ export default function ImageUploader({
             : 'border-border hover:border-primary/50 hover:bg-muted/50'
           }
         `}
-        onClick={() => document.getElementById('file-input')?.click()}
+        onClick={() => document.getElementById(fileInputId)?.click()}
       >
         <input
           type="file"
-          id="file-input"
+          id={fileInputId}
           multiple
           accept="image/*"
           className="hidden"

@@ -5,7 +5,7 @@ export { renderers } from '../../../renderers.mjs';
 const POST = async ({ request, url }) => {
   try {
     const body = await request.json();
-    const { items, customerName, customerEmail, customerPhone, shippingAddress, shippingCity, shippingPostalCode } = body;
+    const { items, customerName, customerEmail, customerPhone, shippingAddress, shippingCity, shippingPostalCode, couponCode } = body;
     if (!items?.length || !customerName || !customerEmail || !shippingAddress || !shippingCity || !shippingPostalCode) {
       return new Response(JSON.stringify({ error: "Faltan campos requeridos" }), {
         status: 400,
@@ -14,6 +14,28 @@ const POST = async ({ request, url }) => {
     }
     const subtotalCents = items.reduce((sum, item) => sum + Math.round(item.price * 100) * item.quantity, 0);
     const shippingCents = subtotalCents >= FREE_SHIPPING_THRESHOLD * 100 ? 0 : SHIPPING_COST;
+    let validatedCoupon = null;
+    if (couponCode) {
+      const { data: couponResult, error: couponError } = await supabase.rpc("validate_coupon", {
+        p_code: couponCode,
+        p_cart_total: subtotalCents / 100,
+        p_customer_email: customerEmail
+      });
+      const result = Array.isArray(couponResult) ? couponResult[0] : couponResult;
+      if (couponError || !result?.is_valid) {
+        return new Response(JSON.stringify({
+          error: result?.error_message || "Código promocional no válido"
+        }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+      validatedCoupon = {
+        id: result.coupon_id,
+        stripeCouponId: result.stripe_coupon_id,
+        calculatedDiscount: result.calculated_discount
+      };
+    }
     const totalCents = subtotalCents + shippingCents;
     const reservedItems = [];
     for (const item of items) {
@@ -97,7 +119,7 @@ const POST = async ({ request, url }) => {
     const expiresAt = Math.floor(Date.now() / 1e3) + STOCK_RESERVATION_MINUTES * 60;
     let session;
     try {
-      session = await stripe.checkout.sessions.create({
+      const sessionConfig = {
         mode: "payment",
         line_items: lineItems,
         success_url: `${url.origin}/checkout/exito?session_id={CHECKOUT_SESSION_ID}`,
@@ -105,11 +127,17 @@ const POST = async ({ request, url }) => {
         expires_at: expiresAt,
         customer_email: customerEmail,
         metadata: {
-          order_id: orderId
+          order_id: orderId,
+          // Always include coupon_id in metadata, even if empty string for consistency
+          coupon_id: validatedCoupon?.id || ""
         },
         locale: "es",
         billing_address_collection: "auto"
-      });
+      };
+      if (validatedCoupon) {
+        sessionConfig.discounts = [{ coupon: validatedCoupon.stripeCouponId }];
+      }
+      session = await stripe.checkout.sessions.create(sessionConfig);
     } catch (stripeError) {
       console.error("Error creating Stripe session:", stripeError);
       for (const reserved of reservedItems) {
