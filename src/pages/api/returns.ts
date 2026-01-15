@@ -41,7 +41,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Verify the order belongs to this user and is eligible for return
     const { data: order, error: orderError } = await supabase
       .from("orders")
-      .select("id, status, delivered_at, customer_email")
+      .select(`
+        id, status, delivered_at, customer_email,
+        order_items (id, price_at_purchase, product_id, variant_id, quantity)
+      `)
       .eq("id", order_id)
       .single();
 
@@ -119,15 +122,28 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Insert return items
-    const returnItems = items.map((item: any) => ({
-      return_id: newReturn.id,
-      order_item_id: item.order_item_id,
-      product_variant_id: item.product_variant_id,
-      quantity: item.quantity,
-      reason: item.reason,
-      reason_details: item.reason_details,
-    }));
+    // Insert return items with calculated refund_amount
+    const orderItemsMap = new Map(
+      (order.order_items || []).map((oi: any) => [oi.id, oi])
+    );
+    
+    let totalEstimatedRefund = 0;
+    const returnItems = items.map((item: any) => {
+      const orderItem = orderItemsMap.get(item.order_item_id);
+      const priceAtPurchase = orderItem?.price_at_purchase || 0;
+      const estimatedRefund = priceAtPurchase * item.quantity;
+      totalEstimatedRefund += estimatedRefund;
+      
+      return {
+        return_id: newReturn.id,
+        order_item_id: item.order_item_id,
+        product_variant_id: item.product_variant_id,
+        quantity: item.quantity,
+        reason: item.reason,
+        reason_details: item.reason_details,
+        refund_amount: estimatedRefund, // Store estimated refund amount
+      };
+    });
 
     const { error: itemsError } = await supabase
       .from("return_items")
@@ -142,6 +158,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
+
+    // Update the return with the total estimated refund amount
+    await supabase
+      .from("returns")
+      .update({ refund_amount: totalEstimatedRefund })
+      .eq("id", newReturn.id);
+
+    // Update order status to indicate a return has been requested
+    await supabase
+      .from("orders")
+      .update({ status: "return_requested" })
+      .eq("id", order_id);
 
     // Fetch product details for email
     const { data: orderDetails } = await supabase

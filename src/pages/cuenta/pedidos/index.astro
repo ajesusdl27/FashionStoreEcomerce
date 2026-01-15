@@ -83,6 +83,30 @@ function getStatusBadge(status: string) {
     shipped: { class: "bg-blue-500/20 text-blue-400", text: "Enviado" },
     delivered: { class: "bg-primary/20 text-primary", text: "Entregado" },
     cancelled: { class: "bg-accent/20 text-accent", text: "Cancelado" },
+    return_requested: {
+      class: "bg-orange-500/20 text-orange-400",
+      text: "Devolución Solicitada",
+    },
+    return_approved: {
+      class: "bg-orange-500/20 text-orange-400",
+      text: "Devolución Aprobada",
+    },
+    return_shipped: {
+      class: "bg-purple-500/20 text-purple-400",
+      text: "Devolución en Camino",
+    },
+    return_received: {
+      class: "bg-purple-500/20 text-purple-400",
+      text: "Devolución Recibida",
+    },
+    return_completed: {
+      class: "bg-emerald-500/20 text-emerald-400",
+      text: "Reembolso Completado",
+    },
+    partially_refunded: {
+      class: "bg-amber-500/20 text-amber-400",
+      text: "Reembolso Parcial",
+    },
   };
   return badges[status] || { class: "bg-muted", text: status };
 }
@@ -122,7 +146,10 @@ function getStatusBadge(status: string) {
                   <div>
                     <div class="flex items-center gap-2">
                       <p class="font-mono text-sm text-muted-foreground group-hover:text-primary transition-colors">
-                        Pedido {order.order_number ? formatOrderId(order.order_number) : `#${order.id?.slice(0, 8).toUpperCase()}`}
+                        Pedido{" "}
+                        {order.order_number
+                          ? formatOrderId(order.order_number)
+                          : `#${order.id?.slice(0, 8).toUpperCase()}`}
                       </p>
                       <svg
                         class="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100"

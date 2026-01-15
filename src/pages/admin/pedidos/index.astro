@@ -73,6 +73,42 @@ const statusConfig: Record<
     textClass: "text-red-400",
     borderColor: "border-l-red-500",
   },
+  return_requested: {
+    label: "Devolución Solicitada",
+    bgClass: "bg-orange-500/20",
+    textClass: "text-orange-400",
+    borderColor: "border-l-orange-500",
+  },
+  return_approved: {
+    label: "Devolución Aprobada",
+    bgClass: "bg-orange-500/20",
+    textClass: "text-orange-400",
+    borderColor: "border-l-orange-500",
+  },
+  return_shipped: {
+    label: "Devolución Enviada",
+    bgClass: "bg-purple-500/20",
+    textClass: "text-purple-400",
+    borderColor: "border-l-purple-500",
+  },
+  return_received: {
+    label: "Devolución Recibida",
+    bgClass: "bg-purple-500/20",
+    textClass: "text-purple-400",
+    borderColor: "border-l-purple-500",
+  },
+  return_completed: {
+    label: "Reembolso Completado",
+    bgClass: "bg-emerald-500/20",
+    textClass: "text-emerald-400",
+    borderColor: "border-l-emerald-500",
+  },
+  partially_refunded: {
+    label: "Reembolso Parcial",
+    bgClass: "bg-amber-500/20",
+    textClass: "text-amber-400",
+    borderColor: "border-l-amber-500",
+  },
 };
 
 const statusOptions = [
@@ -82,6 +118,12 @@ const statusOptions = [
   { value: "shipped", label: "Enviado" },
   { value: "delivered", label: "Entregado" },
   { value: "cancelled", label: "Cancelado" },
+  { value: "return_requested", label: "Devolución Solicitada" },
+  { value: "return_approved", label: "Devolución Aprobada" },
+  { value: "return_shipped", label: "Devolución Enviada" },
+  { value: "return_received", label: "Devolución Recibida" },
+  { value: "return_completed", label: "Reembolso Completado" },
+  { value: "partially_refunded", label: "Reembolso Parcial" },
 ];
 ---
 
@@ -123,7 +165,9 @@ const statusOptions = [
                   {/* Order ID */}
                   <div class="flex-shrink-0 w-24">
                     <span class="font-mono text-sm text-muted-foreground">
-                      {order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`}
+                      {order.order_number
+                        ? formatOrderId(order.order_number)
+                        : `#${order.id.slice(0, 8)}`}
                     </span>
                   </div>
 

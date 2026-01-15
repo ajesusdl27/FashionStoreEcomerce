@@ -147,12 +147,44 @@ const statusConfig: Record<
     bgClass: "bg-red-500/10",
     textClass: "text-red-400",
   },
+  return_requested: {
+    label: "Devolución Solicitada",
+    bgClass: "bg-orange-500/10",
+    textClass: "text-orange-400",
+  },
+  return_approved: {
+    label: "Devolución Aprobada",
+    bgClass: "bg-orange-500/10",
+    textClass: "text-orange-400",
+  },
+  return_shipped: {
+    label: "Devolución en Camino",
+    bgClass: "bg-purple-500/10",
+    textClass: "text-purple-400",
+  },
+  return_received: {
+    label: "Devolución Recibida",
+    bgClass: "bg-purple-500/10",
+    textClass: "text-purple-400",
+  },
+  return_completed: {
+    label: "Reembolso Completado",
+    bgClass: "bg-emerald-500/10",
+    textClass: "text-emerald-400",
+  },
+  partially_refunded: {
+    label: "Reembolso Parcial",
+    bgClass: "bg-amber-500/10",
+    textClass: "text-amber-400",
+  },
 };
 
 const currentStatus = statusConfig[order.status] || statusConfig.pending;
 ---
 
-<PublicLayout title={`Pedido ${order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`} - FashionStore`}>
+<PublicLayout
+  title={`Pedido ${order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`} - FashionStore`}
+>
   <div class="container mx-auto px-4 py-12">
     <!-- Breadcrumb -->
     <div class="mb-8">
@@ -180,7 +212,11 @@ const currentStatus = statusConfig[order.status] || statusConfig.pending;
       >
         <div>
           <h1 class="font-display text-3xl text-foreground">
-            PEDIDO {order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8).toUpperCase()}`}
+            PEDIDO {
+              order.order_number
+                ? formatOrderId(order.order_number)
+                : `#${order.id.slice(0, 8).toUpperCase()}`
+            }
           </h1>
           <p class="text-muted-foreground mt-2">
             Realizado el {formatDate(order.created_at)}
@@ -418,7 +454,9 @@ const currentStatus = statusConfig[order.status] || statusConfig.pending;
         <InvoiceButton
           client:load
           orderId={order.id}
-          orderNumber={order.order_number ? formatOrderId(order.order_number) : order.id.slice(0, 8).toUpperCase()}
+          orderNumber={order.order_number
+            ? formatOrderId(order.order_number)
+            : order.id.slice(0, 8).toUpperCase()}
           orderStatus={order.status}
         />
 

@@ -85,15 +85,59 @@ const statusConfig: Record<
     bgClass: "bg-red-500/20",
     textClass: "text-red-400",
   },
+  return_requested: {
+    label: "Devolución Solicitada",
+    bgClass: "bg-orange-500/20",
+    textClass: "text-orange-400",
+  },
+  return_approved: {
+    label: "Devolución Aprobada",
+    bgClass: "bg-orange-500/20",
+    textClass: "text-orange-400",
+  },
+  return_shipped: {
+    label: "Devolución Enviada",
+    bgClass: "bg-purple-500/20",
+    textClass: "text-purple-400",
+  },
+  return_received: {
+    label: "Devolución Recibida",
+    bgClass: "bg-purple-500/20",
+    textClass: "text-purple-400",
+  },
+  return_completed: {
+    label: "Reembolso Completado",
+    bgClass: "bg-emerald-500/20",
+    textClass: "text-emerald-400",
+  },
+  partially_refunded: {
+    label: "Reembolso Parcial",
+    bgClass: "bg-amber-500/20",
+    textClass: "text-amber-400",
+  },
 };
 
-const statuses = ["pending", "paid", "shipped", "delivered", "cancelled"];
+const statuses = [
+  "pending",
+  "paid",
+  "shipped",
+  "delivered",
+  "cancelled",
+  "return_requested",
+  "return_approved",
+  "return_shipped",
+  "return_received",
+  "return_completed",
+  "partially_refunded",
+];
 const currentStatus = statusConfig[order.status] || statusConfig.pending;
 const isAlreadyShipped =
   order.status === "shipped" || order.status === "delivered";
 ---
 
-<AdminLayout title={`Pedido ${order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`}`}>
+<AdminLayout
+  title={`Pedido ${order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`}`}
+>
   <div class="max-w-4xl mx-auto space-y-6">
     <!-- Header -->
     <div class="flex items-center justify-between">
@@ -117,7 +161,11 @@ const isAlreadyShipped =
         </a>
         <div>
           <h1 class="text-2xl font-bold text-foreground">
-            Pedido {order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`}
+            Pedido {
+              order.order_number
+                ? formatOrderId(order.order_number)
+                : `#${order.id.slice(0, 8)}`
+            }
           </h1>
           <p class="text-zinc-500">{formatDate(order.created_at)}</p>
         </div>
@@ -380,7 +428,11 @@ const isAlreadyShipped =
             <div class="flex justify-between text-sm">
               <span class="text-zinc-500">Nº Pedido</span>
               <span class="font-mono text-foreground"
-                >{order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`}</span
+                >{
+                  order.order_number
+                    ? formatOrderId(order.order_number)
+                    : `#${order.id.slice(0, 8)}`
+                }</span
               >
             </div>
             {
