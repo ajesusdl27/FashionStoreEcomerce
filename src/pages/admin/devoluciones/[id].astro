@@ -1,0 +1,463 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { createAuthenticatedClient } from "@/lib/supabase";
+
+const { id } = Astro.params;
+
+// Get authenticated client for RLS compliance
+const accessToken = Astro.cookies.get("sb-access-token")?.value;
+const refreshToken = Astro.cookies.get("sb-refresh-token")?.value;
+const authClient = createAuthenticatedClient(accessToken, refreshToken);
+
+// Fetch return with all related data
+const { data: returnData, error } = await authClient
+  .from("returns")
+  .select(`
+    *,
+    orders:order_id (
+      id,
+      customer_name,
+      customer_email,
+      customer_phone,
+      shipping_address,
+      shipping_city,
+      shipping_postal_code,
+      total_amount,
+      created_at
+    ),
+    return_items (
+      *,
+      order_items:order_item_id (
+        price_at_purchase,
+        quantity
+      ),
+      product_variants:product_variant_id (
+        size,
+        stock,
+        products:product_id (
+          name,
+          images:product_images (image_url)
+        )
+      )
+    ),
+    return_images (*)
+  `)
+  .eq("id", id)
+  .single();
+
+if (error || !returnData) {
+  return Astro.redirect("/admin/devoluciones");
+}
+
+const formatDate = (date: string | null) => {
+  if (!date) return "-";
+  return new Date(date).toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const formatPrice = (price: number) => {
+  return new Intl.NumberFormat("es-ES", {
+    style: "currency",
+    currency: "EUR",
+  }).format(price);
+};
+
+const getStatusBadge = (status: string) => {
+  const badges: { [key: string]: { bg: string; text: string; label: string } } = {
+    requested: { bg: "bg-amber-500/10", text: "text-amber-500", label: "Pendiente" },
+    approved: { bg: "bg-blue-500/10", text: "text-blue-500", label: "Aprobada" },
+    shipped: { bg: "bg-purple-500/10", text: "text-purple-500", label: "Enviada" },
+    received: { bg: "bg-cyan-500/10", text: "text-cyan-500", label: "En revisión" },
+    completed: { bg: "bg-emerald-500/10", text: "text-emerald-500", label: "Completada" },
+    rejected: { bg: "bg-red-500/10", text: "text-red-500", label: "Rechazada" },
+  };
+  return badges[status] || badges.requested;
+};
+
+const getReasonLabel = (reason: string) => {
+  const reasons: { [key: string]: string } = {
+    size_mismatch: "Talla incorrecta",
+    defective: "Producto defectuoso",
+    not_as_described: "No coincide con descripción",
+    changed_mind: "Cambio de opinión",
+    arrived_late: "Llegó tarde",
+    other: "Otro motivo",
+  };
+  return reasons[reason] || reason;
+};
+
+const badge = getStatusBadge(returnData.status);
+---
+
+<AdminLayout title={`Devolución #${id?.slice(0, 8).toUpperCase()}`}>
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center gap-4">
+      <a
+        href="/admin/devoluciones"
+        class="p-2 rounded-lg hover:bg-muted transition-colors"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+      </a>
+      <div class="flex-1">
+        <h1 class="font-heading text-2xl text-foreground">
+          Devolución #{id?.slice(0, 8).toUpperCase()}
+        </h1>
+        <p class="text-sm text-muted-foreground mt-1">
+          Solicitada el {formatDate(returnData.created_at)}
+        </p>
+      </div>
+      <span class={`badge ${badge.bg} ${badge.text} text-base px-4 py-2`}>
+        {badge.label}
+      </span>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Left Column: Items -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Return Items -->
+        <div class="admin-card">
+          <h2 class="font-heading text-lg mb-4">Artículos a Devolver</h2>
+          
+          <div class="space-y-4">
+            {returnData.return_items?.map((item: any) => (
+              <div class="border border-border rounded-xl p-4" data-item-id={item.id}>
+                <div class="flex gap-4">
+                  <div class="w-20 h-24 bg-muted rounded-lg overflow-hidden flex-shrink-0">
+                    {item.product_variants?.products?.images?.[0]?.image_url ? (
+                      <img
+                        src={item.product_variants.products.images[0].image_url}
+                        alt={item.product_variants?.products?.name}
+                        class="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div class="w-full h-full flex items-center justify-center text-muted-foreground">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div class="flex-1">
+                    <h3 class="font-medium text-foreground">
+                      {item.product_variants?.products?.name}
+                    </h3>
+                    <p class="text-sm text-muted-foreground">
+                      Talla: {item.product_variants?.size} · Cantidad: {item.quantity}
+                    </p>
+                    <p class="text-sm mt-1">
+                      <span class="text-muted-foreground">Motivo:</span>
+                      <span class="font-medium text-foreground ml-1">{getReasonLabel(item.reason)}</span>
+                    </p>
+                    {item.reason_details && (
+                      <p class="text-sm text-muted-foreground mt-1 italic">
+                        "{item.reason_details}"
+                      </p>
+                    )}
+                    <p class="text-sm font-medium text-foreground mt-2">
+                      Valor: {formatPrice(item.order_items?.price_at_purchase * item.quantity || 0)}
+                    </p>
+                  </div>
+                  
+                  <!-- Inspection Status -->
+                  {returnData.status === "received" && (
+                    <div class="flex flex-col gap-2">
+                      <p class="text-xs font-medium text-muted-foreground">Inspección</p>
+                      {item.inspection_status === "pending" ? (
+                        <div class="flex gap-2">
+                          <button
+                            class="inspect-btn px-3 py-1 text-xs font-medium bg-emerald-500/10 text-emerald-500 rounded-lg hover:bg-emerald-500/20"
+                            data-item-id={item.id}
+                            data-action="approve"
+                          >
+                            ✓ Aprobar
+                          </button>
+                          <button
+                            class="inspect-btn px-3 py-1 text-xs font-medium bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500/20"
+                            data-item-id={item.id}
+                            data-action="reject"
+                          >
+                            ✗ Rechazar
+                          </button>
+                        </div>
+                      ) : (
+                        <span class={`text-xs font-medium ${
+                          item.inspection_status === "approved" 
+                            ? "text-emerald-500" 
+                            : "text-red-500"
+                        }`}>
+                          {item.inspection_status === "approved" ? "✓ Aprobado" : "✗ Rechazado"}
+                          {item.restock_approved && " (Restock)"}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <!-- Customer Notes -->
+        {returnData.customer_notes && (
+          <div class="admin-card">
+            <h2 class="font-heading text-lg mb-2">Notas del Cliente</h2>
+            <p class="text-muted-foreground">{returnData.customer_notes}</p>
+          </div>
+        )}
+
+        <!-- Admin Notes -->
+        <div class="admin-card">
+          <h2 class="font-heading text-lg mb-2">Notas Internas</h2>
+          <textarea
+            id="admin-notes"
+            class="admin-input w-full min-h-[100px]"
+            placeholder="Añade notas internas sobre esta devolución..."
+          >{returnData.admin_notes || ""}</textarea>
+        </div>
+      </div>
+
+      <!-- Right Column: Actions & Info -->
+      <div class="space-y-6">
+        <!-- Actions -->
+        <div class="admin-card">
+          <h2 class="font-heading text-lg mb-4">Acciones</h2>
+          
+          <div id="action-error" class="hidden mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm"></div>
+          <div id="action-success" class="hidden mb-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-400 text-sm"></div>
+          
+          <div class="space-y-3">
+            {returnData.status === "requested" && (
+              <>
+                <button
+                  id="btn-approve"
+                  class="w-full admin-btn admin-btn-primary"
+                  data-return-id={returnData.id}
+                >
+                  Aprobar Devolución
+                </button>
+                <button
+                  id="btn-reject"
+                  class="w-full admin-btn bg-red-500/10 text-red-500 hover:bg-red-500/20"
+                  data-return-id={returnData.id}
+                >
+                  Rechazar Solicitud
+                </button>
+              </>
+            )}
+
+            {(returnData.status === "approved" || returnData.status === "shipped") && (
+              <button
+                id="btn-receive"
+                class="w-full admin-btn admin-btn-primary"
+                data-return-id={returnData.id}
+              >
+                Marcar como Recibida
+              </button>
+            )}
+
+            {returnData.status === "received" && (
+              <button
+                id="btn-complete"
+                class="w-full admin-btn admin-btn-primary"
+                data-return-id={returnData.id}
+              >
+                Completar y Reembolsar
+              </button>
+            )}
+
+            {returnData.status === "completed" && (
+              <div class="text-center py-4">
+                <p class="text-emerald-500 font-medium">Devolución Completada</p>
+                <p class="text-sm text-muted-foreground mt-1">
+                  Reembolso: {formatPrice(returnData.refund_amount || 0)}
+                </p>
+              </div>
+            )}
+
+            {returnData.status === "rejected" && (
+              <div class="text-center py-4">
+                <p class="text-red-500 font-medium">Devolución Rechazada</p>
+                {returnData.rejection_reason && (
+                  <p class="text-sm text-muted-foreground mt-1">
+                    Motivo: {returnData.rejection_reason}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <!-- Customer Info -->
+        <div class="admin-card">
+          <h2 class="font-heading text-lg mb-4">Datos del Cliente</h2>
+          <div class="space-y-3 text-sm">
+            <div>
+              <p class="text-muted-foreground">Nombre</p>
+              <p class="font-medium text-foreground">{returnData.orders?.customer_name}</p>
+            </div>
+            <div>
+              <p class="text-muted-foreground">Email</p>
+              <p class="font-medium text-foreground">{returnData.orders?.customer_email}</p>
+            </div>
+            {returnData.orders?.customer_phone && (
+              <div>
+                <p class="text-muted-foreground">Teléfono</p>
+                <p class="font-medium text-foreground">{returnData.orders.customer_phone}</p>
+              </div>
+            )}
+            <div>
+              <p class="text-muted-foreground">Dirección</p>
+              <p class="font-medium text-foreground">
+                {returnData.orders?.shipping_address}<br />
+                {returnData.orders?.shipping_postal_code}, {returnData.orders?.shipping_city}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="admin-card">
+          <h2 class="font-heading text-lg mb-4">Historial</h2>
+          <div class="space-y-3 text-sm">
+            <div class="flex gap-3">
+              <div class="w-2 h-2 rounded-full bg-amber-500 mt-1.5"></div>
+              <div>
+                <p class="font-medium text-foreground">Solicitada</p>
+                <p class="text-muted-foreground">{formatDate(returnData.created_at)}</p>
+              </div>
+            </div>
+            {returnData.approved_at && (
+              <div class="flex gap-3">
+                <div class="w-2 h-2 rounded-full bg-blue-500 mt-1.5"></div>
+                <div>
+                  <p class="font-medium text-foreground">Aprobada</p>
+                  <p class="text-muted-foreground">{formatDate(returnData.approved_at)}</p>
+                </div>
+              </div>
+            )}
+            {returnData.received_at && (
+              <div class="flex gap-3">
+                <div class="w-2 h-2 rounded-full bg-cyan-500 mt-1.5"></div>
+                <div>
+                  <p class="font-medium text-foreground">Recibida</p>
+                  <p class="text-muted-foreground">{formatDate(returnData.received_at)}</p>
+                </div>
+              </div>
+            )}
+            {returnData.completed_at && (
+              <div class="flex gap-3">
+                <div class="w-2 h-2 rounded-full bg-emerald-500 mt-1.5"></div>
+                <div>
+                  <p class="font-medium text-foreground">Completada</p>
+                  <p class="text-muted-foreground">{formatDate(returnData.completed_at)}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</AdminLayout>
+
+<script define:vars={{ returnId: returnData.id }}>
+  const errorEl = document.getElementById("action-error");
+  const successEl = document.getElementById("action-success");
+  const adminNotes = document.getElementById("admin-notes");
+
+  const showError = (msg) => {
+    errorEl.textContent = msg;
+    errorEl.classList.remove("hidden");
+    successEl.classList.add("hidden");
+  };
+
+  const showSuccess = (msg) => {
+    successEl.textContent = msg;
+    successEl.classList.remove("hidden");
+    errorEl.classList.add("hidden");
+    setTimeout(() => window.location.reload(), 1500);
+  };
+
+  // Process return actions
+  const processReturn = async (action, extraData = {}) => {
+    try {
+      const response = await fetch("/api/admin/returns", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          return_id: returnId,
+          action,
+          notes: adminNotes?.value || null,
+          ...extraData,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+      showSuccess(result.message);
+    } catch (err) {
+      showError(err.message);
+    }
+  };
+
+  // Approve button
+  document.getElementById("btn-approve")?.addEventListener("click", () => {
+    processReturn("approve");
+  });
+
+  // Reject button
+  document.getElementById("btn-reject")?.addEventListener("click", () => {
+    const reason = prompt("Motivo del rechazo:");
+    if (reason) {
+      processReturn("reject", { rejection_reason: reason });
+    }
+  });
+
+  // Receive button
+  document.getElementById("btn-receive")?.addEventListener("click", () => {
+    processReturn("receive");
+  });
+
+  // Complete button
+  document.getElementById("btn-complete")?.addEventListener("click", () => {
+    if (confirm("¿Confirmas que deseas completar esta devolución y procesar el reembolso?")) {
+      processReturn("complete");
+    }
+  });
+
+  // Inspect items
+  document.querySelectorAll(".inspect-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const itemId = btn.getAttribute("data-item-id");
+      const action = btn.getAttribute("data-action");
+      const restock = action === "approve" && confirm("¿Devolver este artículo al stock?");
+
+      try {
+        const response = await fetch("/api/admin/returns", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            item_id: itemId,
+            status: action === "approve" ? "approved" : "rejected",
+            restock,
+          }),
+        });
+
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error);
+        window.location.reload();
+      } catch (err) {
+        showError(err.message);
+      }
+    });
+  });
+</script>

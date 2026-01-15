@@ -398,6 +398,16 @@ const currentStatus = statusConfig[order.status] || statusConfig.pending;
           orderId={order.id}
           orderStatus={order.status}
           customerEmail={order.customer_email}
+          deliveredAt={order.delivered_at}
+          orderItems={order.items?.map((item: any) => ({
+            id: item.id,
+            product_id: item.product?.id,
+            variant_id: item.variant?.id,
+            quantity: item.quantity,
+            price_at_purchase: item.price_at_purchase,
+            product: item.product,
+            variant: item.variant,
+          })) || []}
         />
 
         <div class="text-center">

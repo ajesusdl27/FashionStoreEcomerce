@@ -91,3 +91,188 @@ export async function sendOrderShipped(data: import('./email-templates').OrderSh
     return { success: false, error: errorMessage };
   }
 }
+
+// Tipo para datos de devolución
+export interface ReturnEmailData {
+  returnId: string;
+  orderId: string;
+  customerName: string;
+  customerEmail: string;
+  items: {
+    productName: string;
+    size: string;
+    quantity: number;
+    reason: string;
+  }[];
+}
+
+// Envía el email de confirmación de devolución con instrucciones de envío
+export async function sendReturnConfirmation(data: ReturnEmailData): Promise<{ success: boolean; error?: string }> {
+  if (!resend) {
+    console.warn('Resend not configured - skipping return confirmation email');
+    return { success: false, error: 'Email service not configured' };
+  }
+
+  try {
+    const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
+    const siteUrl = import.meta.env.SITE_URL || 'http://localhost:4321';
+    const contactEmail = import.meta.env.CONTACT_EMAIL || 'info@fashionstore.es';
+    
+    const reasonLabels: { [key: string]: string } = {
+      size_mismatch: 'Talla incorrecta',
+      defective: 'Producto defectuoso',
+      not_as_described: 'No coincide con la descripción',
+      changed_mind: 'Cambio de opinión',
+      arrived_late: 'Llegó tarde',
+      other: 'Otro motivo',
+    };
+    
+    const itemsHtml = data.items.map(item => `
+      <tr>
+        <td style="padding: 12px; border-bottom: 1px solid #e5e5e5;">
+          <strong>${item.productName}</strong><br>
+          <span style="color: #666; font-size: 14px;">Talla: ${item.size}</span>
+        </td>
+        <td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: center;">${item.quantity}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: right;">${reasonLabels[item.reason] || item.reason}</td>
+      </tr>
+    `).join('');
+
+    const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solicitud de Devolución - FashionStore</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f4f4;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%); padding: 30px; text-align: center;">
+              <h1 style="margin: 0; color: #CCFF00; font-size: 28px; font-weight: bold; letter-spacing: 2px;">FASHIONSTORE</h1>
+            </td>
+          </tr>
+          
+          <!-- Icon & Message -->
+          <tr>
+            <td style="padding: 40px 30px 20px; text-align: center;">
+              <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #CCFF00 0%, #a3cc00 100%); border-radius: 50%; line-height: 80px;">
+                <span style="font-size: 40px;">📦</span>
+              </div>
+              <h2 style="margin: 0 0 10px; color: #0a0a0a; font-size: 24px;">Solicitud de Devolución Recibida</h2>
+              <p style="margin: 0; color: #666; font-size: 16px; line-height: 1.5;">
+                Hola ${data.customerName}, hemos recibido tu solicitud de devolución.
+              </p>
+            </td>
+          </tr>
+          
+          <!-- Order Number -->
+          <tr>
+            <td style="padding: 0 30px 30px;">
+              <div style="background-color: #f8f8f8; border-radius: 8px; padding: 20px; border-left: 4px solid #CCFF00;">
+                <p style="margin: 0; color: #666; font-size: 14px;">Número de pedido</p>
+                <p style="margin: 5px 0 0; color: #0a0a0a; font-size: 18px; font-weight: bold;">#${data.orderId.slice(0, 8).toUpperCase()}</p>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Items -->
+          <tr>
+            <td style="padding: 0 30px 30px;">
+              <h3 style="margin: 0 0 15px; color: #0a0a0a; font-size: 18px;">Artículos a devolver</h3>
+              <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden;">
+                <tr style="background-color: #f8f8f8;">
+                  <th style="padding: 12px; text-align: left; font-size: 14px; color: #666;">Producto</th>
+                  <th style="padding: 12px; text-align: center; font-size: 14px; color: #666;">Cant.</th>
+                  <th style="padding: 12px; text-align: right; font-size: 14px; color: #666;">Motivo</th>
+                </tr>
+                ${itemsHtml}
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Shipping Address -->
+          <tr>
+            <td style="padding: 0 30px 30px;">
+              <h3 style="margin: 0 0 15px; color: #0a0a0a; font-size: 18px;">📮 Dirección para el envío</h3>
+              <div style="background-color: #f8f8f8; border-radius: 8px; padding: 20px;">
+                <p style="margin: 0; color: #333; line-height: 1.6;">
+                  <strong>FashionStore Devoluciones</strong><br>
+                  Calle de la Moda 123<br>
+                  28001 Madrid<br>
+                  España
+                </p>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Instructions -->
+          <tr>
+            <td style="padding: 0 30px 30px;">
+              <div style="background-color: #fffbeb; border-radius: 8px; padding: 20px; border-left: 4px solid #f59e0b;">
+                <h4 style="margin: 0 0 10px; color: #b45309; font-size: 16px;">⚠️ Instrucciones importantes</h4>
+                <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: #666; line-height: 1.8;">
+                  <li>Incluye el número de pedido visible en el paquete</li>
+                  <li>Los artículos deben estar sin usar y con etiquetas originales</li>
+                  <li>El reembolso se procesará en 5-7 días hábiles tras recibir el paquete</li>
+                </ul>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- CTA Button -->
+          <tr>
+            <td style="padding: 0 30px 40px; text-align: center;">
+              <a href="${siteUrl}/cuenta/pedidos" 
+                 style="display: inline-block; background-color: #0a0a0a; color: #CCFF00; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                Ver mis pedidos
+              </a>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f8f8f8; padding: 30px; text-align: center; border-top: 1px solid #e5e5e5;">
+              <p style="margin: 0 0 10px; color: #666; font-size: 14px;">
+                ¿Tienes alguna pregunta? Contáctanos en <a href="mailto:${contactEmail}" style="color: #0a0a0a;">${contactEmail}</a>
+              </p>
+              <p style="margin: 0; color: #999; font-size: 12px;">
+                © ${new Date().getFullYear()} FashionStore. Todos los derechos reservados.
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `.trim();
+
+    const { data: responseData, error } = await resend.emails.send({
+      from: fromEmail,
+      to: data.customerEmail,
+      subject: `📦 Devolución #${data.returnId.slice(0, 8).toUpperCase()} - Instrucciones de envío`,
+      html,
+    });
+
+    if (error) {
+      console.error('Error sending return confirmation email:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`Return confirmation email sent successfully. ID: ${responseData?.id}`);
+    return { success: true };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error('Exception sending return confirmation email:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
