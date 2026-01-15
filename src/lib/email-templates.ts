@@ -1,4 +1,5 @@
 import type { OrderEmailData } from './email';
+import { formatOrderId } from './order-utils';
 
 // Formatea precio a EUR
 function formatPrice(price: number): string {
@@ -9,7 +10,7 @@ function formatPrice(price: number): string {
 }
 
 // Genera el HTML del email de confirmación de pedido
-export function generateOrderConfirmationHTML(order: OrderEmailData): string {
+export function generateOrderConfirmationHTML(order: OrderEmailData, formattedOrderId: string): string {
   const siteUrl = import.meta.env.SITE_URL || 'http://localhost:4321';
   const contactEmail = import.meta.env.CONTACT_EMAIL || 'info@bookoro.es';
 
@@ -60,7 +61,7 @@ export function generateOrderConfirmationHTML(order: OrderEmailData): string {
             <td style="padding: 0 30px 30px;">
               <div style="background-color: #f8f8f8; border-radius: 8px; padding: 20px; border-left: 4px solid #CCFF00;">
                 <p style="margin: 0; color: #666; font-size: 14px;">Número de pedido</p>
-                <p style="margin: 5px 0 0; color: #0a0a0a; font-size: 18px; font-weight: bold;">#${order.orderId.slice(0, 8).toUpperCase()}</p>
+                <p style="margin: 5px 0 0; color: #0a0a0a; font-size: 18px; font-weight: bold;">${formattedOrderId}</p>
               </div>
             </td>
           </tr>
@@ -147,6 +148,7 @@ export function generateOrderConfirmationHTML(order: OrderEmailData): string {
 // Datos para el email de envío
 export interface OrderShippedData {
   orderId: string;
+  orderNumber?: number;  // Número secuencial (opcional para compatibilidad)
   customerName: string;
   customerEmail: string;
   carrier: string;
@@ -222,7 +224,7 @@ export function generateOrderShippedHTML(data: OrderShippedData): string {
             <td style="padding: 0 30px 30px;">
               <div style="background-color: #f8f8f8; border-radius: 8px; padding: 20px; border-left: 4px solid #CCFF00;">
                 <p style="margin: 0; color: #666; font-size: 14px;">Número de pedido</p>
-                <p style="margin: 5px 0 15px; color: #0a0a0a; font-size: 18px; font-weight: bold;">#${data.orderId.slice(0, 8).toUpperCase()}</p>
+                <p style="margin: 5px 0 15px; color: #0a0a0a; font-size: 18px; font-weight: bold;">${data.orderNumber ? formatOrderId(data.orderNumber) : `#${data.orderId.slice(0, 8).toUpperCase()}`}</p>
                 
                 <p style="margin: 0; color: #666; font-size: 14px;">Transportista</p>
                 <p style="margin: 5px 0 0; color: #0a0a0a; font-size: 16px; font-weight: bold;">${data.carrier}</p>

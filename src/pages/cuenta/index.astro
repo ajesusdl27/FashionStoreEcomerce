@@ -1,6 +1,7 @@
 ---
 import PublicLayout from "@/layouts/PublicLayout.astro";
 import { supabase } from "@/lib/supabase";
+import { formatOrderId } from "@/lib/order-utils";
 
 const user = Astro.locals.user;
 
@@ -13,7 +14,7 @@ const displayName =
   user.user_metadata?.full_name || user.email?.split("@")[0] || "Usuario";
 const { data: recentOrders } = await supabase
   .from("orders")
-  .select("*")
+  .select("*, order_number")
   .eq("customer_email", user.email)
   .order("created_at", { ascending: false })
   .limit(5);
@@ -125,7 +126,7 @@ const formatDate = (date: string) => {
                     <div class="flex items-center justify-between py-4 first:pt-0 last:pb-0">
                       <div>
                         <p class="font-mono text-sm text-muted-foreground">
-                          #{order.id.slice(0, 8)}
+                          {order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`}
                         </p>
                         <p class="text-sm font-medium mt-1">
                           {formatPrice(order.total_amount)}

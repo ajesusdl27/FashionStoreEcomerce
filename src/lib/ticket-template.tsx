@@ -178,6 +178,7 @@ export interface TicketData {
     price: number;
   }[];
   totalAmount: number;
+  shippingCost?: number; // Optional, will calculate from items if not provided
   companyName: string;
   companyNif: string;
   companyAddress: string;
@@ -259,22 +260,43 @@ export const TicketTemplate: React.FC<{ data: TicketData }> = ({ data }) => {
 
         {/* Totals */}
         <View style={styles.totalsSection}>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Base Imponible:</Text>
-            <Text style={styles.totalValue}>
-              {formatCurrency(data.totalAmount / 1.21)}
-            </Text>
-          </View>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>IVA (21%):</Text>
-            <Text style={styles.totalValue}>
-              {formatCurrency(data.totalAmount - (data.totalAmount / 1.21))}
-            </Text>
-          </View>
-          <View style={styles.grandTotal}>
-            <Text style={styles.grandTotalLabel}>TOTAL:</Text>
-            <Text style={styles.grandTotalValue}>{formatCurrency(data.totalAmount)}</Text>
-          </View>
+          {(() => {
+            // Calculate subtotal from items
+            const subtotal = data.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            // Calculate shipping (difference between total and subtotal)
+            const shippingCost = data.shippingCost !== undefined ? data.shippingCost : (data.totalAmount - subtotal);
+            // Base imponible (sin IVA)
+            const baseImponible = data.totalAmount / 1.21;
+            // IVA total
+            const ivaAmount = data.totalAmount - baseImponible;
+            
+            return (
+              <>
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Subtotal productos:</Text>
+                  <Text style={styles.totalValue}>{formatCurrency(subtotal)}</Text>
+                </View>
+                {shippingCost > 0 && (
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>Gastos de envío:</Text>
+                    <Text style={styles.totalValue}>{formatCurrency(shippingCost)}</Text>
+                  </View>
+                )}
+                <View style={[styles.totalRow, { borderTopWidth: 1, borderTopColor: '#eeeeee', paddingTop: 8, marginTop: 4 }]}>
+                  <Text style={styles.totalLabel}>Base Imponible:</Text>
+                  <Text style={styles.totalValue}>{formatCurrency(baseImponible)}</Text>
+                </View>
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>IVA (21%):</Text>
+                  <Text style={styles.totalValue}>{formatCurrency(ivaAmount)}</Text>
+                </View>
+                <View style={styles.grandTotal}>
+                  <Text style={styles.grandTotalLabel}>TOTAL:</Text>
+                  <Text style={styles.grandTotalValue}>{formatCurrency(data.totalAmount)}</Text>
+                </View>
+              </>
+            );
+          })()}
           <Text style={styles.ivaNote}>IVA incluido</Text>
         </View>
 

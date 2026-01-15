@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { stripe } from '@/lib/stripe';
 import { supabase } from '@/lib/supabase';
 import { sendOrderConfirmation } from '@/lib/email';
+import { formatOrderId } from '@/lib/order-utils';
 import type Stripe from 'stripe';
 
 const webhookSecret = import.meta.env.STRIPE_WEBHOOK_SECRET;
@@ -35,11 +36,16 @@ export const POST: APIRoute = async ({ request }) => {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
       const orderId = session.metadata?.order_id;
+      const orderNumber = session.metadata?.order_number;
 
       if (!orderId) {
         console.error('No order_id in session metadata');
         break;
       }
+
+      // Log con formato legible
+      const displayId = orderNumber ? formatOrderId(Number(orderNumber)) : `#${orderId.slice(0, 8)}`;
+      console.log(`Processing payment for order: ${displayId} (UUID: ${orderId})`);
 
       // Idempotency check: verify if order was already processed
       const { data: existingOrder } = await supabase
@@ -60,11 +66,11 @@ export const POST: APIRoute = async ({ request }) => {
         if (error) {
           console.error('Error updating order status:', error);
         } else {
-          console.log(`Order ${orderId} marked as paid`);
+          console.log(`Order ${displayId} marked as paid`);
           isNewPayment = true;
         }
       } else {
-        console.log(`Order ${orderId} already marked as paid - checking side effects`);
+        console.log(`Order ${displayId} already marked as paid - checking side effects`);
       }
 
       // Record coupon usage if present (regardless of whether we just updated the status or it was already paid)
@@ -121,7 +127,7 @@ export const POST: APIRoute = async ({ request }) => {
           // Fetch order details
           const { data: order, error: orderError } = await supabase
             .from('orders')
-            .select('*')
+            .select('*, order_number')
             .eq('id', orderId)
             .single();
           
@@ -162,6 +168,7 @@ export const POST: APIRoute = async ({ request }) => {
           // Send confirmation email
           const emailResult = await sendOrderConfirmation({
             orderId: order.id,
+            orderNumber: order.order_number,
             customerName: order.customer_name,
             customerEmail: order.customer_email,
             shippingAddress: order.shipping_address,
@@ -169,8 +176,7 @@ export const POST: APIRoute = async ({ request }) => {
             shippingPostalCode: order.shipping_postal_code,
             shippingCountry: order.shipping_country || 'España',
             totalAmount: Number(order.total_amount),
-            items: emailItems,
-            orderDate: new Date(order.created_at) // Pass creation date for ticket
+            items: emailItems
           });
           
           if (emailResult.success) {

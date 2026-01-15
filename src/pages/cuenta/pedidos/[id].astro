@@ -3,6 +3,7 @@ import PublicLayout from "@/layouts/PublicLayout.astro";
 import { supabase } from "@/lib/supabase";
 import OrderActions from "@/components/orders/OrderActions";
 import InvoiceButton from "@/components/InvoiceButton";
+import { formatOrderId } from "@/lib/order-utils";
 
 const { id } = Astro.params;
 const user = Astro.locals.user;
@@ -17,6 +18,7 @@ const { data: order, error } = await supabase
   .select(
     `
     *,
+    order_number,
     items:order_items(
       id,
       quantity,
@@ -150,7 +152,7 @@ const statusConfig: Record<
 const currentStatus = statusConfig[order.status] || statusConfig.pending;
 ---
 
-<PublicLayout title={`Pedido #${order.id.slice(0, 8)} - FashionStore`}>
+<PublicLayout title={`Pedido ${order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`} - FashionStore`}>
   <div class="container mx-auto px-4 py-12">
     <!-- Breadcrumb -->
     <div class="mb-8">
@@ -178,7 +180,7 @@ const currentStatus = statusConfig[order.status] || statusConfig.pending;
       >
         <div>
           <h1 class="font-display text-3xl text-foreground">
-            PEDIDO #{order.id.slice(0, 8).toUpperCase()}
+            PEDIDO {order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8).toUpperCase()}`}
           </h1>
           <p class="text-muted-foreground mt-2">
             Realizado el {formatDate(order.created_at)}
@@ -397,6 +399,7 @@ const currentStatus = statusConfig[order.status] || statusConfig.pending;
         <OrderActions
           client:load
           orderId={order.id}
+          orderNumber={order.order_number}
           orderStatus={order.status}
           customerEmail={order.customer_email}
           deliveredAt={order.delivered_at}
@@ -415,7 +418,7 @@ const currentStatus = statusConfig[order.status] || statusConfig.pending;
         <InvoiceButton
           client:load
           orderId={order.id}
-          orderNumber={order.id.slice(0, 8).toUpperCase()}
+          orderNumber={order.order_number ? formatOrderId(order.order_number) : order.id.slice(0, 8).toUpperCase()}
           orderStatus={order.status}
         />
 

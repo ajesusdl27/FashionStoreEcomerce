@@ -45,7 +45,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       // Get order details before updating
       const { data: order, error: orderError } = await authClient
         .from('orders')
-        .select('*')
+        .select('id, order_number, customer_name, customer_email, shipping_address, shipping_city, shipping_postal_code, shipping_country')
         .eq('id', id)
         .single();
 
@@ -88,6 +88,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       // Send shipment email
       const emailResult = await sendOrderShipped({
         orderId: order.id,
+        orderNumber: order.order_number,
         customerName: order.customer_name,
         customerEmail: order.customer_email,
         carrier: tracking.carrier,

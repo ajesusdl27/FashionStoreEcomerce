@@ -1,6 +1,7 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { createAuthenticatedClient } from "@/lib/supabase";
+import { formatOrderId } from "@/lib/order-utils";
 
 // Get authenticated client for RLS compliance
 const accessToken = Astro.cookies.get("sb-access-token")?.value;
@@ -15,6 +16,7 @@ const { data: returns, error } = await authClient
     *,
     orders:order_id (
       id,
+      order_number,
       customer_name,
       customer_email,
       total_amount
@@ -198,7 +200,7 @@ const statusCounts = {
                           href={`/admin/pedidos/${returnItem.order_id}`}
                           class="text-primary hover:underline font-mono text-sm"
                         >
-                          #{returnItem.order_id.slice(0, 8).toUpperCase()}
+                          {returnItem.orders?.order_number ? formatOrderId(returnItem.orders.order_number) : `#${returnItem.order_id.slice(0, 8).toUpperCase()}`}
                         </a>
                       </td>
                       <td>

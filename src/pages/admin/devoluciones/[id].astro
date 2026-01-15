@@ -1,6 +1,7 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { createAuthenticatedClient } from "@/lib/supabase";
+import { formatOrderId } from "@/lib/order-utils";
 
 const { id } = Astro.params;
 
@@ -16,6 +17,7 @@ const { data: returnData, error } = await authClient
     *,
     orders:order_id (
       id,
+      order_number,
       customer_name,
       customer_email,
       customer_phone,

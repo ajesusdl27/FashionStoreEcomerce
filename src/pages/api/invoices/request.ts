@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabase } from '@/lib/supabase';
 import { generateInvoicePDF } from '@/lib/pdf-generator';
+import { formatOrderId, formatInvoiceNumber } from '@/lib/order-utils';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
@@ -41,7 +42,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Verificar que el pedido pertenece al usuario
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('id, customer_email, total_amount, created_at, status')
+      .select('id, order_number, customer_email, total_amount, created_at, status')
       .eq('id', orderId)
       .eq('customer_email', user.email)
       .in('status', ['paid', 'shipped', 'delivered'])
@@ -53,6 +54,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         headers: { 'Content-Type': 'application/json' }
       });
     }
+
+    // Format order number for display
+    const formattedOrderId = formatOrderId(order.order_number);
 
     // Verificar si ya existe una factura
     const { data: existingInvoice } = await supabase
@@ -122,7 +126,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const pdfBuffer = await generateInvoicePDF({
       invoiceNumber: invoiceData.invoice_number,
       invoiceDate: new Date(),
-      orderId: orderId,
+      orderId: formattedOrderId,  // Usar formato #A000001
       orderDate: new Date(order.created_at),
       customerFiscalName,
       customerNif,

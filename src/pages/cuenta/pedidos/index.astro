@@ -1,6 +1,7 @@
 ---
 import PublicLayout from "@/layouts/PublicLayout.astro";
 import { supabase } from "@/lib/supabase";
+import { formatOrderId } from "@/lib/order-utils";
 
 const user = Astro.locals.user;
 
@@ -15,6 +16,7 @@ const { data: orders } = await supabase
   .select(
     `
     *,
+    order_number,
     coupon_usages(
       coupons(
         code,
@@ -120,7 +122,7 @@ function getStatusBadge(status: string) {
                   <div>
                     <div class="flex items-center gap-2">
                       <p class="font-mono text-sm text-muted-foreground group-hover:text-primary transition-colors">
-                        Pedido #{order.id?.slice(0, 8).toUpperCase()}
+                        Pedido {order.order_number ? formatOrderId(order.order_number) : `#${order.id?.slice(0, 8).toUpperCase()}`}
                       </p>
                       <svg
                         class="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100"

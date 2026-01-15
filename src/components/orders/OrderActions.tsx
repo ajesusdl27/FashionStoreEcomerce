@@ -18,6 +18,7 @@ interface OrderItem {
 
 interface OrderActionsProps {
   orderId: string;
+  orderNumber?: number;
   orderStatus: string;
   customerEmail: string;
   deliveredAt?: string;
@@ -34,7 +35,8 @@ const RETURN_REASONS = [
 ];
 
 export default function OrderActions({ 
-  orderId, 
+  orderId,
+  orderNumber,
   orderStatus, 
   customerEmail, 
   deliveredAt,
@@ -340,7 +342,7 @@ export default function OrderActions({
 
         {/* Return Modal */}
         {showReturnModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
             <div 
               className="absolute inset-0 bg-black/70 backdrop-blur-sm"
               onClick={() => !success && setShowReturnModal(false)}
@@ -376,9 +378,17 @@ export default function OrderActions({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                     </svg>
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h2 className="text-xl font-bold text-foreground">Solicitar Devolución</h2>
-                    <p className="text-sm text-muted-foreground">Selecciona los artículos que deseas devolver</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-sm text-muted-foreground">
+                        Pedido {orderNumber ? `#A${String(orderNumber).padStart(6, '0')}` : `#${orderId.slice(0, 8).toUpperCase()}`}
+                      </p>
+                      <span className="text-muted-foreground">•</span>
+                      <p className="text-sm text-muted-foreground">
+                        Selecciona los artículos a devolver
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -435,7 +445,7 @@ export default function OrderActions({
                                   <select
                                     value={selectedItems[item.id]?.quantity || 1}
                                     onChange={(e) => handleItemChange(item.id, 'quantity', parseInt(e.target.value))}
-                                    className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-sm text-foreground"
+                                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:ring-2 focus:ring-primary focus:border-primary relative z-10"
                                   >
                                     {Array.from({ length: item.quantity }, (_, i) => i + 1).map(n => (
                                       <option key={n} value={n}>{n}</option>
@@ -449,7 +459,7 @@ export default function OrderActions({
                                   <select
                                     value={selectedItems[item.id]?.reason || 'size_mismatch'}
                                     onChange={(e) => handleItemChange(item.id, 'reason', e.target.value)}
-                                    className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-sm text-foreground"
+                                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:ring-2 focus:ring-primary focus:border-primary relative z-10"
                                   >
                                     {RETURN_REASONS.map(r => (
                                       <option key={r.value} value={r.value}>{r.label}</option>

@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { stripe, FREE_SHIPPING_THRESHOLD, SHIPPING_COST, STOCK_RESERVATION_MINUTES } from '@/lib/stripe';
-import { supabase } from '@/lib/supabase';
+import { supabase, createAuthenticatedClient } from '@/lib/supabase';
+import { formatOrderId } from '@/lib/order-utils';
 
 interface CartItem {
   id: string;
@@ -25,10 +26,23 @@ interface CheckoutRequest {
   couponCode?: string;
 }
 
-export const POST: APIRoute = async ({ request, url }) => {
+export const POST: APIRoute = async ({ request, url, locals, cookies }) => {
   try {
     const body: CheckoutRequest = await request.json();
     const { items, customerName, customerEmail, customerPhone, shippingAddress, shippingCity, shippingPostalCode, couponCode } = body;
+
+    // Get authenticated user if exists
+    const user = locals.user;
+    const customerId = user?.id || null;
+    
+    // Create authenticated client for RLS compliance if user is logged in
+    const accessToken = cookies.get('sb-access-token')?.value;
+    const refreshToken = cookies.get('sb-refresh-token')?.value;
+    const dbClient = customerId ? createAuthenticatedClient(accessToken, refreshToken) : supabase;
+    
+    if (customerId) {
+      console.log(`Checkout for authenticated user: ${customerId}`);
+    }
 
     // Validate required fields
     if (!items?.length || !customerName || !customerEmail || !shippingAddress || !shippingCity || !shippingPostalCode) {
@@ -46,7 +60,7 @@ export const POST: APIRoute = async ({ request, url }) => {
     let validatedCoupon: { id: string; stripeCouponId: string; calculatedDiscount: number } | null = null;
     
     if (couponCode) {
-      const { data: couponResult, error: couponError } = await supabase.rpc('validate_coupon', {
+      const { data: couponResult, error: couponError } = await dbClient.rpc('validate_coupon', {
         p_code: couponCode,
         p_cart_total: subtotalCents / 100,
         p_customer_email: customerEmail
@@ -77,7 +91,7 @@ export const POST: APIRoute = async ({ request, url }) => {
     const reservedItems: { variantId: string; quantity: number }[] = [];
     
     for (const item of items) {
-      const { data: success, error } = await supabase.rpc('reserve_stock', {
+      const { data: success, error } = await dbClient.rpc('reserve_stock', {
         p_variant_id: item.variantId,
         p_quantity: item.quantity
       });
@@ -85,7 +99,7 @@ export const POST: APIRoute = async ({ request, url }) => {
       if (error || !success) {
         // Rollback any already reserved stock
         for (const reserved of reservedItems) {
-          await supabase.rpc('restore_stock', {
+          await dbClient.rpc('restore_stock', {
             p_variant_id: reserved.variantId,
             p_quantity: reserved.quantity
           });
@@ -110,7 +124,7 @@ export const POST: APIRoute = async ({ request, url }) => {
       price_at_purchase: item.price
     }));
 
-    const { data: orderId, error: orderError } = await supabase.rpc('create_checkout_order', {
+    const { data: orderResult, error: orderError } = await dbClient.rpc('create_checkout_order', {
       p_customer_name: customerName,
       p_customer_email: customerEmail,
       p_customer_phone: customerPhone || null,
@@ -120,13 +134,14 @@ export const POST: APIRoute = async ({ request, url }) => {
       p_shipping_country: 'España',
       p_total_amount: totalCents / 100,
       p_stripe_session_id: null, // Will be updated after Stripe session creation
-      p_items: orderItemsData
+      p_items: orderItemsData,
+      p_customer_id: customerId
     });
 
-    if (orderError || !orderId) {
+    if (orderError || !orderResult) {
       // Rollback stock
       for (const reserved of reservedItems) {
-        await supabase.rpc('restore_stock', {
+        await dbClient.rpc('restore_stock', {
           p_variant_id: reserved.variantId,
           p_quantity: reserved.quantity
         });
@@ -138,6 +153,12 @@ export const POST: APIRoute = async ({ request, url }) => {
         headers: { 'Content-Type': 'application/json' }
       });
     }
+    // Extract order ID and number from RPC result
+    const orderId = orderResult.order_id;
+    const orderNumber = orderResult.order_number;
+    const formattedOrderId = formatOrderId(orderNumber);
+    
+    console.log(`Order created: ${formattedOrderId} (UUID: ${orderId})`);
 
     // Build line items for Stripe
     const lineItems: Array<{
@@ -191,6 +212,8 @@ export const POST: APIRoute = async ({ request, url }) => {
         customer_email: customerEmail,
         metadata: {
           order_id: orderId,
+          order_number: orderNumber.toString(),
+          order_slug: formattedOrderId,
           // Always include coupon_id in metadata, even if empty string for consistency
           coupon_id: validatedCoupon?.id || ''
         },
@@ -209,14 +232,14 @@ export const POST: APIRoute = async ({ request, url }) => {
       console.error('Error creating Stripe session:', stripeError);
       
       for (const reserved of reservedItems) {
-        await supabase.rpc('restore_stock', {
+        await dbClient.rpc('restore_stock', {
           p_variant_id: reserved.variantId,
           p_quantity: reserved.quantity
         });
       }
       
       // Delete the orphaned order
-      await supabase.from('orders').delete().eq('id', orderId);
+      await dbClient.from('orders').delete().eq('id', orderId);
       
       return new Response(JSON.stringify({ 
         error: 'Error al conectar con el sistema de pagos. Por favor, inténtalo de nuevo.' 
@@ -227,10 +250,16 @@ export const POST: APIRoute = async ({ request, url }) => {
     }
 
     // Update order with Stripe session ID
-    await supabase
+    const { error: updateError } = await dbClient
       .from('orders')
       .update({ stripe_session_id: session.id })
       .eq('id', orderId);
+    
+    if (updateError) {
+      console.error('Error updating stripe_session_id:', updateError);
+    } else {
+      console.log(`Stripe session ${session.id} linked to order ${formattedOrderId}`);
+    }
 
     return new Response(JSON.stringify({ 
       url: session.url,

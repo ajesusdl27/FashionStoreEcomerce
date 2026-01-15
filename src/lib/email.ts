@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { generateOrderConfirmationHTML, generateOrderShippedHTML } from './email-templates';
 import { generateTicketPDF } from './pdf-generator';
+import { formatOrderId } from './order-utils';
 
 const resendApiKey = import.meta.env.RESEND_API_KEY;
 
@@ -13,6 +14,7 @@ export const resend = resendApiKey ? new Resend(resendApiKey) : null;
 // Tipo para los datos del pedido a enviar por email
 export interface OrderEmailData {
   orderId: string;
+  orderNumber: number;  // Número secuencial del pedido
   customerName: string;
   customerEmail: string;
   shippingAddress: string;
@@ -39,11 +41,14 @@ export async function sendOrderConfirmation(order: OrderEmailData): Promise<{ su
   try {
     const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
     
+    // Formatear número de pedido
+    const formattedOrderId = formatOrderId(order.orderNumber);
+    
     // Generar ticket PDF
     let ticketBuffer: Buffer | null = null;
     try {
       ticketBuffer = await generateTicketPDF({
-        orderId: order.orderId,
+        orderId: formattedOrderId,  // Usar formato #A000001
         orderDate: order.orderDate || new Date(),
         customerName: order.customerName,
         customerEmail: order.customerEmail,
@@ -60,21 +65,19 @@ export async function sendOrderConfirmation(order: OrderEmailData): Promise<{ su
       // Continuamos sin adjunto si falla la generación
     }
     
-    const shortOrderId = order.orderId.slice(0, 8).toUpperCase();
-    
     // Construir opciones de email
     const emailOptions: Parameters<typeof resend.emails.send>[0] = {
       from: fromEmail,
       to: order.customerEmail,
-      subject: `✓ Pedido confirmado #${shortOrderId} - FashionStore`,
-      html: generateOrderConfirmationHTML(order),
+      subject: `✓ Pedido confirmado ${formattedOrderId} - FashionStore`,
+      html: generateOrderConfirmationHTML(order, formattedOrderId),
     };
     
     // Añadir adjunto solo si se generó correctamente
     if (ticketBuffer) {
       emailOptions.attachments = [
         {
-          filename: `ticket-${shortOrderId}.pdf`,
+          filename: `ticket-${formattedOrderId.replace('#', '')}.pdf`,
           content: ticketBuffer.toString('base64'),
         }
       ];
@@ -110,10 +113,15 @@ export async function sendOrderShipped(data: import('./email-templates').OrderSh
   try {
     const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
     
+    // Formatear ID para display (con fallback para compatibilidad)
+    const displayId = data.orderNumber 
+      ? formatOrderId(data.orderNumber) 
+      : `#${data.orderId.slice(0, 8).toUpperCase()}`;
+    
     const { data: responseData, error } = await resend.emails.send({
       from: fromEmail,
       to: data.customerEmail,
-      subject: `🚚 ¡Tu pedido #${data.orderId.slice(0, 8).toUpperCase()} ha sido enviado! - FashionStore`,
+      subject: `🚚 ¡Tu pedido ${displayId} ha sido enviado! - FashionStore`,
       html: generateOrderShippedHTML(data),
     });
 
@@ -135,6 +143,7 @@ export async function sendOrderShipped(data: import('./email-templates').OrderSh
 export interface ReturnEmailData {
   returnId: string;
   orderId: string;
+  orderNumber?: number;  // Número secuencial (opcional)
   customerName: string;
   customerEmail: string;
   items: {
@@ -156,6 +165,11 @@ export async function sendReturnConfirmation(data: ReturnEmailData): Promise<{ s
     const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
     const siteUrl = import.meta.env.SITE_URL || 'http://localhost:4321';
     const contactEmail = import.meta.env.CONTACT_EMAIL || 'info@fashionstore.es';
+    
+    // Formatear ID para display (con fallback)
+    const displayOrderId = data.orderNumber 
+      ? formatOrderId(data.orderNumber) 
+      : `#${data.orderId.slice(0, 8).toUpperCase()}`;
     
     const reasonLabels: { [key: string]: string } = {
       size_mismatch: 'Talla incorrecta',
@@ -216,7 +230,7 @@ export async function sendReturnConfirmation(data: ReturnEmailData): Promise<{ s
             <td style="padding: 0 30px 30px;">
               <div style="background-color: #f8f8f8; border-radius: 8px; padding: 20px; border-left: 4px solid #CCFF00;">
                 <p style="margin: 0; color: #666; font-size: 14px;">Número de pedido</p>
-                <p style="margin: 5px 0 0; color: #0a0a0a; font-size: 18px; font-weight: bold;">#${data.orderId.slice(0, 8).toUpperCase()}</p>
+                <p style="margin: 5px 0 0; color: #0a0a0a; font-size: 18px; font-weight: bold;">${displayOrderId}</p>
               </div>
             </td>
           </tr>
