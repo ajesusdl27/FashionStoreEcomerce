@@ -119,7 +119,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     }
 
     const body = await request.json();
-    const { return_id, action, notes, rejection_reason } = body;
+    const { return_id, action, notes, rejection_reason, return_label_url } = body;
 
     if (!return_id || !action) {
       return new Response(
@@ -142,6 +142,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       p_action: action,
       p_notes: notes,
       p_rejection_reason: rejection_reason,
+      p_return_label_url: return_label_url
     });
 
     if (error) {

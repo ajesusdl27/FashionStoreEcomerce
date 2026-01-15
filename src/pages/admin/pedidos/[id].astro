@@ -503,6 +503,33 @@ const isAlreadyShipped =
       }
     }
 
+    // Auto-generate tracking URL
+    const carrierUrls: Record<string, string> = {
+      Correos:
+        "https://www.correos.es/es/es/herramientas/localizador/envios/detalle?tracking-number={TRACKING}",
+      SEUR: "https://www.seur.com/livetracking/pages/seguimiento-online-busqueda.do?segOnlineIdentificador={TRACKING}",
+      MRW: "https://www.mrw.es/seguimiento_envios/MRW_resultados_envio.asp?enviament={TRACKING}",
+      DHL: "https://www.dhl.com/es-es/home/tracking.html?tracking-id={TRACKING}",
+      GLS: "https://www.gls-spain.es/es/seguimiento-envio/?match={TRACKING}",
+      UPS: "https://www.ups.com/track?tracknum={TRACKING}",
+      FedEx: "https://www.fedex.com/fedextrack/?trknbr={TRACKING}",
+      "Correos Express":
+        "https://s.correosexpress.com/SeguimientoSinCP/search?shippingNumber={TRACKING}",
+    };
+
+    function generateTrackingUrl() {
+      const carrier = carrierSelect?.value;
+      const number = trackingNumber?.value;
+
+      if (carrier && number && carrierUrls[carrier]) {
+        trackingUrl.value = carrierUrls[carrier].replace("{TRACKING}", number);
+      }
+    }
+
+    carrierSelect?.addEventListener("change", generateTrackingUrl);
+    trackingNumber?.addEventListener("input", generateTrackingUrl);
+    trackingNumber?.addEventListener("change", generateTrackingUrl);
+
     // Initialize visibility
     updateTrackingVisibility();
     statusSelect?.addEventListener("change", updateTrackingVisibility);

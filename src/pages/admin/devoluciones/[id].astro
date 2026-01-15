@@ -413,7 +413,8 @@ const badge = getStatusBadge(returnData.status);
 
   // Approve button
   document.getElementById("btn-approve")?.addEventListener("click", () => {
-    processReturn("approve");
+    const labelUrl = prompt("URL de etiqueta de envío (opcional):");
+    processReturn("approve", { return_label_url: labelUrl });
   });
 
   // Reject button

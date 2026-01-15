@@ -174,7 +174,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Fetch product details for email
     const { data: orderDetails } = await supabase
       .from("orders")
-      .select("customer_name, customer_email")
+      .select("order_number, customer_name, customer_email")
       .eq("id", order_id)
       .single();
 
@@ -203,6 +203,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       sendReturnConfirmation({
         returnId: newReturn.id,
         orderId: order_id,
+        orderNumber: orderDetails.order_number,
         customerName: orderDetails.customer_name,
         customerEmail: orderDetails.customer_email,
         items: emailItems,
