@@ -168,48 +168,63 @@ export async function getBestSellingProduct(client: SupabaseClient): Promise<Bes
   const now = new Date();
   const monthStart = getSpainMidnightUTC(startOfMonth(now));
 
+  // First, get orders from this month
+  const { data: orders, error: ordersError } = await client
+    .from('orders')
+    .select('id')
+    .in('status', ['paid', 'shipped', 'delivered'])
+    .gte('created_at', monthStart.toISOString());
+
+  if (ordersError) throw ordersError;
+  if (!orders || orders.length === 0) return null;
+
+  const orderIds = orders.map(o => o.id);
+
+  // Then get order items for those orders
   const { data, error } = await client
     .from('order_items')
     .select(`
       product_id,
       quantity,
-      product:products!inner (
+      product:products (
         id,
         name,
         price,
         offer_price
-      ),
-      order:orders!inner (
-        created_at,
-        status
       )
     `)
-    .gte('order.created_at', monthStart.toISOString())
-    .in('order.status', ['paid', 'shipped', 'delivered']);
+    .in('order_id', orderIds);
 
   if (error) throw error;
+  if (!data || data.length === 0) return null;
 
-  // Agrupar por producto y sumar cantidades
+  // Group by product and sum quantities
   const productSales = data.reduce((acc, item: any) => {
     const productId = item.product_id;
     if (!productId || !item.product) return acc;
 
+    // Handle array vs object (Supabase returns array for relations)
+    const product = Array.isArray(item.product) ? item.product[0] : item.product;
+    if (!product) return acc;
+
     if (!acc[productId]) {
       acc[productId] = {
-        product: item.product,
+        product: product,
         totalQuantity: 0,
         totalRevenue: 0
       };
     }
 
     acc[productId].totalQuantity += item.quantity;
-    const price = item.product.offer_price || item.product.price;
+    const price = product.offer_price || product.price;
     acc[productId].totalRevenue += item.quantity * Number(price);
 
     return acc;
   }, {} as Record<string, BestSellingProduct>);
 
   const products = Object.values(productSales);
+  if (products.length === 0) return null;
+  
   const bestSelling = products.sort((a, b) => b.totalQuantity - a.totalQuantity)[0];
 
   return bestSelling || null;
