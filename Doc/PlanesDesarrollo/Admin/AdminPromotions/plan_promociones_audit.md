@@ -89,7 +89,6 @@ cta_link: sanitizeUrl(cta_link),
     <option value="products">📦 Página de productos</option>
     <option value="category">📁 Una categoría específica</option>
     <option value="product">🛍️ Un producto específico</option>
-    <option value="custom">🔗 URL personalizada</option>
   </select>
 
   <!-- Selector dinámico según tipo -->
@@ -549,7 +548,7 @@ Tabla comparativa de rendimiento entre promociones.
 - [x] Todos los textos son comprensibles sin conocimiento técnico
 - [x] Hay tooltips de ayuda en campos complejos
 - [x] Se muestra toast de confirmación al guardar
-- [ ] Validación muestra errores antes de enviar
+- [x] Validación muestra errores antes de enviar
 
 ### Fase 2
 
@@ -557,7 +556,7 @@ Tabla comparativa de rendimiento entre promociones.
 - [x] Admin recibe alertas de promociones por expirar
 - [x] Se puede duplicar con personalización
 - [x] Vista previa por dispositivo (desktop/tablet/mobile)
-- [ ] Historial de cambios (requiere tabla SQL)
+- [x] Historial de cambios (tabla SQL promotion_history)
 
 ### Fase 3
 

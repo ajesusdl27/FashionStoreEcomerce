@@ -14,6 +14,12 @@ const { data: coupons } = await authClient
   .select("id, code, discount_type, discount_value")
   .eq("is_active", true)
   .order("code", { ascending: true });
+
+// Fetch categories for link selector
+const { data: categories } = await authClient
+  .from("categories")
+  .select("id, name, slug")
+  .order("name", { ascending: true });
 ---
 
 <AdminLayout title="Nueva Promoción">
@@ -291,10 +297,12 @@ const { data: coupons } = await authClient
               <input
                 type="text"
                 name="title"
+                id="title-input"
                 required
                 placeholder="Ej: REBAJAS DE VERANO"
                 class="admin-input w-full"
               />
+              <p id="title-error" class="hidden text-xs text-red-400 mt-1"></p>
             </div>
             <div>
               <label class="block text-sm font-medium mb-2">Descripción</label>
@@ -392,16 +400,25 @@ const { data: coupons } = await authClient
             </div>
             <div>
               <label class="block text-xs text-muted-foreground mb-1"
-                >Enlace del botón</label
+                >¿A dónde lleva el botón?</label
               >
-              <input
-                type="text"
+              <select
                 name="cta_link"
-                placeholder="Ej: /productos, /categoria/ofertas..."
+                id="cta-link-select"
                 class="admin-input w-full"
-              />
+              >
+                <option value="/productos">📦 Página de Productos</option>
+                <option value="/ofertas">🎁 Ofertas</option>
+                {
+                  categories?.map((cat: any) => (
+                    <option value={`/categoria/${cat.slug}`}>
+                      📁 Categoría: {cat.name}
+                    </option>
+                  ))
+                }
+              </select>
               <p class="text-xs text-muted-foreground mt-1">
-                Si está vacío, redirige a /productos
+                Elige dónde irán los clientes al pulsar el botón
               </p>
             </div>
           </div>
@@ -748,6 +765,14 @@ const { data: coupons } = await authClient
 
     data["locations"] = locations;
 
+    // Handle custom cta_link
+    if (data["cta_link"] === "custom") {
+      const customLink = formData.get("cta_link_custom") as string;
+      data["cta_link"] = customLink || "/productos";
+    }
+    // Remove the custom field from data
+    delete data["cta_link_custom"];
+
     // Default manual validations
     if (!data["image_url"]) {
       formError.textContent = "Debes subir al menos una imagen para el banner.";
@@ -921,5 +946,162 @@ const { data: coupons } = await authClient
         }
       }
     });
+  });
+  // ========== REAL-TIME FORM VALIDATION ==========
+
+  // Validation helper functions
+  function showFieldError(inputId: string, errorId: string, message: string) {
+    const input = document.getElementById(inputId) as HTMLInputElement;
+    const errorEl = document.getElementById(errorId) as HTMLElement;
+    if (input && errorEl) {
+      input.classList.add("border-red-500", "focus:ring-red-500");
+      input.classList.remove("border-border", "focus:ring-primary");
+      errorEl.textContent = message;
+      errorEl.classList.remove("hidden");
+    }
+  }
+
+  function clearFieldError(inputId: string, errorId: string) {
+    const input = document.getElementById(inputId) as HTMLInputElement;
+    const errorEl = document.getElementById(errorId) as HTMLElement;
+    if (input && errorEl) {
+      input.classList.remove("border-red-500", "focus:ring-red-500");
+      input.classList.add("border-border", "focus:ring-primary");
+      errorEl.textContent = "";
+      errorEl.classList.add("hidden");
+    }
+  }
+
+  // Title validation
+  const titleInputEl = document.getElementById(
+    "title-input"
+  ) as HTMLInputElement;
+  titleInputEl?.addEventListener("blur", () => {
+    const value = titleInputEl.value.trim();
+    if (value.length === 0) {
+      showFieldError("title-input", "title-error", "El título es obligatorio");
+    } else if (value.length < 3) {
+      showFieldError(
+        "title-input",
+        "title-error",
+        "El título debe tener al menos 3 caracteres"
+      );
+    } else if (value.length > 100) {
+      showFieldError(
+        "title-input",
+        "title-error",
+        "El título no puede superar los 100 caracteres"
+      );
+    } else {
+      clearFieldError("title-input", "title-error");
+    }
+  });
+
+  titleInputEl?.addEventListener("input", () => {
+    const value = titleInputEl.value.trim();
+    if (value.length >= 3) {
+      clearFieldError("title-input", "title-error");
+    }
+  });
+
+  // Location validation - at least one must be selected
+  const locationCheckboxes = document.querySelectorAll(
+    'input[name="locations"]'
+  ) as NodeListOf<HTMLInputElement>;
+  const locationContainer = locationCheckboxes[0]?.closest(".grid");
+
+  function validateLocations() {
+    const anyChecked = Array.from(locationCheckboxes).some((cb) => cb.checked);
+    const errorEl = document.getElementById("locations-error");
+
+    if (!anyChecked && errorEl) {
+      errorEl.classList.remove("hidden");
+      return false;
+    } else if (errorEl) {
+      errorEl.classList.add("hidden");
+    }
+    return true;
+  }
+
+  // Add location error message if not exists
+  if (locationContainer && !document.getElementById("locations-error")) {
+    const errorDiv = document.createElement("p");
+    errorDiv.id = "locations-error";
+    errorDiv.className = "hidden text-xs text-red-400 mt-2";
+    errorDiv.textContent = "Debes seleccionar al menos una ubicación";
+    locationContainer.parentElement?.appendChild(errorDiv);
+  }
+
+  locationCheckboxes.forEach((cb) => {
+    cb.addEventListener("change", validateLocations);
+  });
+
+  // Priority validation
+  const priorityInput = document.querySelector(
+    'input[name="priority"]'
+  ) as HTMLInputElement;
+  priorityInput?.addEventListener("blur", () => {
+    const value = parseInt(priorityInput.value);
+    if (isNaN(value) || value < 1) {
+      priorityInput.classList.add("border-red-500");
+      priorityInput.value = "1";
+    } else {
+      priorityInput.classList.remove("border-red-500");
+    }
+  });
+
+  // Date validation - end date should be after start date
+  const startDateInput = document.querySelector(
+    'input[name="start_date"]'
+  ) as HTMLInputElement;
+  const endDateInput = document.querySelector(
+    'input[name="end_date"]'
+  ) as HTMLInputElement;
+
+  function validateDates() {
+    if (startDateInput?.value && endDateInput?.value) {
+      const startDate = new Date(startDateInput.value);
+      const endDate = new Date(endDateInput.value);
+
+      if (endDate <= startDate) {
+        endDateInput.classList.add("border-red-500");
+        // Create or update error message
+        let errorEl = document.getElementById("date-error");
+        if (!errorEl) {
+          errorEl = document.createElement("p");
+          errorEl.id = "date-error";
+          errorEl.className = "text-xs text-red-400 mt-1";
+          endDateInput.parentElement?.appendChild(errorEl);
+        }
+        errorEl.textContent =
+          "La fecha de fin debe ser posterior a la de inicio";
+        return false;
+      } else {
+        endDateInput.classList.remove("border-red-500");
+        document.getElementById("date-error")?.remove();
+      }
+    }
+    return true;
+  }
+
+  endDateInput?.addEventListener("blur", validateDates);
+  startDateInput?.addEventListener("change", validateDates);
+
+  // ========== CTA LINK SELECTOR ==========
+  const ctaLinkSelect = document.getElementById(
+    "cta-link-select"
+  ) as HTMLSelectElement;
+  const ctaLinkCustom = document.getElementById(
+    "cta-link-custom"
+  ) as HTMLInputElement;
+
+  ctaLinkSelect?.addEventListener("change", () => {
+    if (ctaLinkSelect.value === "custom") {
+      ctaLinkCustom?.classList.remove("hidden");
+      ctaLinkCustom?.focus();
+    } else {
+      ctaLinkCustom?.classList.add("hidden");
+      ctaLinkCustom.value = "";
+    }
   });
 </script>

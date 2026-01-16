@@ -32,6 +32,12 @@ const { data: coupons } = await authClient
   .eq("is_active", true)
   .order("code", { ascending: true });
 
+// Fetch categories for link selector
+const { data: categories } = await authClient
+  .from("categories")
+  .select("id, name, slug")
+  .order("name", { ascending: true });
+
 const zones = [
   { id: "home_hero", label: "Home: Banner Principal (Hero)" },
   { id: "announcement_top", label: "Global: Barra Superior (Aviso)" },
@@ -43,6 +49,46 @@ const formatDateForInput = (dateString: string | null) => {
   if (!dateString) return "";
   const date = new Date(dateString);
   return date.toISOString().slice(0, 16); // Format YYYY-MM-DDTHH:mm for datetime-local
+};
+
+// Fetch promotion history
+const { data: history } = await authClient
+  .from("promotion_history")
+  .select("id, action, changes, created_at")
+  .eq("promotion_id", id)
+  .order("created_at", { ascending: false })
+  .limit(10);
+
+const historyData = history || [];
+
+// Action config for history display
+const actionConfig: Record<
+  string,
+  { label: string; icon: string; color: string }
+> = {
+  created: { label: "Creada", icon: "➕", color: "text-green-400" },
+  updated: { label: "Editada", icon: "✏️", color: "text-blue-400" },
+  activated: { label: "Activada", icon: "✅", color: "text-emerald-400" },
+  deactivated: { label: "Desactivada", icon: "⏸️", color: "text-yellow-400" },
+  deleted: { label: "Eliminada", icon: "🗑️", color: "text-red-400" },
+};
+
+const timeAgo = (date: string) => {
+  const now = new Date();
+  const then = new Date(date);
+  const diffMs = now.getTime() - then.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "Ahora mismo";
+  if (diffMins < 60) return `Hace ${diffMins} min`;
+  if (diffHours < 24) return `Hace ${diffHours}h`;
+  if (diffDays < 7) return `Hace ${diffDays} días`;
+  return new Date(date).toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "short",
+  });
 };
 ---
 
@@ -193,10 +239,12 @@ const formatDateForInput = (dateString: string | null) => {
               <input
                 type="text"
                 name="title"
+                id="title-input"
                 required
                 value={promotion.title}
                 class="admin-input w-full"
               />
+              <p id="title-error" class="hidden text-xs text-red-400 mt-1"></p>
             </div>
             <div>
               <label class="block text-sm font-medium mb-2">Descripción</label>
@@ -325,17 +373,36 @@ const formatDateForInput = (dateString: string | null) => {
             </div>
             <div>
               <label class="block text-xs text-muted-foreground mb-1"
-                >Enlace del botón</label
+                >¿A dónde lleva el botón?</label
               >
-              <input
-                type="text"
+              <select
                 name="cta_link"
-                value={promotion.cta_link || ""}
-                placeholder="Ej: /productos, /categoria/ofertas..."
+                id="cta-link-select"
                 class="admin-input w-full"
-              />
+              >
+                <option
+                  value="/productos"
+                  selected={promotion.cta_link === "/productos" ||
+                    !promotion.cta_link}>📦 Página de Productos</option
+                >
+                <option
+                  value="/ofertas"
+                  selected={promotion.cta_link === "/ofertas"}
+                  >🎁 Ofertas</option
+                >
+                {
+                  categories?.map((cat: any) => (
+                    <option
+                      value={`/categoria/${cat.slug}`}
+                      selected={promotion.cta_link === `/categoria/${cat.slug}`}
+                    >
+                      📁 Categoría: {cat.name}
+                    </option>
+                  ))
+                }
+              </select>
               <p class="text-xs text-muted-foreground mt-1">
-                Si está vacío, redirige a /productos
+                Elige dónde irán los clientes al pulsar el botón
               </p>
             </div>
           </div>
@@ -566,6 +633,61 @@ const formatDateForInput = (dateString: string | null) => {
         <span class="font-medium">¡Promoción guardada correctamente!</span>
       </div>
     </form>
+
+    <!-- History Section -->
+    <div class="admin-card p-6 mt-8">
+      <h2
+        class="text-lg font-medium border-b border-border pb-2 mb-4 flex items-center gap-2"
+      >
+        <svg
+          class="w-5 h-5 text-muted-foreground"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        Historial de Cambios
+      </h2>
+
+      {
+        historyData.length > 0 ? (
+          <div class="space-y-3">
+            {historyData.map((entry: any) => {
+              const config = actionConfig[entry.action] || actionConfig.updated;
+              return (
+                <div class="flex items-start gap-3 text-sm">
+                  <span class="text-lg">{config.icon}</span>
+                  <div class="flex-1">
+                    <span class={`font-medium ${config.color}`}>
+                      {config.label}
+                    </span>
+                    <span class="text-muted-foreground ml-2">
+                      {timeAgo(entry.created_at)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+            <a
+              href="/admin/promociones/historial"
+              class="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-2"
+            >
+              Ver historial completo →
+            </a>
+          </div>
+        ) : (
+          <p class="text-sm text-muted-foreground">
+            No hay cambios registrados aún. Los cambios aparecerán aquí después
+            de ejecutar la migración.
+          </p>
+        )
+      }
+    </div>
   </div>
 </AdminLayout>
 
@@ -630,6 +752,14 @@ const formatDateForInput = (dateString: string | null) => {
 
     data["locations"] = locations;
 
+    // Handle custom cta_link
+    if (data["cta_link"] === "custom") {
+      const customLink = formData.get("cta_link_custom") as string;
+      data["cta_link"] = customLink || "/productos";
+    }
+    // Remove the custom field from data
+    delete data["cta_link_custom"];
+
     // Default manual validations
     if (!data["image_url"]) {
       // Allow update without changing image?
@@ -693,6 +823,164 @@ const formatDateForInput = (dateString: string | null) => {
       btnSubmit.disabled = false;
       btnText.classList.remove("hidden");
       btnSpinner.classList.add("hidden");
+    }
+  });
+
+  // ========== REAL-TIME FORM VALIDATION ==========
+
+  // Validation helper functions
+  function showFieldError(inputId: string, errorId: string, message: string) {
+    const input = document.getElementById(inputId) as HTMLInputElement;
+    const errorEl = document.getElementById(errorId) as HTMLElement;
+    if (input && errorEl) {
+      input.classList.add("border-red-500", "focus:ring-red-500");
+      input.classList.remove("border-border", "focus:ring-primary");
+      errorEl.textContent = message;
+      errorEl.classList.remove("hidden");
+    }
+  }
+
+  function clearFieldError(inputId: string, errorId: string) {
+    const input = document.getElementById(inputId) as HTMLInputElement;
+    const errorEl = document.getElementById(errorId) as HTMLElement;
+    if (input && errorEl) {
+      input.classList.remove("border-red-500", "focus:ring-red-500");
+      input.classList.add("border-border", "focus:ring-primary");
+      errorEl.textContent = "";
+      errorEl.classList.add("hidden");
+    }
+  }
+
+  // Title validation
+  const titleInputEl = document.getElementById(
+    "title-input"
+  ) as HTMLInputElement;
+  titleInputEl?.addEventListener("blur", () => {
+    const value = titleInputEl.value.trim();
+    if (value.length === 0) {
+      showFieldError("title-input", "title-error", "El título es obligatorio");
+    } else if (value.length < 3) {
+      showFieldError(
+        "title-input",
+        "title-error",
+        "El título debe tener al menos 3 caracteres"
+      );
+    } else if (value.length > 100) {
+      showFieldError(
+        "title-input",
+        "title-error",
+        "El título no puede superar los 100 caracteres"
+      );
+    } else {
+      clearFieldError("title-input", "title-error");
+    }
+  });
+
+  titleInputEl?.addEventListener("input", () => {
+    const value = titleInputEl.value.trim();
+    if (value.length >= 3) {
+      clearFieldError("title-input", "title-error");
+    }
+  });
+
+  // Location validation - at least one must be selected
+  const locationCheckboxes = document.querySelectorAll(
+    'input[name="locations"]'
+  ) as NodeListOf<HTMLInputElement>;
+  const locationContainer = locationCheckboxes[0]?.closest(".grid");
+
+  function validateLocations() {
+    const anyChecked = Array.from(locationCheckboxes).some((cb) => cb.checked);
+    const errorEl = document.getElementById("locations-error");
+
+    if (!anyChecked && errorEl) {
+      errorEl.classList.remove("hidden");
+      return false;
+    } else if (errorEl) {
+      errorEl.classList.add("hidden");
+    }
+    return true;
+  }
+
+  // Add location error message if not exists
+  if (locationContainer && !document.getElementById("locations-error")) {
+    const errorDiv = document.createElement("p");
+    errorDiv.id = "locations-error";
+    errorDiv.className = "hidden text-xs text-red-400 mt-2";
+    errorDiv.textContent = "Debes seleccionar al menos una ubicación";
+    locationContainer.parentElement?.appendChild(errorDiv);
+  }
+
+  locationCheckboxes.forEach((cb) => {
+    cb.addEventListener("change", validateLocations);
+  });
+
+  // Priority validation
+  const priorityInput = document.querySelector(
+    'input[name="priority"]'
+  ) as HTMLInputElement;
+  priorityInput?.addEventListener("blur", () => {
+    const value = parseInt(priorityInput.value);
+    if (isNaN(value) || value < 1) {
+      priorityInput.classList.add("border-red-500");
+      priorityInput.value = "1";
+    } else {
+      priorityInput.classList.remove("border-red-500");
+    }
+  });
+
+  // Date validation - end date should be after start date
+  const startDateInput = document.querySelector(
+    'input[name="start_date"]'
+  ) as HTMLInputElement;
+  const endDateInput = document.querySelector(
+    'input[name="end_date"]'
+  ) as HTMLInputElement;
+
+  function validateDates() {
+    if (startDateInput?.value && endDateInput?.value) {
+      const startDate = new Date(startDateInput.value);
+      const endDate = new Date(endDateInput.value);
+
+      if (endDate <= startDate) {
+        endDateInput.classList.add("border-red-500");
+        // Create or update error message
+        let errorEl = document.getElementById("date-error");
+        if (!errorEl) {
+          errorEl = document.createElement("p");
+          errorEl.id = "date-error";
+          errorEl.className = "text-xs text-red-400 mt-1";
+          endDateInput.parentElement?.appendChild(errorEl);
+        }
+        errorEl.textContent =
+          "La fecha de fin debe ser posterior a la de inicio";
+        return false;
+      } else {
+        endDateInput.classList.remove("border-red-500");
+        document.getElementById("date-error")?.remove();
+      }
+    }
+    return true;
+  }
+
+  endDateInput?.addEventListener("blur", validateDates);
+  startDateInput?.addEventListener("change", validateDates);
+
+  // ========== CTA LINK SELECTOR ==========
+  const ctaLinkSelect = document.getElementById(
+    "cta-link-select"
+  ) as HTMLSelectElement;
+  const ctaLinkCustom = document.getElementById(
+    "cta-link-custom"
+  ) as HTMLInputElement;
+
+  ctaLinkSelect?.addEventListener("change", () => {
+    if (ctaLinkSelect.value === "custom") {
+      ctaLinkCustom?.classList.remove("hidden");
+      ctaLinkCustom?.focus();
+    } else {
+      ctaLinkCustom?.classList.add("hidden");
+      ctaLinkCustom.value = "";
     }
   });
 </script>

@@ -1,0 +1,248 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { createAuthenticatedClient } from "@/lib/supabase";
+
+// Get authenticated client for RLS compliance
+const accessToken = Astro.cookies.get("sb-access-token")?.value;
+const refreshToken = Astro.cookies.get("sb-refresh-token")?.value;
+const authClient = createAuthenticatedClient(accessToken, refreshToken);
+
+// Fetch history with promotion titles
+const { data: history, error } = await authClient
+  .from("promotion_history")
+  .select(`
+    id,
+    promotion_id,
+    action,
+    changes,
+    created_at,
+    changed_by,
+    promotions(title)
+  `)
+  .order("created_at", { ascending: false })
+  .limit(100);
+
+// If table doesn't exist yet, show empty state
+const historyData = error ? [] : (history || []);
+
+// Action labels and colors
+const actionConfig: Record<string, { label: string; icon: string; color: string; bgColor: string }> = {
+  created: { label: "Creada", icon: "➕", color: "text-green-400", bgColor: "bg-green-500/10" },
+  updated: { label: "Editada", icon: "✏️", color: "text-blue-400", bgColor: "bg-blue-500/10" },
+  activated: { label: "Activada", icon: "✅", color: "text-emerald-400", bgColor: "bg-emerald-500/10" },
+  deactivated: { label: "Desactivada", icon: "⏸️", color: "text-yellow-400", bgColor: "bg-yellow-500/10" },
+  deleted: { label: "Eliminada", icon: "🗑️", color: "text-red-400", bgColor: "bg-red-500/10" },
+};
+
+const formatDate = (date: string) => {
+  return new Date(date).toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const timeAgo = (date: string) => {
+  const now = new Date();
+  const then = new Date(date);
+  const diffMs = now.getTime() - then.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "Ahora mismo";
+  if (diffMins < 60) return `Hace ${diffMins} min`;
+  if (diffHours < 24) return `Hace ${diffHours}h`;
+  if (diffDays < 7) return `Hace ${diffDays} días`;
+  return formatDate(date);
+};
+---
+
+<AdminLayout title="Historial de Promociones">
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2 mb-2">
+          <a
+            href="/admin/promociones"
+            class="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Volver
+          </a>
+        </div>
+        <h1 class="font-heading text-2xl text-foreground">
+          Historial de Cambios
+        </h1>
+        <p class="text-sm text-muted-foreground mt-1">
+          Registro de todas las acciones sobre promociones
+        </p>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex flex-wrap items-center gap-3 bg-card border border-border rounded-lg p-4">
+      <span class="text-sm text-muted-foreground font-medium">Filtrar:</span>
+      
+      <select id="filter-action" class="admin-input text-sm py-1.5 px-3 pr-8 min-w-[130px]">
+        <option value="">Todas las acciones</option>
+        <option value="created">➕ Creadas</option>
+        <option value="updated">✏️ Editadas</option>
+        <option value="activated">✅ Activadas</option>
+        <option value="deactivated">⏸️ Desactivadas</option>
+        <option value="deleted">🗑️ Eliminadas</option>
+      </select>
+
+      <button id="clear-filters" class="text-sm text-primary hover:underline hidden">
+        Limpiar filtros
+      </button>
+    </div>
+
+    <!-- History Timeline -->
+    <div class="admin-card p-6">
+      {historyData.length > 0 ? (
+        <div class="space-y-4">
+          {historyData.map((entry: any, index: number) => {
+            const config = actionConfig[entry.action] || actionConfig.updated;
+            const promotionTitle = entry.promotions?.title || 
+              (entry.changes?.old?.title) || 
+              (entry.changes?.new?.title) || 
+              "Promoción eliminada";
+            
+            return (
+              <div 
+                class="history-entry flex gap-4 pb-4 border-b border-border last:border-0 last:pb-0"
+                data-action={entry.action}
+              >
+                <!-- Timeline indicator -->
+                <div class="flex flex-col items-center">
+                  <div class={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${config.bgColor}`}>
+                    {config.icon}
+                  </div>
+                  {index < historyData.length - 1 && (
+                    <div class="w-0.5 flex-1 bg-border mt-2"></div>
+                  )}
+                </div>
+
+                <!-- Content -->
+                <div class="flex-1 min-w-0">
+                  <div class="flex flex-wrap items-center gap-2 mb-1">
+                    <span class={`font-medium ${config.color}`}>
+                      {config.label}
+                    </span>
+                    <span class="text-foreground font-medium truncate max-w-[200px] sm:max-w-none">
+                      "{promotionTitle}"
+                    </span>
+                  </div>
+
+                  <div class="text-xs text-muted-foreground flex flex-wrap items-center gap-2">
+                    <span title={formatDate(entry.created_at)}>
+                      {timeAgo(entry.created_at)}
+                    </span>
+                    {entry.promotion_id && entry.action !== 'deleted' && (
+                      <>
+                        <span>•</span>
+                        <a 
+                          href={`/admin/promociones/editar/${entry.promotion_id}`}
+                          class="text-primary hover:underline"
+                        >
+                          Ver promoción
+                        </a>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Show changes for updates */}
+                  {entry.action === 'updated' && entry.changes?.old && entry.changes?.new && (
+                    <details class="mt-2">
+                      <summary class="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
+                        Ver cambios realizados
+                      </summary>
+                      <div class="mt-2 text-xs bg-muted/50 rounded-lg p-3 space-y-1">
+                        {Object.keys(entry.changes.new).map((key: string) => {
+                          const oldVal = entry.changes.old[key];
+                          const newVal = entry.changes.new[key];
+                          // Only show if changed and not internal fields
+                          if (JSON.stringify(oldVal) !== JSON.stringify(newVal) && 
+                              !['id', 'created_at', 'updated_at'].includes(key)) {
+                            return (
+                              <div class="flex flex-wrap gap-1">
+                                <span class="font-medium text-muted-foreground">{key}:</span>
+                                <span class="text-red-400 line-through">
+                                  {typeof oldVal === 'object' ? JSON.stringify(oldVal) : String(oldVal || '-')}
+                                </span>
+                                <span class="text-muted-foreground">→</span>
+                                <span class="text-green-400">
+                                  {typeof newVal === 'object' ? JSON.stringify(newVal) : String(newVal || '-')}
+                                </span>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+                    </details>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div class="text-center py-12 text-muted-foreground">
+          <svg
+            class="w-16 h-16 mx-auto mb-4 opacity-50"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <p class="font-medium">No hay historial todavía</p>
+          <p class="text-sm mt-1">
+            {error 
+              ? "La tabla de historial aún no existe. Ejecuta la migración 030_create_promotion_history.sql"
+              : "Cuando crees o edites promociones, los cambios aparecerán aquí"}
+          </p>
+        </div>
+      )}
+    </div>
+  </div>
+</AdminLayout>
+
+<script>
+  const filterAction = document.getElementById("filter-action") as HTMLSelectElement;
+  const clearFiltersBtn = document.getElementById("clear-filters") as HTMLButtonElement;
+  const historyEntries = document.querySelectorAll(".history-entry") as NodeListOf<HTMLElement>;
+
+  function applyFilters() {
+    const action = filterAction?.value || "";
+
+    historyEntries.forEach((entry) => {
+      const entryAction = entry.dataset.action;
+      const show = !action || entryAction === action;
+      entry.style.display = show ? "" : "none";
+    });
+
+    if (clearFiltersBtn) {
+      clearFiltersBtn.classList.toggle("hidden", !action);
+    }
+  }
+
+  filterAction?.addEventListener("change", applyFilters);
+  
+  clearFiltersBtn?.addEventListener("click", () => {
+    if (filterAction) filterAction.value = "";
+    applyFilters();
+  });
+</script>
