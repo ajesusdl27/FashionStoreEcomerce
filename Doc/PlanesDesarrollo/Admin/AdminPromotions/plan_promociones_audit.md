@@ -545,17 +545,17 @@ Tabla comparativa de rendimiento entre promociones.
 
 ### Fase 1
 
-- [ ] Usuario puede seleccionar destino del botón sin escribir URL
-- [ ] Todos los textos son comprensibles sin conocimiento técnico
-- [ ] Hay tooltips de ayuda en campos complejos
-- [ ] Se muestra toast de confirmación al guardar
+- [x] Usuario puede seleccionar destino del botón sin escribir URL
+- [x] Todos los textos son comprensibles sin conocimiento técnico
+- [x] Hay tooltips de ayuda en campos complejos
+- [x] Se muestra toast de confirmación al guardar
 - [ ] Validación muestra errores antes de enviar
 
 ### Fase 2
 
-- [ ] Zona product_page funciona correctamente
+- [x] Zona product_page funciona correctamente
 - [ ] Admin recibe alertas de promociones por expirar
-- [ ] Se puede duplicar con personalización
+- [x] Se puede duplicar con personalización
 - [ ] Existe historial de cambios
 
 ### Fase 3

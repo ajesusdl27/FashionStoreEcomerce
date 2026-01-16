@@ -289,7 +289,25 @@ const { data: coupons } = await authClient
                 d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"
               ></path>
             </svg>
-            Botón de Acción (CTA)
+            Botón Principal
+            <span
+              class="tooltip cursor-help"
+              title="El botón que aparece en el banner. Este es el que los clientes pulsarán para ver más detalles."
+            >
+              <svg
+                class="w-4 h-4 text-muted-foreground"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
+            </span>
           </label>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -446,7 +464,27 @@ const { data: coupons } = await authClient
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div>
-          <label class="block text-sm font-medium mb-2">Prioridad</label>
+          <label class="block text-sm font-medium mb-2 flex items-center gap-2">
+            Orden de aparición
+            <span
+              class="tooltip cursor-help"
+              title="Si hay varias promociones activas, la de número más bajo aparece primero. Ej: 1 = primera, 10 = después"
+            >
+              <svg
+                class="w-4 h-4 text-muted-foreground"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
+            </span>
+          </label>
           <input
             type="number"
             name="priority"
@@ -483,6 +521,33 @@ const { data: coupons } = await authClient
         </h2>
 
         <div>
+          <!-- Coupon explanation -->
+          <div
+            class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-4"
+          >
+            <h4 class="font-medium text-blue-400 mb-2 flex items-center gap-2">
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
+              ¿Cómo funcionan los cupones?
+            </h4>
+            <p class="text-sm text-muted-foreground">
+              Si vinculas un cupón, el código aparecerá en el banner y los
+              clientes podrán copiarlo. El descuento se aplica cuando lo usan en
+              el checkout.
+            </p>
+          </div>
+
           <label class="block text-sm font-medium mb-2">Vincular Cupón</label>
           <select name="coupon_id" class="admin-input w-full">
             <option value="">-- Sin cupón vinculado --</option>
@@ -497,10 +562,6 @@ const { data: coupons } = await authClient
               ))
             }
           </select>
-          <p class="text-xs text-muted-foreground mt-1">
-            Si se selecciona, el banner mostrará el código y permitirá copiarlo
-            o aplicarlo.
-          </p>
         </div>
       </div>
 

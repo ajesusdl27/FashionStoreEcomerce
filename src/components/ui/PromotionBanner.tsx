@@ -22,10 +22,11 @@ interface Promotion {
 
 interface PromotionBannerProps {
   zone: string;
-  className?: string; // Additional classes
+  className?: string;
+  compact?: boolean; // Use compact layout for small spaces
 }
 
-export default function PromotionBanner({ zone, className = '' }: PromotionBannerProps) {
+export default function PromotionBanner({ zone, className = '', compact = false }: PromotionBannerProps) {
   const [promotion, setPromotion] = useState<Promotion | null>(null);
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
@@ -42,26 +43,48 @@ export default function PromotionBanner({ zone, className = '' }: PromotionBanne
 
   useEffect(() => {
     const fetchPromotion = async () => {
+      console.log(`[PromotionBanner] Fetching promotions for zone: "${zone}"`);
       try {
-        // Fetch active promotions for this zone
-        // We order by priority ascending (1 is top) and then created_at desc (newest first)
+        const now = new Date().toISOString();
+        
+        // Fetch ALL active promotions (don't filter by locations in query - it doesn't work with arrays)
         const { data, error } = await supabase
           .from('promotions')
           .select('*, coupons(code, discount_type, discount_value)')
-          .contains('locations', [zone])
           .eq('is_active', true)
-          .or(`start_date.is.null,start_date.lte.${new Date().toISOString()}`)
-          .or(`end_date.is.null,end_date.gte.${new Date().toISOString()}`)
-          .order('priority', { ascending: true })
-          .limit(1)
-          .single();
+          .order('priority', { ascending: true });
 
-        if (error && error.code !== 'PGRST116') {
+        console.log(`[PromotionBanner] Zone "${zone}" - Total active promotions:`, data?.length || 0);
+
+        if (error) {
           console.error('Error fetching promotion:', error);
+          setLoading(false);
+          return;
         }
 
-        if (data) {
-          setPromotion(data);
+        // Filter by zone AND date in JavaScript (same pattern as AnnouncementBar)
+        const validPromotions = (data || []).filter((promo: any) => {
+          // Check if this zone is in locations array
+          const hasZone = Array.isArray(promo.locations) && promo.locations.includes(zone);
+          
+          // Check dates
+          const startValid = !promo.start_date || new Date(promo.start_date) <= new Date(now);
+          const endValid = !promo.end_date || new Date(promo.end_date) >= new Date(now);
+          
+          console.log(`[PromotionBanner] Checking promo "${promo.title}":`, { 
+            locations: promo.locations,
+            hasZone, 
+            startValid, 
+            endValid
+          });
+          
+          return hasZone && startValid && endValid;
+        });
+
+        console.log(`[PromotionBanner] Zone "${zone}" - Valid promotions:`, validPromotions.length);
+
+        if (validPromotions.length > 0) {
+          setPromotion(validPromotions[0]);
         }
       } catch (e) {
         console.error('Exception fetching promotion:', e);
@@ -110,6 +133,47 @@ export default function PromotionBanner({ zone, className = '' }: PromotionBanne
   const ctaButtonText = cta_text || 'Comprar Ahora';
   const ctaButtonLink = cta_link || '/productos';
 
+  // Auto-detect compact mode for certain zones
+  const isCompact = compact || zone === 'cart_sidebar' || zone === 'product_page';
+
+  // Compact layout for cart_sidebar and product_page
+  if (isCompact) {
+    return (
+      <a 
+        href={ctaButtonLink}
+        className={`relative block w-full overflow-hidden rounded-lg group ${className}`}
+      >
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <img 
+            src={displayImage} 
+            alt={title} 
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-black/50" />
+        </div>
+
+        {/* Compact Content */}
+        <div className="relative z-10 flex items-center justify-between p-3 md:p-4">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-heading text-sm md:text-base font-bold text-white truncate">
+              {title}
+            </h3>
+            {coupons && (
+              <span className="text-xs text-primary font-mono font-bold">
+                Código: {coupons.code}
+              </span>
+            )}
+          </div>
+          <span className="flex-shrink-0 bg-primary text-primary-foreground px-3 py-1.5 rounded text-xs font-medium ml-2">
+            {ctaButtonText}
+          </span>
+        </div>
+      </a>
+    );
+  }
+
+  // Full layout for home_hero and announcement_top
   return (
     <div className={`relative w-full overflow-hidden group ${className}`}>
       {/* Background Image */}
