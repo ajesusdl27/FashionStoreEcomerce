@@ -41,6 +41,15 @@ interface SalesChartProps {
  * Interactive bar chart showing daily sales for the last 7 days
  */
 export default function SalesChart({ data }: SalesChartProps) {
+  // Handle empty or null data
+  if (!data || data.length === 0) {
+    return (
+      <div className="h-64 sm:h-80 flex items-center justify-center text-muted-foreground">
+        <p>No hay datos de ventas disponibles</p>
+      </div>
+    );
+  }
+
   const chartData = {
     labels: data.map(d => d.label),
     datasets: [
@@ -82,7 +91,7 @@ export default function SalesChart({ data }: SalesChartProps) {
               style: 'currency',
               currency: 'EUR'
             });
-            const orders = data[context.dataIndex].orderCount;
+            const orders = data[context.dataIndex]?.orderCount || 0;
             return [
               `Ventas: ${revenue}`,
               `Pedidos: ${orders}`
