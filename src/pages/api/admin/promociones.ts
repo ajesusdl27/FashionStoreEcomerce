@@ -241,6 +241,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       .eq('id', id);
 
     if (error) {
+      console.error('DELETE promotion error:', error);
       return new Response(JSON.stringify({ error: error.message }), { 
         status: 400, headers: { 'Content-Type': 'application/json' } 
       });

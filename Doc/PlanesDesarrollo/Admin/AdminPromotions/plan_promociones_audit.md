@@ -560,11 +560,11 @@ Tabla comparativa de rendimiento entre promociones.
 
 ### Fase 3
 
-- [ ] Wizard guía creación paso a paso
-- [ ] Constructor de reglas funciona sin código
-- [ ] Hay al menos 5 templates disponibles
-- [ ] El calendario muestra todas las promociones
-- [ ] Borradores se guardan automáticamente
+- [x] Wizard guía creación paso a paso
+- [x] Constructor de reglas funciona sin código
+- [x] Hay al menos 5 templates disponibles
+- [x] El calendario muestra todas las promociones
+- [x] Borradores se guardan automáticamente
 
 ### Fase 4
 
