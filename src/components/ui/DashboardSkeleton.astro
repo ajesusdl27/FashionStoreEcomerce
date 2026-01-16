@@ -1,0 +1,69 @@
+---
+/**
+ * Dashboard Skeleton Loader
+ * Displays while dashboard data is loading
+ */
+---
+
+<div class="space-y-8">
+  <!-- Stats Grid Skeleton -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+    {
+      [...Array(5)].map(() => (
+        <div class="stat-card animate-pulse">
+          <div class="space-y-2">
+            <div class="h-4 bg-muted rounded w-24" />
+            <div class="h-10 bg-muted rounded w-20" />
+            <div class="h-3 bg-muted rounded w-16" />
+          </div>
+          <div class="skeleton w-14 h-14 rounded-xl" />
+        </div>
+      ))
+    }
+  </div>
+
+  <!-- Chart Skeleton -->
+  <div class="admin-card">
+    <div class="h-6 bg-muted rounded w-48 mb-6"></div>
+    <div class="skeleton h-64 rounded-lg"></div>
+  </div>
+
+  <!-- Two Column Layout Skeleton -->
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+    <!-- Recent Orders Skeleton -->
+    <div class="admin-card">
+      <div class="h-6 bg-muted rounded w-40 mb-6"></div>
+      <div class="space-y-3">
+        {
+          [...Array(5)].map(() => (
+            <div class="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+              <div class="space-y-2 flex-1">
+                <div class="h-4 bg-muted rounded w-32" />
+                <div class="h-3 bg-muted rounded w-24" />
+              </div>
+              <div class="h-6 bg-muted rounded w-16" />
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    <!-- Low Stock Skeleton -->
+    <div class="admin-card">
+      <div class="h-6 bg-muted rounded w-32 mb-6"></div>
+      <div class="space-y-3">
+        {
+          [...Array(5)].map(() => (
+            <div class="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+              <div class="space-y-2 flex-1">
+                <div class="h-4 bg-muted rounded w-40" />
+                <div class="h-3 bg-muted rounded w-20" />
+              </div>
+              <div class="h-6 bg-muted rounded w-16" />
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</div>
