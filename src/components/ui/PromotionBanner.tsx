@@ -43,7 +43,6 @@ export default function PromotionBanner({ zone, className = '', compact = false 
 
   useEffect(() => {
     const fetchPromotion = async () => {
-      console.log(`[PromotionBanner] Fetching promotions for zone: "${zone}"`);
       try {
         const now = new Date().toISOString();
         
@@ -54,8 +53,6 @@ export default function PromotionBanner({ zone, className = '', compact = false 
           .eq('is_active', true)
           .order('priority', { ascending: true });
 
-        console.log(`[PromotionBanner] Zone "${zone}" - Total active promotions:`, data?.length || 0);
-
         if (error) {
           console.error('Error fetching promotion:', error);
           setLoading(false);
@@ -64,24 +61,11 @@ export default function PromotionBanner({ zone, className = '', compact = false 
 
         // Filter by zone AND date in JavaScript (same pattern as AnnouncementBar)
         const validPromotions = (data || []).filter((promo: any) => {
-          // Check if this zone is in locations array
           const hasZone = Array.isArray(promo.locations) && promo.locations.includes(zone);
-          
-          // Check dates
           const startValid = !promo.start_date || new Date(promo.start_date) <= new Date(now);
           const endValid = !promo.end_date || new Date(promo.end_date) >= new Date(now);
-          
-          console.log(`[PromotionBanner] Checking promo "${promo.title}":`, { 
-            locations: promo.locations,
-            hasZone, 
-            startValid, 
-            endValid
-          });
-          
           return hasZone && startValid && endValid;
         });
-
-        console.log(`[PromotionBanner] Zone "${zone}" - Valid promotions:`, validPromotions.length);
 
         if (validPromotions.length > 0) {
           setPromotion(validPromotions[0]);

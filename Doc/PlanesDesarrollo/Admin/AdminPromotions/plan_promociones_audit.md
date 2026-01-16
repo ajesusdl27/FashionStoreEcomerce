@@ -554,9 +554,10 @@ Tabla comparativa de rendimiento entre promociones.
 ### Fase 2
 
 - [x] Zona product_page funciona correctamente
-- [ ] Admin recibe alertas de promociones por expirar
+- [x] Admin recibe alertas de promociones por expirar
 - [x] Se puede duplicar con personalización
-- [ ] Existe historial de cambios
+- [x] Vista previa por dispositivo (desktop/tablet/mobile)
+- [ ] Historial de cambios (requiere tabla SQL)
 
 ### Fase 3
 

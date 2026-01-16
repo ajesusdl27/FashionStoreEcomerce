@@ -66,9 +66,75 @@ const { data: coupons } = await authClient
         Vista Previa en Vivo
       </h2>
 
+      <!-- Device Preview Toggle -->
+      <div class="flex items-center gap-2 mb-4" id="device-toggle">
+        <span class="text-xs text-muted-foreground mr-2">Vista:</span>
+        <button
+          type="button"
+          data-preview="desktop"
+          class="preview-device-btn p-2 rounded border border-primary bg-primary/10 text-primary"
+          title="Escritorio"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+            ></path>
+          </svg>
+        </button>
+        <button
+          type="button"
+          data-preview="tablet"
+          class="preview-device-btn p-2 rounded border border-border hover:border-primary hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+          title="Tablet"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+            ></path>
+          </svg>
+        </button>
+        <button
+          type="button"
+          data-preview="mobile"
+          class="preview-device-btn p-2 rounded border border-border hover:border-primary hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+          title="Móvil"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+            ></path>
+          </svg>
+        </button>
+      </div>
+
       <div
         id="live-preview"
-        class="relative aspect-[21/9] bg-muted rounded-lg overflow-hidden border border-border"
+        class="relative aspect-[21/9] bg-muted rounded-lg overflow-hidden border border-border transition-all duration-300"
+        data-device="desktop"
       >
         <!-- Placeholder when no image -->
         <div
@@ -819,5 +885,41 @@ const { data: coupons } = await authClient
     if (previewOverlay) {
       previewOverlay.className = `absolute inset-0 ${isWhite ? "bg-gradient-to-r from-black/70 via-black/30 to-transparent" : "bg-gradient-to-r from-white/70 via-white/30 to-transparent"}`;
     }
+  });
+
+  // Device preview toggle
+  const deviceBtns = document.querySelectorAll(".preview-device-btn");
+  const livePreview = document.getElementById("live-preview");
+
+  deviceBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const device = (btn as HTMLElement).dataset.preview;
+
+      // Update button styles
+      deviceBtns.forEach((b) => {
+        b.className =
+          "preview-device-btn p-2 rounded border border-border hover:border-primary hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors";
+      });
+      btn.className =
+        "preview-device-btn p-2 rounded border border-primary bg-primary/10 text-primary";
+
+      // Update preview container size
+      if (livePreview) {
+        livePreview.dataset.device = device;
+        switch (device) {
+          case "mobile":
+            livePreview.className =
+              "relative mx-auto max-w-[320px] aspect-[9/16] bg-muted rounded-lg overflow-hidden border border-border transition-all duration-300";
+            break;
+          case "tablet":
+            livePreview.className =
+              "relative mx-auto max-w-[600px] aspect-[4/3] bg-muted rounded-lg overflow-hidden border border-border transition-all duration-300";
+            break;
+          default: // desktop
+            livePreview.className =
+              "relative aspect-[21/9] bg-muted rounded-lg overflow-hidden border border-border transition-all duration-300";
+        }
+      }
+    });
   });
 </script>
