@@ -211,10 +211,10 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
             {/* Ventas del Mes */}
             <KPICard
               client:load
-              title="Ventas del Mes"
+              title="💰 Ventas del Mes"
               value={formatPrice(analytics.monthlyRevenue.total)}
               trend={analytics.monthlyRevenue.trend}
-              subtitle={`${analytics.monthlyRevenue.orderCount} pedidos`}
+              subtitle={`De ${analytics.monthlyRevenue.orderCount} pedido${analytics.monthlyRevenue.orderCount !== 1 ? "s" : ""}`}
               colorClass="text-green-600 dark:text-green-400"
               iconName="money"
             />
@@ -222,9 +222,13 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
             {/* Pedidos Pendientes */}
             <KPICard
               client:load
-              title="Pedidos Pendientes"
+              title="⏳ Por Procesar"
               value={analytics.pendingOrders.total}
-              subtitle={`${analytics.pendingOrders.pending} sin pagar • ${analytics.pendingOrders.paid} por enviar`}
+              subtitle={
+                analytics.pendingOrders.total === 0
+                  ? "¡Todo al día!"
+                  : `${analytics.pendingOrders.paid} listos para enviar`
+              }
               colorClass="text-amber-600 dark:text-amber-400"
               iconName="clock"
             />
@@ -233,18 +237,18 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
             {analytics.bestSelling ? (
               <KPICard
                 client:load
-                title="Producto Más Vendido"
+                title="⭐ Más Vendido"
                 value={analytics.bestSelling.product.name}
-                subtitle={`${analytics.bestSelling.totalQuantity} unidades • ${formatPrice(analytics.bestSelling.totalRevenue)}`}
+                subtitle={`${analytics.bestSelling.totalQuantity} uds vendidas`}
                 colorClass="text-primary"
                 iconName="star"
               />
             ) : (
               <div class="stat-card">
                 <div>
-                  <p class="stat-label">Producto Más Vendido</p>
+                  <p class="stat-label">⭐ Más Vendido</p>
                   <p class="text-sm text-muted-foreground mt-2">
-                    Sin datos este mes
+                    Aún no hay ventas este mes
                   </p>
                 </div>
               </div>
@@ -256,10 +260,10 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
             <div class="flex items-center justify-between mb-6">
               <div>
                 <h2 class="font-heading text-xl text-foreground">
-                  Ventas de los Últimos 7 Días
+                  📊 Ventas de la Semana
                 </h2>
                 <p class="text-sm text-muted-foreground mt-1">
-                  Evolución diaria de ingresos
+                  Tu evolución diaria de ingresos
                 </p>
               </div>
             </div>
