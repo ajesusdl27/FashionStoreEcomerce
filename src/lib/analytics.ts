@@ -168,8 +168,6 @@ export async function getBestSellingProduct(client: SupabaseClient): Promise<Bes
   const now = new Date();
   const monthStart = getSpainMidnightUTC(startOfMonth(now));
 
-  console.log('[Analytics] getBestSellingProduct - monthStart:', monthStart.toISOString());
-
   // First, get orders from this month
   const { data: orders, error: ordersError } = await client
     .from('orders')
@@ -177,16 +175,10 @@ export async function getBestSellingProduct(client: SupabaseClient): Promise<Bes
     .in('status', ['paid', 'shipped', 'delivered', 'return_completed', 'partially_refunded'])
     .gte('created_at', monthStart.toISOString());
 
-  console.log('[Analytics] Orders found:', orders?.length || 0, orders);
-
-  if (ordersError) {
-    console.error('[Analytics] Orders error:', ordersError);
-    throw ordersError;
-  }
+  if (ordersError) throw ordersError;
   if (!orders || orders.length === 0) return null;
 
   const orderIds = orders.map(o => o.id);
-  console.log('[Analytics] Order IDs:', orderIds);
 
   // Then get order items for those orders
   const { data, error } = await client
@@ -204,28 +196,16 @@ export async function getBestSellingProduct(client: SupabaseClient): Promise<Bes
     `)
     .in('order_id', orderIds);
 
-  console.log('[Analytics] Order items found:', data?.length || 0, data);
-
-  if (error) {
-    console.error('[Analytics] Order items error:', error);
-    throw error;
-  }
+  if (error) throw error;
   if (!data || data.length === 0) return null;
 
   // Group by product and sum quantities
   const productSales = data.reduce((acc, item: any) => {
     const productId = item.product_id;
-    console.log('[Analytics] Processing item:', item);
-    
-    if (!productId || !item.product) {
-      console.log('[Analytics] Skipping item - no productId or product');
-      return acc;
-    }
+    if (!productId || !item.product) return acc;
 
     // Handle array vs object (Supabase returns array for relations)
     const product = Array.isArray(item.product) ? item.product[0] : item.product;
-    console.log('[Analytics] Product:', product);
-    
     if (!product) return acc;
 
     if (!acc[productId]) {
@@ -244,12 +224,9 @@ export async function getBestSellingProduct(client: SupabaseClient): Promise<Bes
   }, {} as Record<string, BestSellingProduct>);
 
   const products = Object.values(productSales);
-  console.log('[Analytics] Product sales result:', products);
-  
   if (products.length === 0) return null;
   
   const bestSelling = products.sort((a, b) => b.totalQuantity - a.totalQuantity)[0];
-  console.log('[Analytics] Best selling:', bestSelling);
 
   return bestSelling || null;
 }
