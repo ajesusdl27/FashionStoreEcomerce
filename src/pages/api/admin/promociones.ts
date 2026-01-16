@@ -2,6 +2,34 @@ import type { APIRoute } from 'astro';
 import { createAuthenticatedClient } from '@/lib/supabase';
 import { validateToken } from '@/lib/auth-utils';
 
+/**
+ * Sanitize URLs to prevent XSS attacks via javascript: or data: URLs
+ * Only allows relative paths, https://, and http:// URLs (converted to https)
+ */
+const sanitizeUrl = (url: string | null | undefined): string | null => {
+  if (!url) return null;
+  const trimmed = url.trim();
+  
+  // Allow relative paths starting with /
+  if (trimmed.startsWith('/')) {
+    return trimmed;
+  }
+  
+  // Allow HTTPS URLs
+  if (trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+  
+  // Convert HTTP to HTTPS
+  if (trimmed.startsWith('http://')) {
+    return trimmed.replace('http://', 'https://');
+  }
+  
+  // Reject javascript:, data:, vbscript:, and any other potentially malicious schemes
+  // Default to /productos for safety
+  return '/productos';
+};
+
 // GET - List all promotions
 export const GET: APIRoute = async ({ cookies }) => {
   try {
@@ -98,7 +126,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         image_url,
         mobile_image_url: mobile_image_url || null,
         cta_text: cta_text || null,
-        cta_link: cta_link || null,
+        cta_link: sanitizeUrl(cta_link),
         coupon_id: coupon_id || null,
         locations: locations || ['home_hero'],
         priority: priority || 10,
@@ -156,7 +184,11 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // Clean up updates object (remove undefined/null if strict update needed, but Supabase handles partial updates well)
+    // Sanitize cta_link if present in updates to prevent XSS
+    if (updates.cta_link !== undefined) {
+      updates.cta_link = sanitizeUrl(updates.cta_link);
+    }
+
     const { error } = await authClient
       .from('promotions')
       .update({
