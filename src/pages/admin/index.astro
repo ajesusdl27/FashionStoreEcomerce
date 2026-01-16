@@ -1,6 +1,17 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { createAuthenticatedClient } from "@/lib/supabase";
+import {
+  getMonthlyRevenue,
+  getPendingOrders,
+  getBestSellingProduct,
+  getSalesLast7Days,
+} from "@/lib/analytics";
+import { formatPrice } from "@/lib/formatters";
+
+// React Island Components
+import KPICard from "@/components/islands/KPICard";
+import SalesChart from "@/components/islands/SalesChart";
 
 // Get authenticated client for RLS compliance
 const accessToken = Astro.cookies.get("sb-access-token")?.value;
@@ -135,6 +146,27 @@ const totalRevenue =
     return sum + (orderTotal - refunded);
   }, 0) || 0;
 
+// ✅ NEW: Fetch analytics data for new KPIs
+let analytics = null;
+try {
+  const [monthlyRevenue, pendingOrders, bestSelling, sales7Days] =
+    await Promise.all([
+      getMonthlyRevenue(authClient),
+      getPendingOrders(authClient),
+      getBestSellingProduct(authClient),
+      getSalesLast7Days(authClient),
+    ]);
+
+  analytics = {
+    monthlyRevenue,
+    pendingOrders,
+    bestSelling,
+    sales7Days,
+  };
+} catch (error) {
+  console.error("Analytics error:", error);
+}
+
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat("es-ES", {
     style: "currency",
@@ -171,6 +203,117 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
 
 <AdminLayout title="Dashboard">
   <div class="space-y-8">
+    {/* ===== NEW ANALYTICS SECTION ===== */}
+    {
+      analytics && (
+        <>
+          {/* Analytics KPI Cards */}
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Ventas del Mes */}
+            <KPICard
+              client:load
+              title="Ventas del Mes"
+              value={formatPrice(analytics.monthlyRevenue.total)}
+              trend={analytics.monthlyRevenue.trend}
+              subtitle={`${analytics.monthlyRevenue.orderCount} pedidos`}
+              colorClass="text-green-600 dark:text-green-400"
+              icon={
+                <svg
+                  class="w-7 h-7"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+              }
+            />
+
+            {/* Pedidos Pendientes */}
+            <KPICard
+              client:load
+              title="Pedidos Pendientes"
+              value={analytics.pendingOrders.total}
+              subtitle={`${analytics.pendingOrders.pending} sin pagar • ${analytics.pendingOrders.paid} por enviar`}
+              colorClass="text-amber-600 dark:text-amber-400"
+              icon={
+                <svg
+                  class="w-7 h-7"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+              }
+            />
+
+            {/* Producto Más Vendido */}
+            {analytics.bestSelling ? (
+              <KPICard
+                client:load
+                title="Producto Más Vendido"
+                value={analytics.bestSelling.product.name}
+                subtitle={`${analytics.bestSelling.totalQuantity} unidades • ${formatPrice(analytics.bestSelling.totalRevenue)}`}
+                colorClass="text-primary"
+                icon={
+                  <svg
+                    class="w-7 h-7"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+                    ></path>
+                  </svg>
+                }
+              />
+            ) : (
+              <div class="stat-card">
+                <div>
+                  <p class="stat-label">Producto Más Vendido</p>
+                  <p class="text-sm text-muted-foreground mt-2">
+                    Sin datos este mes
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Sales Chart */}
+          <div class="admin-card">
+            <div class="flex items-center justify-between mb-6">
+              <div>
+                <h2 class="font-heading text-xl text-foreground">
+                  Ventas de los Últimos 7 Días
+                </h2>
+                <p class="text-sm text-muted-foreground mt-1">
+                  Evolución diaria de ingresos
+                </p>
+              </div>
+            </div>
+            <SalesChart client:load data={analytics.sales7Days} />
+          </div>
+        </>
+      )
+    }
+
+    {/* ===== END ANALYTICS SECTION ===== */}
+
     <!-- Stats Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
       <!-- Orders Today -->
