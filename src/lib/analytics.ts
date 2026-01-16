@@ -4,11 +4,8 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz';
 import { startOfMonth, endOfMonth, subDays, format } from 'date-fns';
 import { es } from 'date-fns/locale';
-
-const TIMEZONE = 'Europe/Madrid';
 
 interface MonthlyRevenue {
   total: number;
@@ -47,24 +44,54 @@ interface DailySales {
 }
 
 /**
+ * Get Spain midnight in UTC (handles DST automatically)
+ */
+function getSpainMidnightUTC(date: Date = new Date()): Date {
+  // Use Intl API to detect Spain's current offset
+  const spainTimeStr = date.toLocaleString('en-US', { 
+    timeZone: 'Europe/Madrid',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+  
+  const [datePart] = spainTimeStr.split(', ');
+  const [month, day, year] = datePart.split('/');
+  const spainDate = new Date(`${year}-${month}-${day}T00:00:00Z`);
+  
+  // Detect if DST is active (GMT+2) or not (GMT+1)
+  const isDST = date.toLocaleString('en-US', {
+    timeZone: 'Europe/Madrid',
+    timeZoneName: 'short'
+  }).includes('GMT+2');
+  
+  const spainOffset = isDST ? 2 : 1;
+  spainDate.setUTCHours(0 - spainOffset);
+  
+  return spainDate;
+}
+
+/**
  * Obtener ingresos totales del mes actual con comparación
  */
 export async function getMonthlyRevenue(client: SupabaseClient): Promise<MonthlyRevenue> {
   const now = new Date();
-  const spainNow = utcToZonedTime(now, TIMEZONE);
+  const spainNowMidnight = getSpainMidnightUTC(now);
   
-  const monthStart = startOfMonth(spainNow);
-  const monthEnd = endOfMonth(spainNow);
+  const monthStart = startOfMonth(spainNowMidnight);
+  const monthEnd = endOfMonth(spainNowMidnight);
+  monthEnd.setUTCHours(23, 59, 59, 999);
   
-  const monthStartUTC = zonedTimeToUtc(monthStart, TIMEZONE);
-  const monthEndUTC = zonedTimeToUtc(monthEnd, TIMEZONE);
-
   const { data, error } = await client
     .from('orders')
     .select('total_amount, refunded_amount')
     .in('status', ['paid', 'shipped', 'delivered', 'return_completed', 'partially_refunded'])
-    .gte('created_at', monthStartUTC.toISOString())
-    .lte('created_at', monthEndUTC.toISOString());
+    .gte('created_at', monthStart.toISOString())
+    .lte('created_at', monthEnd.toISOString());
 
   if (error) throw error;
 
@@ -82,15 +109,12 @@ export async function getMonthlyRevenue(client: SupabaseClient): Promise<Monthly
   const lastMonthEnd = new Date(monthEnd);
   lastMonthEnd.setMonth(lastMonthEnd.getMonth() - 1);
 
-  const lastMonthStartUTC = zonedTimeToUtc(lastMonthStart, TIMEZONE);
-  const lastMonthEndUTC = zonedTimeToUtc(lastMonthEnd, TIMEZONE);
-
   const { data: lastMonthData } = await client
     .from('orders')
     .select('total_amount, refunded_amount')
     .in('status', ['paid', 'shipped', 'delivered', 'return_completed', 'partially_refunded'])
-    .gte('created_at', lastMonthStartUTC.toISOString())
-    .lte('created_at', lastMonthEndUTC.toISOString());
+    .gte('created_at', lastMonthStart.toISOString())
+    .lte('created_at', lastMonthEnd.toISOString());
 
   const lastMonthRevenue = lastMonthData?.reduce((sum, order) => {
     const orderTotal = Number(order.total_amount) || 0;
@@ -98,7 +122,7 @@ export async function getMonthlyRevenue(client: SupabaseClient): Promise<Monthly
     return sum + (orderTotal - refunded);
   }, 0) || 0;
 
-  const trend = lastMonthRevenue > 0 
+  const trend = lastMonth Revenue > 0 
     ? ((totalRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 
     : 0;
 
@@ -142,16 +166,14 @@ export async function getPendingOrders(client: SupabaseClient): Promise<PendingO
  */
 export async function getBestSellingProduct(client: SupabaseClient): Promise<BestSellingProduct | null> {
   const now = new Date();
-  const spainNow = utcToZonedTime(now, TIMEZONE);
-  const monthStart = startOfMonth(spainNow);
-  const monthStartUTC = zonedTimeToUtc(monthStart, TIMEZONE);
+  const monthStart = getSpainMidnightUTC(startOfMonth(now));
 
   const { data, error } = await client
     .from('order_items')
     .select(`
       product_id,
       quantity,
-      product:products (
+      product:products!inner (
         id,
         name,
         price,
@@ -162,13 +184,13 @@ export async function getBestSellingProduct(client: SupabaseClient): Promise<Bes
         status
       )
     `)
-    .gte('order.created_at', monthStartUTC.toISOString())
+    .gte('order.created_at', monthStart.toISOString())
     .in('order.status', ['paid', 'shipped', 'delivered']);
 
   if (error) throw error;
 
   // Agrupar por producto y sumar cantidades
-  const productSales = data.reduce((acc, item) => {
+  const productSales = data.reduce((acc, item: any) => {
     const productId = item.product_id;
     if (!productId || !item.product) return acc;
 
@@ -198,26 +220,20 @@ export async function getBestSellingProduct(client: SupabaseClient): Promise<Bes
  */
 export async function getSalesLast7Days(client: SupabaseClient): Promise<DailySales[]> {
   const now = new Date();
-  const spainNow = utcToZonedTime(now, TIMEZONE);
-  
   const days: DailySales[] = [];
   
   for (let i = 6; i >= 0; i--) {
-    const date = subDays(spainNow, i);
-    const dayStart = new Date(date);
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(date);
-    dayEnd.setHours(23, 59, 59, 999);
-
-    const dayStartUTC = zonedTimeToUtc(dayStart, TIMEZONE);
-    const dayEndUTC = zonedTimeToUtc(dayEnd, TIMEZONE);
+    const date = subDays(now, i);
+    const dayStart = getSpainMidnightUTC(date);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setUTCHours(dayEnd.getUTCHours() + 24);
 
     const { data } = await client
       .from('orders')
       .select('total_amount, refunded_amount')
       .in('status', ['paid', 'shipped', 'delivered', 'return_completed', 'partially_refunded'])
-      .gte('created_at', dayStartUTC.toISOString())
-      .lte('created_at', dayEndUTC.toISOString());
+      .gte('created_at', dayStart.toISOString())
+      .lt('created_at', dayEnd.toISOString());
 
     const dailyRevenue = data?.reduce((sum, order) => {
       const orderTotal = Number(order.total_amount) || 0;

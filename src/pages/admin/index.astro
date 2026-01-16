@@ -1,25 +1,57 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { createAuthenticatedClient } from "@/lib/supabase";
-import { zonedTimeToUtc, utcToZonedTime } from "date-fns-tz";
 
 // Get authenticated client for RLS compliance
 const accessToken = Astro.cookies.get("sb-access-token")?.value;
 const refreshToken = Astro.cookies.get("sb-refresh-token")?.value;
 const authClient = createAuthenticatedClient(accessToken, refreshToken);
 
-// ✅ FIX 1: Timezone handling correcto para España
-const TIMEZONE = "Europe/Madrid";
-const now = new Date();
-const spainNow = utcToZonedTime(now, TIMEZONE);
+// ✅ FIX 1: Timezone handling for Spain (manual UTC conversion)
+// Spain is UTC+1 (winter) or UTC+2 (summer - DST)
+// Database stores everything in UTC, so we need to convert "today in Spain" to UTC range
 
-const spainToday = new Date(spainNow);
-spainToday.setHours(0, 0, 0, 0);
-const todayUTC = zonedTimeToUtc(spainToday, TIMEZONE);
+function getSpainMidnightUTC(): Date {
+  const now = new Date();
 
-const yesterdaySpain = new Date(spainToday);
-yesterdaySpain.setDate(yesterdaySpain.getDate() - 1);
-const yesterdayUTC = zonedTimeToUtc(yesterdaySpain, TIMEZONE);
+  // Get current time in Spain using Intl API
+  const spainTimeStr = now.toLocaleString("en-US", {
+    timeZone: "Europe/Madrid",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+
+  // Parse it back to create a Date object at Spain's current time
+  const [datePart, timePart] = spainTimeStr.split(", ");
+  const [month, day, year] = datePart.split("/");
+  const spainDate = new Date(`${year}-${month}-${day}T00:00:00Z`);
+
+  // This gives us midnight in Spain, represented in UTC
+  // We need to adjust by Spain's current offset
+  const spainOffset = new Date()
+    .toLocaleString("en-US", {
+      timeZone: "Europe/Madrid",
+      timeZoneName: "short",
+    })
+    .includes("GMT+2")
+    ? 2
+    : 1; // DST detection
+
+  spainDate.setUTCHours(0 - spainOffset); // Subtract offset to get UTC time
+  return spainDate;
+}
+
+const todaySpainMidnight = getSpainMidnightUTC();
+const todayUTC = todaySpainMidnight.toISOString();
+
+const yesterdaySpainMidnight = new Date(todaySpainMidnight);
+yesterdaySpainMidnight.setUTCDate(yesterdaySpainMidnight.getUTCDate() - 1);
+const yesterdayUTC = yesterdaySpainMidnight.toISOString();
 
 // ✅ FIX 2: Paralelizar queries (de 800ms a ~120ms)
 const [
@@ -36,14 +68,14 @@ const [
   authClient
     .from("orders")
     .select("*", { count: "exact", head: true })
-    .gte("created_at", todayUTC.toISOString()),
+    .gte("created_at", todayUTC),
 
   // Orders yesterday (for comparison)
   authClient
     .from("orders")
     .select("*", { count: "exact", head: true })
-    .gte("created_at", yesterdayUTC.toISOString())
-    .lt("created_at", todayUTC.toISOString()),
+    .gte("created_at", yesterdayUTC)
+    .lt("created_at", todayUTC),
 
   // Revenue (paid + shipped + delivered + return-related orders)
   authClient
