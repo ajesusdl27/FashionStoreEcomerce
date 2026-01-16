@@ -122,7 +122,7 @@ export async function getMonthlyRevenue(client: SupabaseClient): Promise<Monthly
     return sum + (orderTotal - refunded);
   }, 0) || 0;
 
-  const trend = lastMonth Revenue > 0 
+  const trend = lastMonthRevenue > 0 
     ? ((totalRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 
     : 0;
 
