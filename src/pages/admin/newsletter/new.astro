@@ -1,5 +1,6 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
+import WysiwygEditor from "@/components/islands/WysiwygEditor";
 ---
 
 <AdminLayout title="Nueva Campaña - Newsletter">
@@ -52,21 +53,53 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
           <label class="block text-sm font-medium text-foreground mb-2"
             >Contenido *</label
           >
-          <textarea
-            id="content"
-            name="content"
-            rows="15"
-            class="admin-input w-full font-mono text-sm"
-            placeholder="Escribe el contenido de tu email aquí...
+          
+          <!-- Tab switcher -->
+          <div class="flex gap-2 mb-3">
+            <button
+              type="button"
+              id="tab-wysiwyg"
+              class="px-3 py-1.5 text-sm rounded-lg bg-primary text-primary-foreground"
+            >
+              Editor Visual
+            </button>
+            <button
+              type="button"
+              id="tab-html"
+              class="px-3 py-1.5 text-sm rounded-lg bg-secondary text-secondary-foreground"
+            >
+              HTML
+            </button>
+          </div>
 
-Puedes usar HTML básico como:
-<h1>Título</h1>
-<p>Párrafo</p>
-<a href='https://...'>Enlace</a>
-<img src='https://...' alt='Imagen' />"
-            required></textarea>
+          <!-- WYSIWYG Editor -->
+          <div id="editor-wysiwyg">
+            <WysiwygEditor 
+              client:load
+              content=""
+              onChange={(html: string) => {
+                const contentInput = document.getElementById('content') as HTMLTextAreaElement;
+                if (contentInput) contentInput.value = html;
+              }}
+              placeholder="Escribe el contenido de tu email aquí..."
+            />
+          </div>
+          
+          <!-- HTML Editor (hidden by default) -->
+          <div id="editor-html" class="hidden">
+            <textarea
+              id="content-html"
+              rows="15"
+              class="admin-input w-full font-mono text-sm"
+              placeholder="Escribe HTML aquí..."
+            ></textarea>
+          </div>
+          
+          <!-- Hidden field to store content -->
+          <input type="hidden" id="content" name="content" />
+          
           <p class="text-xs text-muted-foreground mt-2">
-            Puedes usar HTML para formatear el contenido.
+            Usa el editor visual o escribe HTML directamente.
           </p>
         </div>
       </div>
@@ -93,18 +126,68 @@ Puedes usar HTML básico como:
   </div>
 
   <script>
-    const form = document.getElementById("campaign-form") as HTMLFormElement;
     const subjectInput = document.getElementById("subject") as HTMLInputElement;
-    const contentInput = document.getElementById(
-      "content"
-    ) as HTMLTextAreaElement;
+    const contentInput = document.getElementById("content") as HTMLInputElement;
+    const contentHtmlTextarea = document.getElementById("content-html") as HTMLTextAreaElement;
     const saveDraftBtn = document.getElementById("save-draft");
     const saveAndSendBtn = document.getElementById("save-and-send");
     const messageDiv = document.getElementById("form-message");
+    
+    // Tab switching
+    const tabWysiwyg = document.getElementById("tab-wysiwyg");
+    const tabHtml = document.getElementById("tab-html");
+    const editorWysiwyg = document.getElementById("editor-wysiwyg");
+    const editorHtml = document.getElementById("editor-html");
+    
+    let activeTab: 'wysiwyg' | 'html' = 'wysiwyg';
+
+    function switchTab(tab: 'wysiwyg' | 'html') {
+      activeTab = tab;
+      
+      if (tab === 'wysiwyg') {
+        tabWysiwyg?.classList.replace('bg-secondary', 'bg-primary');
+        tabWysiwyg?.classList.replace('text-secondary-foreground', 'text-primary-foreground');
+        tabHtml?.classList.replace('bg-primary', 'bg-secondary');
+        tabHtml?.classList.replace('text-primary-foreground', 'text-secondary-foreground');
+        editorWysiwyg?.classList.remove('hidden');
+        editorHtml?.classList.add('hidden');
+        
+        // Sync HTML to WYSIWYG would require re-initializing the editor
+        // For now, we just show a warning if there's content
+        if (contentHtmlTextarea?.value) {
+          contentInput.value = contentHtmlTextarea.value;
+        }
+      } else {
+        tabHtml?.classList.replace('bg-secondary', 'bg-primary');
+        tabHtml?.classList.replace('text-secondary-foreground', 'text-primary-foreground');
+        tabWysiwyg?.classList.replace('bg-primary', 'bg-secondary');
+        tabWysiwyg?.classList.replace('text-primary-foreground', 'text-secondary-foreground');
+        editorWysiwyg?.classList.add('hidden');
+        editorHtml?.classList.remove('hidden');
+        
+        // Sync WYSIWYG content to HTML textarea
+        if (contentInput?.value) {
+          contentHtmlTextarea.value = contentInput.value;
+        }
+      }
+    }
+
+    tabWysiwyg?.addEventListener('click', () => switchTab('wysiwyg'));
+    tabHtml?.addEventListener('click', () => switchTab('html'));
+    
+    // Sync HTML textarea changes to hidden input
+    contentHtmlTextarea?.addEventListener('input', () => {
+      contentInput.value = contentHtmlTextarea.value;
+    });
 
     async function saveCampaign(andSend: boolean) {
       const subject = subjectInput.value.trim();
-      const content = contentInput.value.trim();
+      
+      // Get content from active editor
+      let content = contentInput.value.trim();
+      if (activeTab === 'html') {
+        content = contentHtmlTextarea.value.trim();
+      }
 
       if (!subject || !content) {
         showMessage("Por favor, completa todos los campos", "error");
@@ -125,7 +208,6 @@ Puedes usar HTML básico como:
         }
 
         if (andSend) {
-          // Redirect to send page
           window.location.href = `/admin/newsletter/send/${result.id}`;
         } else {
           showMessage("Borrador guardado correctamente", "success");
@@ -141,6 +223,7 @@ Puedes usar HTML básico como:
     function showMessage(text: string, type: "success" | "error") {
       if (!messageDiv) return;
       messageDiv.textContent = text;
+      messageDiv.classList.remove("hidden");
       messageDiv.className = `p-4 rounded-lg text-sm ${
         type === "success"
           ? "bg-green-500/20 text-green-400"

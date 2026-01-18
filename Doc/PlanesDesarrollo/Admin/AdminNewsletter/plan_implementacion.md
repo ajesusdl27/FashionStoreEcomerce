@@ -435,15 +435,21 @@ export const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-z
 | 3.3 | Paginación de suscriptores           | `subscribers.astro`                | 2h       | ⏳ Pendiente    |
 | 3.4 | Preview del email antes de enviar    | `send/[id].astro`                  | 2h       | ✅ Completado   |
 | 3.5 | Envío de email de prueba             | `send/[id].astro` + API            | 2h       | ✅ Completado   |
-| 3.6 | Página de edición de campañas        | `[NEW] edit/[id].astro`            | 3h       | ⏳ Pendiente    |
-| 3.7 | Editor WYSIWYG (TipTap o Quill)      | `new.astro` + componente React     | 8h       | ⏳ Pendiente    |
+| 3.6 | Página de edición de campañas        | `edit/[id].astro`                  | 3h       | ✅ Completado   |
+| 3.7 | Editor WYSIWYG (TipTap)              | `new.astro` + `WysiwygEditor.tsx`  | 8h       | ✅ Completado   |
 
 **Archivos creados/modificados en Fase 3:**
 - ✅ `src/pages/admin/newsletter/subscribers.astro` - Búsqueda, filtros y exportación CSV
 - ✅ `src/pages/admin/newsletter/send/[id].astro` - Preview HTML y envío de prueba
 - ✅ `src/pages/api/admin/newsletter/send-test.ts` - API para envío de prueba
+- ✅ `src/pages/admin/newsletter/edit/[id].astro` - Página de edición de campañas
+- ✅ `src/pages/api/admin/newsletter/update-campaign.ts` - API para actualizar campañas
+- ✅ `src/pages/api/admin/newsletter/delete-campaign.ts` - API para eliminar campañas
+- ✅ `src/pages/admin/newsletter/index.astro` - Botón de editar y reintentar campañas fallidas
+- ✅ `src/components/islands/WysiwygEditor.tsx` - Editor WYSIWYG con TipTap
+- ✅ `src/pages/admin/newsletter/new.astro` - Integración editor visual/HTML
 
-**Tiempo estimado Fase 3:** 20 horas → **9 horas completadas**
+**Tiempo estimado Fase 3:** 20 horas → **✅ Completado (excepto paginación)**
 
 ---
 

@@ -131,12 +131,33 @@ const getStatusInfo = (status: string) => {
                     <span class={`px-3 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
                       {statusInfo.label}
                     </span>
+                    {/* Edit button for drafts and failed campaigns */}
+                    {(campaign.status === CAMPAIGN_STATUS.DRAFT || campaign.status === CAMPAIGN_STATUS.FAILED) && (
+                      <a
+                        href={`/admin/newsletter/edit/${campaign.id}`}
+                        class="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        title="Editar campaña"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                      </a>
+                    )}
                     {campaign.status === CAMPAIGN_STATUS.DRAFT && (
                       <a
                         href={`/admin/newsletter/send/${campaign.id}`}
                         class="text-sm text-primary hover:underline"
                       >
                         Enviar
+                      </a>
+                    )}
+                    {campaign.status === CAMPAIGN_STATUS.FAILED && (
+                      <a
+                        href={`/admin/newsletter/send/${campaign.id}`}
+                        class="text-sm text-orange-400 hover:underline"
+                        title="Reintentar envío"
+                      >
+                        Reintentar
                       </a>
                     )}
                   </div>
