@@ -1,11 +1,16 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { supabase } from "@/lib/supabase";
-import { formatOrderId } from "@/lib/order-utils";
+import { formatOrderId, parseOrderId } from "@/lib/order-utils";
+import {
+  ORDER_STATUS_CONFIG,
+  ORDER_STATUS_OPTIONS,
+} from "@/lib/constants/order-status";
 
-// Fetch orders with pagination
+// Fetch orders with pagination and search
 const page = parseInt(Astro.url.searchParams.get("page") || "1");
 const statusFilter = Astro.url.searchParams.get("status") || "";
+const searchQuery = Astro.url.searchParams.get("q") || "";
 const limit = 20;
 const offset = (page - 1) * limit;
 
@@ -16,6 +21,20 @@ let query = supabase
 
 if (statusFilter) {
   query = query.eq("status", statusFilter);
+}
+
+// Search by order number, customer name, or email
+if (searchQuery) {
+  const parsedOrderNum = parseOrderId(searchQuery);
+  if (parsedOrderNum) {
+    // Search by order number
+    query = query.eq("order_number", parsedOrderNum);
+  } else {
+    // Search by customer name or email
+    query = query.or(
+      `customer_name.ilike.%${searchQuery}%,customer_email.ilike.%${searchQuery}%`
+    );
+  }
 }
 
 const { data: orders, count } = await query.range(offset, offset + limit - 1);
@@ -39,50 +58,9 @@ const formatDate = (date: string) => {
   });
 };
 
-const statusConfig: Record<
-  string,
-  { label: string; bgClass: string; textClass: string; borderColor: string }
-> = {
-  pending: {
-    label: "Pendiente",
-    bgClass: "bg-yellow-500/20",
-    textClass: "text-yellow-400",
-    borderColor: "border-l-yellow-500",
-  },
-  paid: {
-    label: "Pagado",
-    bgClass: "bg-green-500/20",
-    textClass: "text-green-400",
-    borderColor: "border-l-green-500",
-  },
-  shipped: {
-    label: "Enviado",
-    bgClass: "bg-blue-500/20",
-    textClass: "text-blue-400",
-    borderColor: "border-l-blue-500",
-  },
-  delivered: {
-    label: "Entregado",
-    bgClass: "bg-green-500/20",
-    textClass: "text-green-400",
-    borderColor: "border-l-green-500",
-  },
-  cancelled: {
-    label: "Cancelado",
-    bgClass: "bg-red-500/20",
-    textClass: "text-red-400",
-    borderColor: "border-l-red-500",
-  },
-};
-
-const statusOptions = [
-  { value: "", label: "Todos los estados" },
-  { value: "pending", label: "Pendiente" },
-  { value: "paid", label: "Pagado" },
-  { value: "shipped", label: "Enviado" },
-  { value: "delivered", label: "Entregado" },
-  { value: "cancelled", label: "Cancelado" },
-];
+// Use shared status config
+const statusConfig = ORDER_STATUS_CONFIG;
+const statusOptions = ORDER_STATUS_OPTIONS;
 ---
 
 <AdminLayout title="Pedidos">
@@ -93,21 +71,94 @@ const statusOptions = [
     >
       <p class="text-muted-foreground">{count || 0} pedidos en total</p>
 
-      <!-- Status Filter -->
-      <select
-        id="status-filter"
-        class="admin-select w-48"
-        onchange="window.location.href = this.value ? `/admin/pedidos?status=${this.value}` : '/admin/pedidos'"
-      >
-        {
-          statusOptions.map((opt) => (
-            <option value={opt.value} selected={statusFilter === opt.value}>
-              {opt.label}
-            </option>
-          ))
-        }
-      </select>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <!-- Search Input -->
+        <form id="search-form" class="relative">
+          <input
+            type="text"
+            name="q"
+            id="search-input"
+            placeholder="Buscar (#A000001, nombre, email...)"
+            value={searchQuery}
+            class="admin-input w-64 pl-10 pr-10"
+          />
+          <svg
+            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          {
+            searchQuery && (
+              <button
+                type="button"
+                id="clear-search"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                title="Limpiar búsqueda"
+              >
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            )
+          }
+          {
+            statusFilter && (
+              <input type="hidden" name="status" value={statusFilter} />
+            )
+          }
+        </form>
+
+        <!-- Status Filter -->
+        <select id="status-filter" class="admin-select w-48">
+          {
+            statusOptions.map((opt) => (
+              <option value={opt.value} selected={statusFilter === opt.value}>
+                {opt.label}
+              </option>
+            ))
+          }
+        </select>
+      </div>
     </div>
+
+    <!-- Active Search Badge -->
+    {
+      searchQuery && (
+        <div class="flex items-center gap-2 text-sm">
+          <span class="text-muted-foreground">Resultados para:</span>
+          <span class="bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">
+            "{searchQuery}"
+          </span>
+          <a
+            href={
+              statusFilter
+                ? `/admin/pedidos?status=${statusFilter}`
+                : "/admin/pedidos"
+            }
+            class="text-muted-foreground hover:text-foreground underline"
+          >
+            Limpiar búsqueda
+          </a>
+        </div>
+      )
+    }
 
     <!-- Orders List -->
     <div class="space-y-2">
@@ -123,7 +174,9 @@ const statusOptions = [
                   {/* Order ID */}
                   <div class="flex-shrink-0 w-24">
                     <span class="font-mono text-sm text-muted-foreground">
-                      {order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`}
+                      {order.order_number
+                        ? formatOrderId(order.order_number)
+                        : `#${order.id.slice(0, 8)}`}
                     </span>
                   </div>
 
@@ -218,7 +271,7 @@ const statusOptions = [
           <div class="flex gap-2">
             {page > 1 && (
               <a
-                href={`/admin/pedidos?page=${page - 1}${statusFilter ? `&status=${statusFilter}` : ""}`}
+                href={`/admin/pedidos?page=${page - 1}${statusFilter ? `&status=${statusFilter}` : ""}${searchQuery ? `&q=${encodeURIComponent(searchQuery)}` : ""}`}
                 class="px-4 py-2 bg-muted hover:bg-muted/80 border border-border rounded-lg text-sm transition-colors"
               >
                 Anterior
@@ -226,7 +279,7 @@ const statusOptions = [
             )}
             {page < totalPages && (
               <a
-                href={`/admin/pedidos?page=${page + 1}${statusFilter ? `&status=${statusFilter}` : ""}`}
+                href={`/admin/pedidos?page=${page + 1}${statusFilter ? `&status=${statusFilter}` : ""}${searchQuery ? `&q=${encodeURIComponent(searchQuery)}` : ""}`}
                 class="px-4 py-2 bg-muted hover:bg-muted/80 border border-border rounded-lg text-sm transition-colors"
               >
                 Siguiente
@@ -237,4 +290,26 @@ const statusOptions = [
       )
     }
   </div>
+
+  <script define:vars={{ searchQuery, statusFilter }}>
+    // Status filter change handler
+    const statusSelect = document.getElementById("status-filter");
+    statusSelect?.addEventListener("change", (e) => {
+      const value = e.target.value;
+      let url = "/admin/pedidos";
+      const params = new URLSearchParams();
+      if (value) params.set("status", value);
+      if (searchQuery) params.set("q", searchQuery);
+      if (params.toString()) url += "?" + params.toString();
+      window.location.href = url;
+    });
+
+    // Clear search button
+    const clearBtn = document.getElementById("clear-search");
+    clearBtn?.addEventListener("click", () => {
+      let url = "/admin/pedidos";
+      if (statusFilter) url += "?status=" + statusFilter;
+      window.location.href = url;
+    });
+  </script>
 </AdminLayout>

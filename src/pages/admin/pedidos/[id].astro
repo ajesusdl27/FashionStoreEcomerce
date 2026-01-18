@@ -2,6 +2,10 @@
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { supabase } from "@/lib/supabase";
 import { formatOrderId } from "@/lib/order-utils";
+import {
+  ORDER_STATUS_CONFIG,
+  ORDER_STATUS_VALUES,
+} from "@/lib/constants/order-status";
 
 const { id } = Astro.params;
 
@@ -56,44 +60,17 @@ const formatDate = (date: string) => {
   });
 };
 
-const statusConfig: Record<
-  string,
-  { label: string; bgClass: string; textClass: string }
-> = {
-  pending: {
-    label: "Pendiente",
-    bgClass: "bg-yellow-500/20",
-    textClass: "text-yellow-400",
-  },
-  paid: {
-    label: "Pagado",
-    bgClass: "bg-green-500/20",
-    textClass: "text-green-400",
-  },
-  shipped: {
-    label: "Enviado",
-    bgClass: "bg-blue-500/20",
-    textClass: "text-blue-400",
-  },
-  delivered: {
-    label: "Entregado",
-    bgClass: "bg-green-500/20",
-    textClass: "text-green-400",
-  },
-  cancelled: {
-    label: "Cancelado",
-    bgClass: "bg-red-500/20",
-    textClass: "text-red-400",
-  },
-};
-
-const statuses = ["pending", "paid", "shipped", "delivered", "cancelled"];
+// Use shared status config
+const statusConfig = ORDER_STATUS_CONFIG;
+const statuses = ORDER_STATUS_VALUES;
 const currentStatus = statusConfig[order.status] || statusConfig.pending;
 const isAlreadyShipped =
   order.status === "shipped" || order.status === "delivered";
 ---
 
-<AdminLayout title={`Pedido ${order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`}`}>
+<AdminLayout
+  title={`Pedido ${order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`}`}
+>
   <div class="max-w-4xl mx-auto space-y-6">
     <!-- Header -->
     <div class="flex items-center justify-between">
@@ -117,7 +94,11 @@ const isAlreadyShipped =
         </a>
         <div>
           <h1 class="text-2xl font-bold text-foreground">
-            Pedido {order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`}
+            Pedido {
+              order.order_number
+                ? formatOrderId(order.order_number)
+                : `#${order.id.slice(0, 8)}`
+            }
           </h1>
           <p class="text-zinc-500">{formatDate(order.created_at)}</p>
         </div>
@@ -366,7 +347,29 @@ const isAlreadyShipped =
             </div>
           </div>
 
-          <button id="update-status" class="admin-btn-primary w-full">
+          <button
+            id="update-status"
+            class="admin-btn-primary w-full flex items-center justify-center gap-2"
+          >
+            <svg
+              id="btn-spinner"
+              class="hidden animate-spin h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
             <span id="btn-text">Actualizar Estado</span>
           </button>
           <div id="status-message" class="hidden mt-3 p-3 rounded-lg text-sm">
@@ -380,7 +383,11 @@ const isAlreadyShipped =
             <div class="flex justify-between text-sm">
               <span class="text-zinc-500">Nº Pedido</span>
               <span class="font-mono text-foreground"
-                >{order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`}</span
+                >{
+                  order.order_number
+                    ? formatOrderId(order.order_number)
+                    : `#${order.id.slice(0, 8)}`
+                }</span
               >
             </div>
             {
@@ -457,6 +464,7 @@ const isAlreadyShipped =
 
     updateBtn?.addEventListener("click", async () => {
       const newStatus = statusSelect.value;
+      const btnSpinner = document.getElementById("btn-spinner");
 
       // Validate carrier if shipping
       if (newStatus === "shipped" && !carrierSelect?.value) {
@@ -468,6 +476,12 @@ const isAlreadyShipped =
         }
         return;
       }
+
+      // Show loading state
+      if (btnSpinner) btnSpinner.classList.remove("hidden");
+      if (btnText) btnText.textContent = "Actualizando...";
+      if (updateBtn) (updateBtn as HTMLButtonElement).disabled = true;
+      if (statusSelect) statusSelect.disabled = true;
 
       // Build request body
       const requestBody: any = { id: orderId, status: newStatus };
@@ -500,7 +514,7 @@ const isAlreadyShipped =
           messageDiv.textContent =
             newStatus === "shipped"
               ? "✅ Pedido marcado como enviado y email enviado al cliente"
-              : "✅ Estado actualizado";
+              : "✅ Estado actualizado correctamente";
           messageDiv.classList.remove("hidden");
         }
 
@@ -508,6 +522,16 @@ const isAlreadyShipped =
           window.location.reload();
         }, 1500);
       } catch (error: any) {
+        // Reset loading state on error
+        if (btnSpinner) btnSpinner.classList.add("hidden");
+        if (btnText)
+          btnText.textContent =
+            newStatus === "shipped"
+              ? "📦 Marcar como Enviado"
+              : "Actualizar Estado";
+        if (updateBtn) (updateBtn as HTMLButtonElement).disabled = false;
+        if (statusSelect) statusSelect.disabled = false;
+
         if (messageDiv) {
           messageDiv.className =
             "mt-3 p-3 rounded-lg text-sm bg-red-500/20 text-red-400";
