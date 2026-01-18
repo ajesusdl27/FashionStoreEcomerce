@@ -25,6 +25,26 @@ const formatDate = (date: string | null) => {
 const formatDiscount = (type: string, value: number) => {
   return type === "percentage" ? `${value}%` : `${value}€`;
 };
+
+// Calculate coupon status
+const getCouponStatus = (coupon: any) => {
+  const now = new Date();
+  if (!coupon.is_active) return { label: "Inactivo", class: "badge-muted" };
+  if (coupon.end_date && new Date(coupon.end_date) < now)
+    return { label: "Expirado", class: "badge-warning" };
+  if (coupon.max_uses && coupon.current_uses >= coupon.max_uses)
+    return { label: "Agotado", class: "badge-error" };
+  // Check if expires within 7 days
+  if (coupon.end_date) {
+    const daysLeft = Math.ceil(
+      (new Date(coupon.end_date).getTime() - now.getTime()) /
+        (1000 * 60 * 60 * 24)
+    );
+    if (daysLeft <= 7 && daysLeft > 0)
+      return { label: `Expira en ${daysLeft}d`, class: "badge-warning" };
+  }
+  return { label: "Activo", class: "badge-success" };
+};
 ---
 
 <AdminLayout title="Cupones">
@@ -58,12 +78,43 @@ const formatDiscount = (type: string, value: number) => {
       </button>
     </div>
 
+    <!-- Search and Filters -->
+    <div class="flex flex-col sm:flex-row gap-3">
+      <div class="flex-1 relative">
+        <svg
+          class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+        <input
+          type="text"
+          id="search-coupon"
+          placeholder="Buscar por código..."
+          class="admin-input w-full pl-9"
+        />
+      </div>
+      <select id="filter-status" class="admin-input w-full sm:w-48">
+        <option value="">Todos los estados</option>
+        <option value="active">Activos</option>
+        <option value="inactive">Inactivos</option>
+        <option value="expired">Expirados</option>
+        <option value="depleted">Agotados</option>
+      </select>
+    </div>
+
     <!-- Coupons Table -->
     <div class="admin-card">
       {
         coupons && coupons.length > 0 ? (
           <div class="overflow-x-auto -mx-6">
-            <table class="admin-table">
+            <table class="admin-table" id="coupons-table">
               <thead>
                 <tr>
                   <th>Código</th>
@@ -76,79 +127,115 @@ const formatDiscount = (type: string, value: number) => {
                 </tr>
               </thead>
               <tbody>
-                {coupons.map((coupon: any) => (
-                  <tr>
-                    <td>
-                      <span class="font-mono font-bold text-primary">
-                        {coupon.code}
-                      </span>
-                    </td>
-                    <td class="font-medium">
-                      {formatDiscount(
-                        coupon.discount_type,
-                        coupon.discount_value
-                      )}
-                    </td>
-                    <td>
-                      {coupon.min_purchase_amount > 0 ? (
-                        `${coupon.min_purchase_amount}€`
-                      ) : (
-                        <span class="text-muted-foreground">-</span>
-                      )}
-                    </td>
-                    <td>
-                      <span
-                        class={
-                          coupon.max_uses &&
-                          coupon.current_uses >= coupon.max_uses
-                            ? "text-red-400"
-                            : ""
-                        }
-                      >
-                        {coupon.current_uses}
-                        {coupon.max_uses ? `/${coupon.max_uses}` : ""}
-                      </span>
-                    </td>
-                    <td class="text-sm text-muted-foreground">
-                      <div>{formatDate(coupon.start_date)}</div>
-                      <div>→ {formatDate(coupon.end_date)}</div>
-                    </td>
-                    <td>
-                      <button
-                        class="toggle-status-btn"
-                        data-id={coupon.id}
-                        data-active={coupon.is_active}
-                      >
-                        <span
-                          class={`badge ${coupon.is_active ? "badge-success" : "badge-muted"}`}
-                        >
-                          {coupon.is_active ? "Activo" : "Inactivo"}
+                {coupons.map((coupon: any) => {
+                  const status = getCouponStatus(coupon);
+                  return (
+                    <tr
+                      data-code={coupon.code.toLowerCase()}
+                      data-status={
+                        status.label.toLowerCase().includes("activo")
+                          ? "active"
+                          : status.label.toLowerCase().includes("inactivo")
+                            ? "inactive"
+                            : status.label.toLowerCase().includes("expir")
+                              ? "expired"
+                              : status.label.toLowerCase().includes("agotado")
+                                ? "depleted"
+                                : "active"
+                      }
+                    >
+                      <td>
+                        <span class="font-mono font-bold text-primary">
+                          {coupon.code}
                         </span>
-                      </button>
-                    </td>
-                    <td class="text-right">
-                      <button
-                        class="delete-coupon-btn admin-btn-icon text-red-400 hover:bg-red-500/10"
-                        data-id={coupon.id}
-                        title="Eliminar"
-                      >
-                        <svg
-                          class="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                      </td>
+                      <td class="font-medium">
+                        {formatDiscount(
+                          coupon.discount_type,
+                          coupon.discount_value
+                        )}
+                      </td>
+                      <td>
+                        {coupon.min_purchase_amount > 0 ? (
+                          `${coupon.min_purchase_amount}€`
+                        ) : (
+                          <span class="text-muted-foreground">-</span>
+                        )}
+                      </td>
+                      <td>
+                        <span
+                          class={
+                            coupon.max_uses &&
+                            coupon.current_uses >= coupon.max_uses
+                              ? "text-red-400"
+                              : ""
+                          }
                         >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                          {coupon.current_uses}
+                          {coupon.max_uses ? `/${coupon.max_uses}` : ""}
+                        </span>
+                      </td>
+                      <td class="text-sm text-muted-foreground">
+                        <div>{formatDate(coupon.start_date)}</div>
+                        <div>→ {formatDate(coupon.end_date)}</div>
+                      </td>
+                      <td>
+                        <button
+                          class="toggle-status-btn"
+                          data-id={coupon.id}
+                          data-active={coupon.is_active}
+                        >
+                          <span class={`badge ${status.class}`}>
+                            {status.label}
+                          </span>
+                        </button>
+                      </td>
+                      <td class="text-right">
+                        <div class="flex items-center justify-end gap-1">
+                          <button
+                            class="edit-coupon-btn admin-btn-icon hover:bg-secondary"
+                            data-coupon={JSON.stringify(coupon)}
+                            title="Editar"
+                          >
+                            <svg
+                              class="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                              />
+                            </svg>
+                          </button>
+                          <button
+                            class="delete-coupon-btn admin-btn-icon text-red-400 hover:bg-red-500/10"
+                            data-id={coupon.id}
+                            data-code={coupon.code}
+                            title="Eliminar"
+                          >
+                            <svg
+                              class="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -312,9 +399,8 @@ const formatDiscount = (type: string, value: number) => {
       </form>
 
       <div class="p-6 border-t border-border flex gap-3 justify-end">
-        <button type="button" id="btn-cancel" class="admin-btn">
-          Cancelar
-        </button>
+        <button type="button" id="btn-cancel" class="admin-btn">Cancelar</button
+        >
         <button
           type="submit"
           form="coupon-form"
@@ -345,9 +431,270 @@ const formatDiscount = (type: string, value: number) => {
       </div>
     </div>
   </div>
+
+  <!-- Edit Coupon Modal -->
+  <div
+    id="edit-modal"
+    class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4"
+  >
+    <div
+      class="bg-card border border-border rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+    >
+      <div class="p-6 border-b border-border">
+        <h2 class="font-heading text-xl">Editar Cupón</h2>
+        <p class="text-sm text-muted-foreground mt-1">
+          Código y descuento no se pueden modificar (sincronizados con Stripe)
+        </p>
+      </div>
+
+      <form id="edit-form" class="p-6 space-y-4">
+        <input type="hidden" name="id" />
+
+        <!-- Read-only fields -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Código</label>
+            <input
+              type="text"
+              name="code_display"
+              readonly
+              class="admin-input w-full bg-muted/50 cursor-not-allowed"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Descuento</label>
+            <input
+              type="text"
+              name="discount_display"
+              readonly
+              class="admin-input w-full bg-muted/50 cursor-not-allowed"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2"
+              >Compra mínima (€)</label
+            >
+            <input
+              type="number"
+              name="min_purchase_amount"
+              min="0"
+              step="0.01"
+              placeholder="0"
+              class="admin-input w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2"
+              >Máx. descuento (€)</label
+            >
+            <input
+              type="number"
+              name="max_discount_amount"
+              min="0"
+              step="0.01"
+              placeholder="Sin límite"
+              class="admin-input w-full"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Fecha inicio</label>
+            <input
+              type="datetime-local"
+              name="start_date"
+              class="admin-input w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Fecha fin</label>
+            <input
+              type="datetime-local"
+              name="end_date"
+              class="admin-input w-full"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2"
+              >Máx. usos totales</label
+            >
+            <input
+              type="number"
+              name="max_uses"
+              min="1"
+              placeholder="Ilimitado"
+              class="admin-input w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2"
+              >Máx. por cliente</label
+            >
+            <input
+              type="number"
+              name="max_uses_per_customer"
+              min="1"
+              class="admin-input w-full"
+            />
+          </div>
+        </div>
+
+        <div
+          id="edit-form-error"
+          class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm"
+        >
+        </div>
+      </form>
+
+      <div class="p-6 border-t border-border flex gap-3 justify-end">
+        <button type="button" id="btn-edit-cancel" class="admin-btn"
+          >Cancelar</button
+        >
+        <button
+          type="submit"
+          form="edit-form"
+          id="btn-edit-submit"
+          class="admin-btn admin-btn-primary"
+        >
+          <span id="btn-edit-text">Guardar Cambios</span>
+          <svg
+            id="btn-edit-spinner"
+            class="hidden animate-spin w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div
+    id="delete-modal"
+    class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4"
+  >
+    <div class="bg-card border border-border rounded-2xl w-full max-w-md p-6">
+      <div class="flex items-center gap-3 text-amber-400 mb-4">
+        <svg
+          class="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          ></path>
+        </svg>
+        <h3 class="font-heading text-lg text-foreground">
+          Confirmar Eliminación
+        </h3>
+      </div>
+      <p class="text-muted-foreground mb-6">
+        ¿Estás seguro de eliminar el cupón <strong
+          id="delete-code"
+          class="text-foreground"></strong>? Esta acción eliminará también el
+        cupón de Stripe y no se puede deshacer.
+      </p>
+      <div class="flex gap-3 justify-end">
+        <button id="cancel-delete" class="admin-btn">Cancelar</button>
+        <button
+          id="confirm-delete"
+          class="admin-btn bg-red-500 hover:bg-red-600 text-white"
+        >
+          Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
 </AdminLayout>
 
 <script>
+  // Toast function
+  function showToast(
+    message: string,
+    type: "success" | "error" | "info" = "info"
+  ) {
+    const container = document.getElementById("toast-container");
+    const toast = document.createElement("div");
+    const bgColor =
+      type === "success"
+        ? "bg-green-500"
+        : type === "error"
+          ? "bg-red-500"
+          : "bg-blue-500";
+    toast.className = `px-4 py-3 rounded-lg shadow-lg ${bgColor} text-white flex items-center gap-2 animate-fadeIn`;
+
+    const icon =
+      type === "success"
+        ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>'
+        : type === "error"
+          ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
+          : '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+
+    toast.innerHTML = `${icon}<span>${message}</span>`;
+    container?.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add("opacity-0", "transition-opacity");
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
+
+  // Search and filter
+  const searchInput = document.getElementById(
+    "search-coupon"
+  ) as HTMLInputElement;
+  const filterSelect = document.getElementById(
+    "filter-status"
+  ) as HTMLSelectElement;
+  const tableRows = document.querySelectorAll("#coupons-table tbody tr");
+
+  function filterTable() {
+    const searchTerm = searchInput?.value.toLowerCase() || "";
+    const statusFilter = filterSelect?.value || "";
+
+    tableRows.forEach((row) => {
+      const code = row.getAttribute("data-code") || "";
+      const status = row.getAttribute("data-status") || "";
+
+      const matchesSearch = code.includes(searchTerm);
+      const matchesStatus = !statusFilter || status === statusFilter;
+
+      (row as HTMLElement).style.display =
+        matchesSearch && matchesStatus ? "" : "none";
+    });
+  }
+
+  searchInput?.addEventListener("input", filterTable);
+  filterSelect?.addEventListener("change", filterTable);
+
+  // Create modal
   const modal = document.getElementById("coupon-modal") as HTMLElement;
   const form = document.getElementById("coupon-form") as HTMLFormElement;
   const btnNew = document.getElementById("btn-new-coupon");
@@ -357,7 +704,6 @@ const formatDiscount = (type: string, value: number) => {
   const btnText = document.getElementById("btn-text") as HTMLElement;
   const btnSpinner = document.getElementById("btn-spinner") as HTMLElement;
 
-  // Open modal
   btnNew?.addEventListener("click", () => {
     modal.classList.remove("hidden");
     modal.classList.add("flex");
@@ -365,7 +711,6 @@ const formatDiscount = (type: string, value: number) => {
     formError.classList.add("hidden");
   });
 
-  // Close modal
   btnCancel?.addEventListener("click", () => {
     modal.classList.add("hidden");
     modal.classList.remove("flex");
@@ -378,7 +723,6 @@ const formatDiscount = (type: string, value: number) => {
     }
   });
 
-  // Submit form
   form?.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -409,13 +753,148 @@ const formatDiscount = (type: string, value: number) => {
         throw new Error(result.error || "Error al crear el cupón");
       }
 
-      window.location.reload();
+      showToast("Cupón creado correctamente", "success");
+      setTimeout(() => window.location.reload(), 500);
     } catch (error: any) {
       formError.textContent = error.message;
       formError.classList.remove("hidden");
       btnSubmit.disabled = false;
       btnText.classList.remove("hidden");
       btnSpinner.classList.add("hidden");
+    }
+  });
+
+  // Edit modal
+  const editModal = document.getElementById("edit-modal") as HTMLElement;
+  const editForm = document.getElementById("edit-form") as HTMLFormElement;
+  const btnEditCancel = document.getElementById("btn-edit-cancel");
+  const editFormError = document.getElementById(
+    "edit-form-error"
+  ) as HTMLElement;
+  const btnEditSubmit = document.getElementById(
+    "btn-edit-submit"
+  ) as HTMLButtonElement;
+  const btnEditText = document.getElementById("btn-edit-text") as HTMLElement;
+  const btnEditSpinner = document.getElementById(
+    "btn-edit-spinner"
+  ) as HTMLElement;
+
+  document.querySelectorAll(".edit-coupon-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const couponData = JSON.parse(btn.getAttribute("data-coupon") || "{}");
+
+      // Populate form
+      (editForm.querySelector('[name="id"]') as HTMLInputElement).value =
+        couponData.id;
+      (
+        editForm.querySelector('[name="code_display"]') as HTMLInputElement
+      ).value = couponData.code;
+      (
+        editForm.querySelector('[name="discount_display"]') as HTMLInputElement
+      ).value =
+        couponData.discount_type === "percentage"
+          ? `${couponData.discount_value}%`
+          : `${couponData.discount_value}€`;
+      (
+        editForm.querySelector(
+          '[name="min_purchase_amount"]'
+        ) as HTMLInputElement
+      ).value = couponData.min_purchase_amount || "";
+      (
+        editForm.querySelector(
+          '[name="max_discount_amount"]'
+        ) as HTMLInputElement
+      ).value = couponData.max_discount_amount || "";
+      (editForm.querySelector('[name="max_uses"]') as HTMLInputElement).value =
+        couponData.max_uses || "";
+      (
+        editForm.querySelector(
+          '[name="max_uses_per_customer"]'
+        ) as HTMLInputElement
+      ).value = couponData.max_uses_per_customer || 1;
+
+      // Format dates for datetime-local input
+      if (couponData.start_date) {
+        const startDate = new Date(couponData.start_date);
+        (
+          editForm.querySelector('[name="start_date"]') as HTMLInputElement
+        ).value = startDate.toISOString().slice(0, 16);
+      }
+      if (couponData.end_date) {
+        const endDate = new Date(couponData.end_date);
+        (
+          editForm.querySelector('[name="end_date"]') as HTMLInputElement
+        ).value = endDate.toISOString().slice(0, 16);
+      }
+
+      editModal.classList.remove("hidden");
+      editModal.classList.add("flex");
+      editFormError.classList.add("hidden");
+    });
+  });
+
+  btnEditCancel?.addEventListener("click", () => {
+    editModal.classList.add("hidden");
+    editModal.classList.remove("flex");
+  });
+
+  editModal?.addEventListener("click", (e) => {
+    if (e.target === editModal) {
+      editModal.classList.add("hidden");
+      editModal.classList.remove("flex");
+    }
+  });
+
+  editForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    btnEditSubmit.disabled = true;
+    btnEditText.classList.add("hidden");
+    btnEditSpinner.classList.remove("hidden");
+    editFormError.classList.add("hidden");
+
+    const formData = new FormData(editForm);
+    const data: Record<string, any> = {
+      id: formData.get("id"),
+    };
+
+    // Only include editable fields
+    const editableFields = [
+      "min_purchase_amount",
+      "max_discount_amount",
+      "start_date",
+      "end_date",
+      "max_uses",
+      "max_uses_per_customer",
+    ];
+    editableFields.forEach((field) => {
+      const value = formData.get(field);
+      if (value !== "") {
+        data[field] = value;
+      }
+    });
+
+    try {
+      const response = await fetch("/api/admin/cupones", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Error al actualizar el cupón");
+      }
+
+      showToast("Cupón actualizado correctamente", "success");
+      setTimeout(() => window.location.reload(), 500);
+    } catch (error: any) {
+      editFormError.textContent = error.message;
+      editFormError.classList.remove("hidden");
+      btnEditSubmit.disabled = false;
+      btnEditText.classList.remove("hidden");
+      btnEditSpinner.classList.add("hidden");
     }
   });
 
@@ -433,40 +912,71 @@ const formatDiscount = (type: string, value: number) => {
         });
 
         if (response.ok) {
-          window.location.reload();
+          showToast(
+            `Cupón ${isActive ? "desactivado" : "activado"}`,
+            "success"
+          );
+          setTimeout(() => window.location.reload(), 500);
+        } else {
+          showToast("Error al cambiar estado", "error");
         }
       } catch (error) {
         console.error("Error toggling status:", error);
+        showToast("Error al cambiar estado", "error");
       }
     });
   });
 
-  // Delete coupon
+  // Delete modal
+  const deleteModal = document.getElementById("delete-modal") as HTMLElement;
+  const deleteCode = document.getElementById("delete-code") as HTMLElement;
+  const cancelDelete = document.getElementById("cancel-delete");
+  const confirmDelete = document.getElementById("confirm-delete");
+  let couponToDelete: string | null = null;
+
   document.querySelectorAll(".delete-coupon-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const id = btn.getAttribute("data-id");
-
-      if (
-        !confirm(
-          "¿Estás seguro de eliminar este cupón? Esta acción no se puede deshacer."
-        )
-      ) {
-        return;
-      }
-
-      try {
-        const response = await fetch("/api/admin/cupones", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id }),
-        });
-
-        if (response.ok) {
-          window.location.reload();
-        }
-      } catch (error) {
-        console.error("Error deleting coupon:", error);
-      }
+    btn.addEventListener("click", () => {
+      couponToDelete = btn.getAttribute("data-id");
+      const code = btn.getAttribute("data-code");
+      deleteCode.textContent = code || "";
+      deleteModal.classList.remove("hidden");
+      deleteModal.classList.add("flex");
     });
+  });
+
+  cancelDelete?.addEventListener("click", () => {
+    deleteModal.classList.add("hidden");
+    deleteModal.classList.remove("flex");
+    couponToDelete = null;
+  });
+
+  deleteModal?.addEventListener("click", (e) => {
+    if (e.target === deleteModal) {
+      deleteModal.classList.add("hidden");
+      deleteModal.classList.remove("flex");
+      couponToDelete = null;
+    }
+  });
+
+  confirmDelete?.addEventListener("click", async () => {
+    if (!couponToDelete) return;
+
+    try {
+      const response = await fetch("/api/admin/cupones", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: couponToDelete }),
+      });
+
+      if (response.ok) {
+        showToast("Cupón eliminado correctamente", "success");
+        setTimeout(() => window.location.reload(), 500);
+      } else {
+        showToast("Error al eliminar cupón", "error");
+      }
+    } catch (error) {
+      console.error("Error deleting coupon:", error);
+      showToast("Error al eliminar cupón", "error");
+    }
   });
 </script>

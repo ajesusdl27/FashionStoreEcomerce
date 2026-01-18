@@ -85,6 +85,42 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
+    // Validate discount value
+    const discountVal = parseFloat(discount_value);
+    if (discount_type === 'percentage') {
+      if (isNaN(discountVal) || discountVal <= 0 || discountVal > 100) {
+        return new Response(JSON.stringify({ 
+          error: 'El porcentaje de descuento debe estar entre 1 y 100' 
+        }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+    } else if (discount_type === 'fixed') {
+      if (isNaN(discountVal) || discountVal <= 0) {
+        return new Response(JSON.stringify({ 
+          error: 'El monto de descuento debe ser mayor a 0' 
+        }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+    }
+
+    // Validate dates
+    if (start_date && end_date && new Date(end_date) < new Date(start_date)) {
+      return new Response(JSON.stringify({ 
+        error: 'La fecha de fin debe ser posterior a la fecha de inicio' 
+      }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    // Check if code already exists BEFORE creating in Stripe
+    const { data: existingCoupon } = await authClient
+      .from('coupons')
+      .select('id')
+      .ilike('code', code)
+      .maybeSingle();
+
+    if (existingCoupon) {
+      return new Response(JSON.stringify({ 
+        error: 'Ya existe un cupón con ese código' 
+      }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
     // Create coupon in Stripe first
     let stripeCoupon;
     try {
@@ -107,6 +143,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         status: 400, headers: { 'Content-Type': 'application/json' } 
       });
     }
+
 
     // Create coupon in Supabase
     const { data, error } = await authClient
@@ -151,7 +188,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 };
 
-// PUT - Update coupon (toggle active status)
+// PUT - Update coupon (editable fields only - code/discount type/value are immutable due to Stripe sync)
 export const PUT: APIRoute = async ({ request, cookies }) => {
   try {
     const accessToken = cookies.get('sb-access-token')?.value;
@@ -171,12 +208,47 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     }
 
     const authClient = createAuthenticatedClient(accessToken, refreshToken);
-    const { id, is_active } = await request.json();
+    const { 
+      id, 
+      is_active,
+      min_purchase_amount,
+      max_discount_amount,
+      start_date,
+      end_date,
+      max_uses,
+      max_uses_per_customer
+    } = await request.json();
 
-    const { error } = await authClient
+    if (!id) {
+      return new Response(JSON.stringify({ error: 'ID de cupón requerido' }), { 
+        status: 400, headers: { 'Content-Type': 'application/json' } 
+      });
+    }
+
+    // Validate dates if both are provided
+    if (start_date && end_date && new Date(end_date) < new Date(start_date)) {
+      return new Response(JSON.stringify({ 
+        error: 'La fecha de fin debe ser posterior a la fecha de inicio' 
+      }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    // Build update object dynamically (only include provided fields)
+    const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
+    
+    if (typeof is_active === 'boolean') updateData.is_active = is_active;
+    if (min_purchase_amount !== undefined) updateData.min_purchase_amount = parseFloat(min_purchase_amount) || 0;
+    if (max_discount_amount !== undefined) updateData.max_discount_amount = max_discount_amount ? parseFloat(max_discount_amount) : null;
+    if (start_date !== undefined) updateData.start_date = start_date || null;
+    if (end_date !== undefined) updateData.end_date = end_date || null;
+    if (max_uses !== undefined) updateData.max_uses = max_uses ? parseInt(max_uses) : null;
+    if (max_uses_per_customer !== undefined) updateData.max_uses_per_customer = max_uses_per_customer ? parseInt(max_uses_per_customer) : 1;
+
+    const { data, error } = await authClient
       .from('coupons')
-      .update({ is_active, updated_at: new Date().toISOString() })
-      .eq('id', id);
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
 
     if (error) {
       return new Response(JSON.stringify({ error: error.message }), { 
@@ -184,7 +256,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    return new Response(JSON.stringify({ success: true }), { 
+    return new Response(JSON.stringify({ success: true, coupon: data }), { 
       status: 200, headers: { 'Content-Type': 'application/json' } 
     });
   } catch (error: any) {
@@ -193,6 +265,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     });
   }
 };
+
 
 // DELETE - Delete coupon (also deletes from Stripe)
 export const DELETE: APIRoute = async ({ request, cookies }) => {
