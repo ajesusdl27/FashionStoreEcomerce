@@ -2,12 +2,6 @@ import type { APIRoute } from 'astro';
 import { createAuthenticatedClient } from '@/lib/supabase';
 import { validateToken } from '@/lib/auth-utils';
 import { sendOrderShipped } from '@/lib/email';
-import { 
-  ORDER_STATUS_VALUES, 
-  isValidTransition, 
-  getTransitionErrorMessage,
-  type OrderStatus 
-} from '@/lib/constants/order-status';
 
 // UPDATE order status
 export const PUT: APIRoute = async ({ request, cookies }) => {
@@ -33,34 +27,9 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
 
     const { id, status, tracking } = await request.json();
 
-    // Validate status is a known value
-    if (!ORDER_STATUS_VALUES.includes(status)) {
+    const validStatuses = ['pending', 'paid', 'shipped', 'delivered', 'cancelled'];
+    if (!validStatuses.includes(status)) {
       return new Response(JSON.stringify({ error: 'Estado inválido' }), { 
-        status: 400, headers: { 'Content-Type': 'application/json' } 
-      });
-    }
-
-    // Get current order to validate state transition
-    const { data: currentOrder, error: fetchError } = await authClient
-      .from('orders')
-      .select('id, status, order_number, customer_name, customer_email, shipping_address, shipping_city, shipping_postal_code, shipping_country')
-      .eq('id', id)
-      .single();
-
-    if (fetchError || !currentOrder) {
-      return new Response(JSON.stringify({ error: 'Pedido no encontrado' }), { 
-        status: 404, headers: { 'Content-Type': 'application/json' } 
-      });
-    }
-
-    // Validate state transition is allowed
-    const currentStatus = currentOrder.status as OrderStatus;
-    const newStatus = status as OrderStatus;
-    
-    if (currentStatus !== newStatus && !isValidTransition(currentStatus, newStatus)) {
-      return new Response(JSON.stringify({ 
-        error: getTransitionErrorMessage(currentStatus, newStatus) 
-      }), { 
         status: 400, headers: { 'Content-Type': 'application/json' } 
       });
     }
@@ -70,6 +39,19 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       if (!tracking?.carrier) {
         return new Response(JSON.stringify({ error: 'Debes especificar el transportista' }), { 
           status: 400, headers: { 'Content-Type': 'application/json' } 
+        });
+      }
+
+      // Get order details before updating
+      const { data: order, error: orderError } = await authClient
+        .from('orders')
+        .select('id, order_number, customer_name, customer_email, shipping_address, shipping_city, shipping_postal_code, shipping_country')
+        .eq('id', id)
+        .single();
+
+      if (orderError || !order) {
+        return new Response(JSON.stringify({ error: 'Pedido no encontrado' }), { 
+          status: 404, headers: { 'Content-Type': 'application/json' } 
         });
       }
 
@@ -105,17 +87,17 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
 
       // Send shipment email
       const emailResult = await sendOrderShipped({
-        orderId: currentOrder.id,
-        orderNumber: currentOrder.order_number,
-        customerName: currentOrder.customer_name,
-        customerEmail: currentOrder.customer_email,
+        orderId: order.id,
+        orderNumber: order.order_number,
+        customerName: order.customer_name,
+        customerEmail: order.customer_email,
         carrier: tracking.carrier,
         trackingNumber: tracking.trackingNumber,
         trackingUrl: tracking.trackingUrl,
-        shippingAddress: currentOrder.shipping_address,
-        shippingCity: currentOrder.shipping_city,
-        shippingPostalCode: currentOrder.shipping_postal_code,
-        shippingCountry: currentOrder.shipping_country
+        shippingAddress: order.shipping_address,
+        shippingCity: order.shipping_city,
+        shippingPostalCode: order.shipping_postal_code,
+        shippingCountry: order.shipping_country
       });
 
       if (!emailResult.success) {

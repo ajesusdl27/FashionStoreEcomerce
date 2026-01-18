@@ -2,6 +2,8 @@ import type { APIRoute } from 'astro';
 import { createAuthenticatedClient } from '@/lib/supabase';
 import { validateToken } from '@/lib/auth-utils';
 import { resend } from '@/lib/email';
+import { SEND_LOG_STATUS } from '@/lib/constants/newsletter';
+import { generateNewsletterHTML } from '@/lib/email-templates/newsletter-templates';
 
 // Sends a chunk of emails (called multiple times from the client)
 export const POST: APIRoute = async ({ request, cookies }) => {
@@ -41,10 +43,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // Fetch subscribers chunk
+    // Fetch subscribers chunk (including unsubscribe_token for GDPR)
     const { data: subscribers, error: subError } = await authClient
       .from('newsletter_subscribers')
-      .select('email')
+      .select('id, email, unsubscribe_token')
       .eq('is_active', true)
       .range(offset, offset + limit - 1);
 
@@ -65,13 +67,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Send emails one by one with delay
     let sentCount = 0;
+    let failedCount = 0;
     const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
     const siteUrl = import.meta.env.SITE_URL || 'http://localhost:4321';
 
-    // Generate full HTML email
-    const emailHtml = generateNewsletterHTML(campaign.subject, campaign.content, siteUrl);
-
     for (const sub of subscribers) {
+      // Generate unique unsubscribe URL for each subscriber (GDPR CRITICAL)
+      const unsubscribeUrl = `${siteUrl}/newsletter/unsubscribe?token=${sub.unsubscribe_token}`;
+      const emailHtml = generateNewsletterHTML({
+        subject: campaign.subject,
+        content: campaign.content,
+        siteUrl,
+        unsubscribeUrl,
+      });
+
       try {
         if (resend) {
           await resend.emails.send({
@@ -79,39 +88,53 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             to: sub.email,
             subject: campaign.subject,
             html: emailHtml,
+            headers: {
+              'List-Unsubscribe': `<${unsubscribeUrl}>`,
+              'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+            },
           });
           sentCount++;
+          
+          // Log successful send
+          await logSendResult(authClient, campaignId, sub.id, sub.email, SEND_LOG_STATUS.SENT);
           
           // Wait 1 second between emails to respect rate limit
           if (sentCount < subscribers.length) {
             await new Promise(resolve => setTimeout(resolve, 1000));
           }
         }
-      } catch (emailError) {
+      } catch (emailError: unknown) {
+        const errorMessage = emailError instanceof Error ? emailError.message : 'Unknown error';
         console.error(`Error sending to ${sub.email}:`, emailError);
+        failedCount++;
+        
+        // Log failed send
+        await logSendResult(authClient, campaignId, sub.id, sub.email, SEND_LOG_STATUS.FAILED, errorMessage);
         // Continue with other emails
       }
     }
 
-    // Update campaign sent_count
+    // Update campaign sent_count and failed_count
     await authClient
       .from('newsletter_campaigns')
       .update({ 
-        sent_count: (campaign.sent_count || 0) + sentCount 
+        sent_count: (campaign.sent_count || 0) + sentCount,
+        failed_count: (campaign.failed_count || 0) + failedCount
       })
       .eq('id', campaignId);
 
     const done = subscribers.length < limit;
 
     return new Response(JSON.stringify({ 
-      sent: sentCount, 
+      sent: sentCount,
+      failed: failedCount,
       done,
       nextOffset: offset + limit 
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Send chunk exception:', error);
     return new Response(JSON.stringify({ error: 'Error interno' }), {
       status: 500,
@@ -120,62 +143,24 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 };
 
-function generateNewsletterHTML(subject: string, content: string, siteUrl: string): string {
-  return `
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${subject}</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f4f4;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          
-          <!-- Header -->
-          <tr>
-            <td style="background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%); padding: 30px; text-align: center;">
-              <h1 style="margin: 0; color: #CCFF00; font-size: 28px; font-weight: bold; letter-spacing: 2px;">FASHIONSTORE</h1>
-            </td>
-          </tr>
-          
-          <!-- Content -->
-          <tr>
-            <td style="padding: 40px 30px;">
-              ${content}
-            </td>
-          </tr>
-          
-          <!-- CTA -->
-          <tr>
-            <td style="padding: 0 30px 40px; text-align: center;">
-              <a href="${siteUrl}" 
-                 style="display: inline-block; background-color: #CCFF00; color: #0a0a0a; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">
-                Visitar la tienda
-              </a>
-            </td>
-          </tr>
-          
-          <!-- Footer -->
-          <tr>
-            <td style="background-color: #f8f8f8; padding: 30px; text-align: center; border-top: 1px solid #e5e5e5;">
-              <p style="margin: 0 0 10px; color: #999; font-size: 12px;">
-                Recibiste este email porque te suscribiste a nuestra newsletter.
-              </p>
-              <p style="margin: 0; color: #999; font-size: 12px;">
-                © ${new Date().getFullYear()} FashionStore. Todos los derechos reservados.
-              </p>
-            </td>
-          </tr>
-          
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-  `.trim();
+// Helper to log send results
+async function logSendResult(
+  client: ReturnType<typeof createAuthenticatedClient>,
+  campaignId: string,
+  subscriberId: string | null,
+  email: string,
+  status: string,
+  errorMessage?: string
+) {
+  try {
+    await client.from('newsletter_send_logs').insert({
+      campaign_id: campaignId,
+      subscriber_id: subscriberId,
+      subscriber_email: email,
+      status,
+      error_message: errorMessage || null,
+    });
+  } catch (e) {
+    console.error('Error logging send result:', e);
+  }
 }

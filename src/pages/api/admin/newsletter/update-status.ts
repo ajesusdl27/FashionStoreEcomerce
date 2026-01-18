@@ -1,8 +1,12 @@
 import type { APIRoute } from 'astro';
 import { createAuthenticatedClient } from '@/lib/supabase';
 import { validateToken } from '@/lib/auth-utils';
-import { CAMPAIGN_STATUS } from '@/lib/constants/newsletter';
+import { CAMPAIGN_STATUS, type CampaignStatus } from '@/lib/constants/newsletter';
 
+/**
+ * Updates campaign status
+ * Used to mark campaigns as 'sending' before starting, or 'failed' on error
+ */
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const accessToken = cookies.get('sb-access-token')?.value;
@@ -24,35 +28,49 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const authClient = createAuthenticatedClient(accessToken, refreshToken);
-    const { subject, content } = await request.json();
+    const { campaignId, status, errorMessage } = await request.json();
 
-    if (!subject || !content) {
-      return new Response(JSON.stringify({ error: 'Asunto y contenido son requeridos' }), {
+    if (!campaignId || !status) {
+      return new Response(JSON.stringify({ error: 'Faltan parámetros requeridos' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    const { data, error } = await authClient
+    // Validate status is a valid value
+    const validStatuses: CampaignStatus[] = Object.values(CAMPAIGN_STATUS);
+    if (!validStatuses.includes(status)) {
+      return new Response(JSON.stringify({ error: 'Estado inválido' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const updateData: Record<string, unknown> = { status };
+    
+    if (errorMessage) {
+      updateData.last_error = errorMessage;
+    }
+
+    const { error } = await authClient
       .from('newsletter_campaigns')
-      .insert({ subject, content, status: CAMPAIGN_STATUS.DRAFT })
-      .select('id')
-      .single();
+      .update(updateData)
+      .eq('id', campaignId);
 
     if (error) {
-      console.error('Error creating campaign:', error);
-      return new Response(JSON.stringify({ error: 'Error al crear campaña' }), {
+      console.error('Error updating campaign status:', error);
+      return new Response(JSON.stringify({ error: 'Error al actualizar estado' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    return new Response(JSON.stringify({ success: true, id: data.id }), {
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
-  } catch (error: any) {
-    console.error('Campaign creation exception:', error);
+  } catch (error: unknown) {
+    console.error('Update status exception:', error);
     return new Response(JSON.stringify({ error: 'Error interno' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

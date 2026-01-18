@@ -1,6 +1,7 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { supabase } from "@/lib/supabase";
+import { CAMPAIGN_STATUS } from "@/lib/constants/newsletter";
 
 const { id } = Astro.params;
 
@@ -13,6 +14,11 @@ const { data: campaign, error } = await supabase
 
 if (error || !campaign) {
   return Astro.redirect("/admin/newsletter?error=not-found");
+}
+
+// CRITICAL: Validate campaign is in draft status (prevent resending)
+if (campaign.status !== CAMPAIGN_STATUS.DRAFT) {
+  return Astro.redirect(`/admin/newsletter?error=already-${campaign.status}`);
 }
 
 // Get subscriber count
@@ -44,6 +50,62 @@ const { count: subscriberCount } = await supabase
         dependiendo del número de suscriptores.
         <strong>No cierres esta pestaña</strong> hasta que finalice.
       </p>
+    </div>
+
+    <!-- Test Email Section -->
+    <div class="admin-card">
+      <h3 class="font-semibold text-foreground mb-3">📧 Enviar email de prueba</h3>
+      <p class="text-sm text-muted-foreground mb-4">
+        Envía una vista previa a tu correo antes de hacer el envío masivo.
+      </p>
+      <div class="flex gap-3">
+        <input 
+          type="email" 
+          id="test-email-input" 
+          placeholder="tu@email.com"
+          class="admin-input flex-1"
+        />
+        <button
+          id="send-test-btn"
+          class="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          data-campaign-id={campaign.id}
+        >
+          <span id="test-btn-text">Enviar prueba</span>
+          <svg id="test-btn-spinner" class="hidden w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+        </button>
+      </div>
+      <p id="test-result" class="text-sm mt-2 hidden"></p>
+    </div>
+
+    <!-- Email Preview -->
+    <div class="admin-card">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-semibold text-foreground">👁️ Vista previa del email</h3>
+        <button
+          id="toggle-preview"
+          class="text-sm text-primary hover:underline"
+        >
+          Ver HTML renderizado
+        </button>
+      </div>
+      
+      <!-- Raw content preview (default) -->
+      <div id="raw-preview" class="p-4 bg-muted/30 rounded-lg max-h-64 overflow-y-auto">
+        <p class="text-sm text-muted-foreground whitespace-pre-wrap font-mono">{campaign.content}</p>
+      </div>
+      
+      <!-- Rendered HTML preview (hidden by default) -->
+      <div id="html-preview" class="hidden rounded-lg overflow-hidden border border-border">
+        <iframe 
+          id="preview-iframe"
+          class="w-full h-96 bg-white"
+          sandbox="allow-same-origin"
+          title="Vista previa del email"
+        ></iframe>
+      </div>
     </div>
 
     <!-- Progress Section -->
@@ -100,6 +162,42 @@ const { count: subscriberCount } = await supabase
         🚀 Comenzar Envío
       </button>
     </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div class="bg-background border border-border rounded-xl shadow-lg max-w-md w-full p-6">
+        <h3 class="text-xl font-bold text-foreground mb-4">⚠️ Confirmar envío masivo</h3>
+        <p class="text-muted-foreground mb-4">
+          Estás a punto de enviar "<strong class="text-foreground">{campaign.subject}</strong>" a <strong class="text-primary">{subscriberCount}</strong> suscriptores.
+        </p>
+        <p class="text-sm text-muted-foreground mb-6">
+          Esta acción no se puede deshacer. Los emails se enviarán inmediatamente.
+        </p>
+        
+        <label class="flex items-start gap-3 mb-6 cursor-pointer">
+          <input type="checkbox" id="confirm-checkbox" class="mt-1 w-4 h-4 rounded border-border" />
+          <span class="text-sm text-foreground">
+            Confirmo que he revisado el contenido y quiero enviar esta campaña a todos los suscriptores activos.
+          </span>
+        </label>
+        
+        <div class="flex gap-3">
+          <button
+            id="cancel-modal"
+            class="flex-1 py-2.5 px-4 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/80 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            id="confirm-send"
+            class="flex-1 py-2.5 px-4 bg-destructive text-destructive-foreground rounded-lg font-medium hover:bg-destructive/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled
+          >
+            Confirmar Envío
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -111,23 +209,66 @@ const { count: subscriberCount } = await supabase
     const progressText = document.getElementById("progress-text");
     const statusText = document.getElementById("status-text");
     const resultText = document.getElementById("result-text");
+    
+    // Modal elements
+    const confirmModal = document.getElementById("confirm-modal");
+    const confirmCheckbox = document.getElementById("confirm-checkbox") as HTMLInputElement;
+    const cancelModalBtn = document.getElementById("cancel-modal");
+    const confirmSendBtn = document.getElementById("confirm-send") as HTMLButtonElement;
 
     const campaignId = startBtn?.dataset.campaignId;
     const total = parseInt(startBtn?.dataset.total || "0", 10);
-    const CHUNK_SIZE = 5; // Send 5 emails per request (5 seconds per chunk)
+    const CHUNK_SIZE = 5;
+    const MAX_RETRIES = 3;
+    const RETRY_DELAYS = [3000, 6000, 12000];
 
-    startBtn?.addEventListener("click", async () => {
+    // Show confirmation modal on click
+    startBtn?.addEventListener("click", () => {
       if (total === 0) {
         alert("No hay suscriptores activos");
         return;
       }
+      confirmModal?.classList.remove("hidden");
+    });
 
+    // Close modal on cancel
+    cancelModalBtn?.addEventListener("click", () => {
+      confirmModal?.classList.add("hidden");
+      confirmCheckbox.checked = false;
+      confirmSendBtn.disabled = true;
+    });
+
+    // Enable confirm button only when checkbox is checked
+    confirmCheckbox?.addEventListener("change", () => {
+      confirmSendBtn.disabled = !confirmCheckbox.checked;
+    });
+
+    // Start sending on confirm
+    confirmSendBtn?.addEventListener("click", async () => {
+      confirmModal?.classList.add("hidden");
+      await startSending();
+    });
+
+    async function startSending() {
       // Hide buttons, show progress
       actionButtons?.classList.add("hidden");
       progressSection?.classList.remove("hidden");
 
+      // CRITICAL: Mark campaign as 'sending' BEFORE starting
+      try {
+        await fetch("/api/admin/newsletter/update-status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ campaignId, status: "sending" }),
+        });
+      } catch (e) {
+        console.error("Failed to update status to sending:", e);
+      }
+
       let offset = 0;
       let totalSent = 0;
+      let totalFailed = 0;
+      let retryCount = 0;
 
       while (true) {
         if (statusText) {
@@ -147,14 +288,16 @@ const { count: subscriberCount } = await supabase
             throw new Error(result.error || "Error al enviar");
           }
 
-          totalSent += result.sent;
+          totalSent += result.sent || 0;
+          totalFailed += result.failed || 0;
           offset = result.nextOffset || offset + CHUNK_SIZE;
+          retryCount = 0; // Reset retry count on success
 
           // Update progress
-          const percentage = Math.min((totalSent / total) * 100, 100);
+          const percentage = Math.min(((totalSent + totalFailed) / total) * 100, 100);
           if (progressBar) progressBar.style.width = `${percentage}%`;
           if (progressText)
-            progressText.textContent = `${totalSent} / ${total}`;
+            progressText.textContent = `${totalSent} enviados / ${total} (${totalFailed} fallidos)`;
 
           if (result.done) {
             // Mark campaign as sent
@@ -167,18 +310,175 @@ const { count: subscriberCount } = await supabase
             // Show result
             progressSection?.classList.add("hidden");
             resultSection?.classList.remove("hidden");
-            if (resultText)
-              resultText.textContent = `Se han enviado ${totalSent} emails correctamente.`;
+            if (resultText) {
+              resultText.textContent = `Se han enviado ${totalSent} emails correctamente.${totalFailed > 0 ? ` (${totalFailed} fallidos)` : ''}`;
+            }
             break;
           }
-        } catch (error: any) {
-          if (statusText) {
-            statusText.textContent = `Error: ${error.message}. Reintentando...`;
+        } catch (error: unknown) {
+          retryCount++;
+          const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+          
+          if (retryCount >= MAX_RETRIES) {
+            // Mark as failed after max retries
+            await fetch("/api/admin/newsletter/update-status", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ 
+                campaignId, 
+                status: "failed", 
+                errorMessage: `Falló después de ${MAX_RETRIES} reintentos: ${errorMessage}` 
+              }),
+            });
+            
+            if (statusText) {
+              statusText.textContent = `Error crítico: ${errorMessage}. Campaña marcada como fallida.`;
+              statusText.className = "text-sm text-red-400 mt-3 text-center";
+            }
+            break;
           }
-          // Wait and retry
-          await new Promise((resolve) => setTimeout(resolve, 3000));
+
+          const delay = RETRY_DELAYS[retryCount - 1] || 12000;
+          if (statusText) {
+            statusText.textContent = `Error: ${errorMessage}. Reintentando en ${delay / 1000}s... (${retryCount}/${MAX_RETRIES})`;
+          }
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
+    }
+
+    // ========== TEST EMAIL FUNCTIONALITY ==========
+    const testEmailInput = document.getElementById('test-email-input') as HTMLInputElement;
+    const sendTestBtn = document.getElementById('send-test-btn') as HTMLButtonElement;
+    const testBtnText = document.getElementById('test-btn-text');
+    const testBtnSpinner = document.getElementById('test-btn-spinner');
+    const testResult = document.getElementById('test-result');
+
+    sendTestBtn?.addEventListener('click', async () => {
+      const testEmail = testEmailInput.value.trim();
+      
+      if (!testEmail) {
+        showTestResult('Por favor, introduce un email', 'error');
+        return;
+      }
+
+      // Show loading state
+      sendTestBtn.disabled = true;
+      testBtnText!.textContent = 'Enviando...';
+      testBtnSpinner?.classList.remove('hidden');
+
+      try {
+        const response = await fetch('/api/admin/newsletter/send-test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            campaignId, 
+            testEmail 
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          showTestResult(`✅ ${data.message}`, 'success');
+        } else {
+          showTestResult(`❌ ${data.error}`, 'error');
+        }
+      } catch (error) {
+        showTestResult('❌ Error al enviar email de prueba', 'error');
+      } finally {
+        sendTestBtn.disabled = false;
+        testBtnText!.textContent = 'Enviar prueba';
+        testBtnSpinner?.classList.add('hidden');
+      }
     });
+
+    function showTestResult(message: string, type: 'success' | 'error') {
+      if (testResult) {
+        testResult.textContent = message;
+        testResult.className = `text-sm mt-2 ${type === 'success' ? 'text-green-400' : 'text-red-400'}`;
+        testResult.classList.remove('hidden');
+        setTimeout(() => testResult.classList.add('hidden'), 5000);
+      }
+    }
+
+    // ========== PREVIEW TOGGLE ==========
+    const togglePreviewBtn = document.getElementById('toggle-preview');
+    const rawPreview = document.getElementById('raw-preview');
+    const htmlPreview = document.getElementById('html-preview');
+    const previewIframe = document.getElementById('preview-iframe') as HTMLIFrameElement;
+    let showingHtml = false;
+
+    // Pre-generate the HTML preview
+    const campaignContent = rawPreview?.querySelector('p')?.textContent || '';
+    const previewHtml = generatePreviewHTML(campaignContent);
+
+    togglePreviewBtn?.addEventListener('click', () => {
+      showingHtml = !showingHtml;
+      
+      if (showingHtml) {
+        rawPreview?.classList.add('hidden');
+        htmlPreview?.classList.remove('hidden');
+        togglePreviewBtn.textContent = 'Ver código fuente';
+        
+        // Load HTML into iframe
+        if (previewIframe) {
+          previewIframe.srcdoc = previewHtml;
+        }
+      } else {
+        rawPreview?.classList.remove('hidden');
+        htmlPreview?.classList.add('hidden');
+        togglePreviewBtn.textContent = 'Ver HTML renderizado';
+      }
+    });
+
+    function generatePreviewHTML(content: string): string {
+      const siteUrl = window.location.origin;
+      return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f4f4; }
+  </style>
+</head>
+<body>
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <tr>
+            <td style="background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%); padding: 30px; text-align: center;">
+              <h1 style="margin: 0; color: #CCFF00; font-size: 28px; font-weight: bold; letter-spacing: 2px;">FASHIONSTORE</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px 30px;">
+              ${content}
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #f8f8f8; padding: 30px; text-align: center; border-top: 1px solid #e5e5e5;">
+              <p style="margin: 0 0 10px; color: #666; font-size: 12px;">
+                Recibiste este email porque te suscribiste a nuestra newsletter.
+              </p>
+              <p style="margin: 0 0 10px; color: #999; font-size: 12px;">
+                <a href="#" style="color: #666;">Darse de baja</a> · 
+                <a href="${siteUrl}/privacidad" style="color: #666;">Política de Privacidad</a>
+              </p>
+              <p style="margin: 0; color: #999; font-size: 12px;">
+                © ${new Date().getFullYear()} FashionStore. Todos los derechos reservados.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+    }
   </script>
 </AdminLayout>

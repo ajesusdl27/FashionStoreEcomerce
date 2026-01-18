@@ -1,303 +1,554 @@
-# Deep Audit - Newsletter Module
+# 🔍 Deep Audit - Newsletter Module (FashionStore)
 
-## 📊 Resumen de la Auditoría
+**Fecha de Auditoría:** 18 de Enero, 2026  
+**Auditor:** Senior Full Stack Developer - Email Marketing Expert  
+**Versión:** 2.0 (Actualización Completa)
 
-| Métrica                   | Valor                    |
-| ------------------------- | ------------------------ |
-| **Archivos Analizados**   | 10                       |
-| **Problemas Críticos**    | 5                        |
-| **Problemas Importantes** | 8                        |
-| **Mejoras Sugeridas**     | 7                        |
-| **Salud General**         | ⚠️ **REQUIERE ATENCIÓN** |
+---
+
+## 📊 Resumen Ejecutivo de la Auditoría
+
+### Estado General del Sistema
+
+| Métrica                   | Valor                          |
+| ------------------------- | ------------------------------ |
+| **Archivos Analizados**   | 10                             |
+| **Problemas Críticos**    | 6                              |
+| **Problemas Importantes** | 9                              |
+| **Mejoras Sugeridas**     | 8                              |
+| **Salud General**         | 🔴 **CRÍTICO - NO PRODUCCIÓN** |
 
 ### Evaluación de Componentes
 
-| Componente           | Estado         | Notas                                          |
-| -------------------- | -------------- | ---------------------------------------------- |
-| Envío de emails      | 🟡 Funcional   | Falta robustez, no hay reintentos persistentes |
-| Gestión suscriptores | 🟡 Básico      | Sin búsqueda, filtros ni exportación           |
-| Editor de campañas   | 🔴 Limitado    | Solo HTML puro, sin WYSIWYG                    |
-| Cumplimiento GDPR    | 🔴 **CRÍTICO** | **NO HAY LINK DE UNSUBSCRIBE**                 |
-| Seguridad anti-spam  | 🔴 Vulnerable  | Sin rate limiting ni honeypot                  |
-| Dashboard/Stats      | 🟡 Básico      | Sin métricas de apertura/clics                 |
+| Componente                  | Estado              | Notas                                              |
+| --------------------------- | ------------------- | -------------------------------------------------- |
+| Envío de emails             | 🟡 Funcional        | Batching correcto, pero sin reintentos persistidos |
+| Gestión suscriptores        | 🟡 Básico           | Sin búsqueda, filtros, paginación ni exportación   |
+| Editor de campañas          | 🔴 **Limitado**     | Solo HTML puro, inusable para Marketing Manager    |
+| **Cumplimiento GDPR**       | 🔴 **BLOQUEANTE**   | **NO HAY LINK DE UNSUBSCRIBE** - Ilegal            |
+| Seguridad anti-spam         | 🔴 **Vulnerable**   | Sin rate limiting ni honeypot                      |
+| Dashboard/Stats             | 🟡 Mínimo           | Sin métricas de apertura/clics/bounces             |
+| Protección envío duplicado  | 🔴 **Inexistente**  | Posible envío múltiple de misma campaña            |
+| Validación de emails        | 🟡 Básica           | Solo comprueba `@`, no valida formato RFC          |
+
+### 🚨 Veredicto
+
+> **El sistema NO está listo para producción.** Existen problemas críticos de legalidad (GDPR) y seguridad que deben resolverse antes de cualquier envío real a suscriptores.
 
 ---
 
-## 🔴 Problemas Detectados
+## 🔴 Problemas Críticos (Bloquean Producción)
 
-### Críticos (Legalidad/GDPR - Prioridad Máxima)
+### 1. ❌ GDPR: Falta link de "Darse de Baja" (Unsubscribe)
 
-#### 1. ❌ Falta link de "Darse de Baja" (Unsubscribe)
+| Campo            | Detalle                                                                     |
+| ---------------- | --------------------------------------------------------------------------- |
+| **Archivo**      | `src/pages/api/admin/newsletter/send-chunk.ts` (líneas 113-180)             |
+| **Severidad**    | 🔴 **BLOQUEANTE LEGAL**                                                     |
+| **Problema**     | La plantilla HTML de emails NO incluye ningún enlace funcional para baja    |
+| **Impacto**      | Violación GDPR Art. 7.3 + CAN-SPAM Act. Multas hasta 4% facturación anual   |
+| **Evidencia**    | Función `generateNewsletterHTML()` no incluye link de unsubscribe en footer |
 
-- **Archivo**: [send-chunk.ts](file:///c:/Users/anton/Desktop/Development/VictoriaFPII/Sistema%20de%20Gesti%C3%B3n%20Empresarial/SegundoTrimestre/Proyectos/FashionStore/src/pages/api/admin/newsletter/send-chunk.ts#L123-180)
-- **Problema**: La plantilla HTML de emails NO incluye ningún enlace funcional para darse de baja
-- **Impacto Legal**: **Violación directa del GDPR** (Art. 7.3) y CAN-SPAM Act. Posibles multas y marcado como SPAM
-- **Solución**: Crear endpoint `/api/newsletter/unsubscribe` + añadir link con token único en cada email
+**Código actual problemático:**
+```html
+<!-- Footer actual - SIN LINK DE BAJA -->
+<p style="...">Recibiste este email porque te suscribiste a nuestra newsletter.</p>
+<p style="...">© 2026 FashionStore. Todos los derechos reservados.</p>
+```
 
-#### 2. ❌ Sin protección contra bots en suscripción
-
-- **Archivo**: [subscribe.ts](file:///c:/Users/anton/Desktop/Development/VictoriaFPII/Sistema%20de%20Gesti%C3%B3n%20Empresarial/SegundoTrimestre/Proyectos/FashionStore/src/pages/api/newsletter/subscribe.ts)
-- **Problema**: Endpoint público sin rate limiting ni honeypot
-- **Impacto**: Vulnerable a ataques de fuerza bruta, list bombing y spam de suscripciones falsas
-- **Solución**: Implementar campo honeypot en el form + rate limiting por IP (ej: 5 suscripciones/hora/IP)
-
-#### 3. ❌ No existe estado "failed" para campañas
-
-- **Archivo**: [013_create_newsletter_tables.sql](file:///c:/Users/anton/Desktop/Development/VictoriaFPII/Sistema%20de%20Gesti%C3%B3n%20Empresarial/SegundoTrimestre/Proyectos/FashionStore/Doc/migrations/013_create_newsletter_tables.sql#L18)
-- **Problema**: El CHECK constraint solo permite `draft`, `sending`, `sent` - no hay `failed`
-- **Impacto**: Si el envío falla a mitad, la campaña queda en estado `sending` indefinidamente
-- **Solución**: Añadir estado `failed` + lógica de timeout/recuperación
-
-#### 4. ❌ Sin persistencia de errores de envío
-
-- **Archivo**: [send-chunk.ts](file:///c:/Users/anton/Desktop/Development/VictoriaFPII/Sistema%20de%20Gesti%C3%B3n%20Empresarial/SegundoTrimestre/Proyectos/FashionStore/src/pages/api/admin/newsletter/send-chunk.ts#L90-93)
-- **Problema**: Los errores de envío solo se loggean en consola, no se guardan en DB
-- **Impacto**: Imposible saber qué emails fallaron para reintentar o investigar bounces
-- **Solución**: Crear tabla `newsletter_send_logs` para tracking de éxitos/fallos
-
-#### 5. ❌ Falta confirmación antes de envío masivo
-
-- **Archivo**: [send/[id].astro](file:///c:/Users/anton/Desktop/Development/VictoriaFPII/Sistema%20de%20Gesti%C3%B3n%20Empresarial/SegundoTrimestre/Proyectos/FashionStore/src/pages/admin/newsletter/send/%5Bid%5D.astro#L119)
-- **Problema**: El botón "Comenzar Envío" envía inmediatamente a TODOS sin confirmación explícita
-- **Impacto**: Riesgo de envío accidental de borrador incompleto a toda la lista
-- **Solución**: Añadir modal de confirmación con resumen del email y checkbox "Confirmo el envío"
+**Solución requerida:**
+1. Crear tabla/campo `unsubscribe_token` único por suscriptor
+2. Crear endpoint `/api/newsletter/unsubscribe?token=XXX`
+3. Crear página `/newsletter/unsubscribe` para confirmación visual
+4. Añadir link en TODOS los emails enviados
 
 ---
 
-### Importantes (Robustez Técnica)
+### 2. ❌ Sin protección contra bots (List Bombing)
 
-#### 6. 🟡 Magic Strings para estados de campaña
+| Campo         | Detalle                                                                              |
+| ------------- | ------------------------------------------------------------------------------------ |
+| **Archivo**   | `src/pages/api/newsletter/subscribe.ts` + `src/components/islands/NewsletterForm.tsx` |
+| **Severidad** | 🔴 **CRÍTICO SEGURIDAD**                                                             |
+| **Problema**  | Endpoint público sin rate limiting ni honeypot                                       |
+| **Impacto**   | Vulnerable a list bombing, spam masivo, DoS, y contaminación de lista                |
 
-- **Archivos**: Múltiples (`index.astro`, `send-chunk.ts`, `mark-sent.ts`)
-- **Problema**: Estados hardcodeados como `'draft'`, `'sending'`, `'sent'` dispersos
-- **Solución**: Crear constantes en `src/lib/constants/campaign-status.ts`
+**Código actual vulnerable:**
+```typescript
+// subscribe.ts - Sin ninguna protección
+export const POST: APIRoute = async ({ request }) => {
+  const { email } = await request.json();
+  // Directamente inserta sin validar origen, frecuencia ni honeypot
+```
 
-#### 7. 🟡 Plantillas de email hardcodeadas
-
-- **Archivos**: [send-chunk.ts](file:///c:/Users/anton/Desktop/Development/VictoriaFPII/Sistema%20de%20Gesti%C3%B3n%20Empresarial/SegundoTrimestre/Proyectos/FashionStore/src/pages/api/admin/newsletter/send-chunk.ts#L123-180) y [subscribe.ts](file:///c:/Users/anton/Desktop/Development/VictoriaFPII/Sistema%20de%20Gesti%C3%B3n%20Empresarial/SegundoTrimestre/Proyectos/FashionStore/src/pages/api/newsletter/subscribe.ts#L91-195)
-- **Problema**: Templates HTML duplicados e incrustados en el código
-- **Solución**: Extraer a `src/lib/email-templates/newsletter.ts`
-
-#### 8. 🟡 Validación de email básica
-
-- **Archivo**: [subscribe.ts](file:///c:/Users/anton/Desktop/Development/VictoriaFPII/Sistema%20de%20Gesti%C3%B3n%20Empresarial/SegundoTrimestre/Proyectos/FashionStore/src/pages/api/newsletter/subscribe.ts#L9)
-- **Problema**: Solo verifica que contenga `@`, no valida formato RFC 5322
-- **Solución**: Usar regex robusto o librería como `email-validator`
-
-#### 9. 🟡 Lógica de reintentos limitada
-
-- **Archivo**: [send/[id].astro](file:///c:/Users/anton/Desktop/Development/VictoriaFPII/Sistema%20de%20Gesti%C3%B3n%20Empresarial/SegundoTrimestre/Proyectos/FashionStore/src/pages/admin/newsletter/send/%5Bid%5D.astro#L174-180)
-- **Problema**: Reintento infinito en cliente, sin límite de intentos ni backoff exponencial
-- **Solución**: Implementar máximo 3 reintentos con backoff (3s, 6s, 12s)
-
-#### 10. 🟡 No se marca el estado "sending" al iniciar
-
-- **Archivo**: [send/[id].astro](file:///c:/Users/anton/Desktop/Development/VictoriaFPII/Sistema%20de%20Gesti%C3%B3n%20Empresarial/SegundoTrimestre/Proyectos/FashionStore/src/pages/admin/newsletter/send/%5Bid%5D.astro)
-- **Problema**: La campaña no se marca como `sending` al inicio del envío
-- **Impacto**: Si el usuario abre otra pestaña, podría iniciar envío duplicado
-- **Solución**: Actualizar status a `sending` antes del primer chunk
-
-#### 11. 🟡 Sin validación de campaña ya enviada
-
-- **Archivo**: [send/[id].astro](file:///c:/Users/anton/Desktop/Development/VictoriaFPII/Sistema%20de%20Gesti%C3%B3n%20Empresarial/SegundoTrimestre/Proyectos/FashionStore/src/pages/admin/newsletter/send/%5Bid%5D.astro)
-- **Problema**: No valida si `campaign.status === 'sent'` al cargar la página
-- **Impacto**: Una campaña ya enviada podría reenviarse
-- **Solución**: Redirigir si status !== 'draft'
-
-#### 12. 🟡 Toggle sin feedback de error
-
-- **Archivo**: [subscribers.astro](file:///c:/Users/anton/Desktop/Development/VictoriaFPII/Sistema%20de%20Gesti%C3%B3n%20Empresarial/SegundoTrimestre/Proyectos/FashionStore/src/pages/admin/newsletter/subscribers.astro#L110-112)
-- **Problema**: `console.error` en catch pero sin feedback al usuario
-- **Solución**: Mostrar toast de error
-
-#### 13. 🟡 Falta edición de campañas
-
-- **Problema**: No existe página `/admin/newsletter/edit/[id].astro`
-- **Impacto**: Para modificar un borrador hay que crear uno nuevo
-- **Solución**: Crear página de edición reutilizando componentes de `new.astro`
+**Ataques posibles:**
+- **List Bombing**: Bot añade miles de emails falsos → degrada reputación del dominio
+- **Email Harassment**: Suscribir emails de terceros sin consentimiento
+- **DoS**: Saturar la base de datos con suscripciones falsas
 
 ---
 
-### Mejoras de UX/UI (Experiencia Usuario Admin)
+### 3. ❌ Reenvío accidental de campañas (Sin protección de estado)
 
-#### 14. 💡 Editor HTML puro en lugar de WYSIWYG
+| Campo         | Detalle                                                              |
+| ------------- | -------------------------------------------------------------------- |
+| **Archivo**   | `src/pages/admin/newsletter/send/[id].astro`                         |
+| **Severidad** | 🔴 **CRÍTICO**                                                       |
+| **Problema**  | No valida `campaign.status` antes de permitir envío                  |
+| **Impacto**   | Una campaña ya enviada (`sent`) puede reenviarse múltiples veces     |
 
-- **Archivo**: [new.astro](file:///c:/Users/anton/Desktop/Development/VictoriaFPII/Sistema%20de%20Gesti%C3%B3n%20Empresarial/SegundoTrimestre/Proyectos/FashionStore/src/pages/admin/newsletter/new.astro#L55-67)
-- **Problema**: Textarea con HTML manual; un Marketing Manager no técnico no puede usarlo
-- **Solución**: Integrar editor WYSIWYG (TipTap, Quill, o React Email Editor)
-
-#### 15. 💡 Sin búsqueda/filtro de suscriptores
-
-- **Archivo**: [subscribers.astro](file:///c:/Users/anton/Desktop/Development/VictoriaFPII/Sistema%20de%20Gesti%C3%B3n%20Empresarial/SegundoTrimestre/Proyectos/FashionStore/src/pages/admin/newsletter/subscribers.astro)
-- **Problema**: Lista plana sin capacidad de buscar por email o filtrar por estado
-- **Solución**: Añadir campo de búsqueda + filtro activo/inactivo
-
-#### 16. 💡 Sin exportación de lista
-
-- **Problema**: No hay forma de exportar suscriptores a CSV para backup o análisis
-- **Solución**: Botón "Exportar CSV" con descarga client-side
-
-#### 17. 💡 Preview de email antes de enviar
-
-- **Archivo**: [send/[id].astro](file:///c:/Users/anton/Desktop/Development/VictoriaFPII/Sistema%20de%20Gesti%C3%B3n%20Empresarial/SegundoTrimestre/Proyectos/FashionStore/src/pages/admin/newsletter/send/%5Bid%5D.astro)
-- **Problema**: El admin no puede ver cómo quedará el email antes de enviar
-- **Solución**: Añadir iframe con preview del email renderizado
-
-#### 18. 💡 Sin estadísticas de campañas
-
-- **Problema**: No hay tracking de tasas de apertura, clics, bounces
-- **Solución (Futura)**: Usar Resend Analytics o implementar pixel tracking
-
-#### 19. 💡 Sin paginación de suscriptores
-
-- **Archivo**: [subscribers.astro](file:///c:/Users/anton/Desktop/Development/VictoriaFPII/Sistema%20de%20Gesti%C3%B3n%20Empresarial/SegundoTrimestre/Proyectos/FashionStore/src/pages/admin/newsletter/subscribers.astro)
-- **Problema**: Carga TODOS los suscriptores en memoria
-- **Impacto**: Con miles de suscriptores la página será lenta
-- **Solución**: Implementar paginación server-side
-
-#### 20. 💡 Envío de email de prueba
-
-- **Problema**: No hay forma de enviar un email de prueba antes del envío masivo
-- **Solución**: Botón "Enviar prueba a mi email" en la página de envío
+**Código actual problemático:**
+```typescript
+// No hay validación de estado al cargar la página
+const { data: campaign } = await supabase
+  .from("newsletter_campaigns")
+  .select("*")
+  .eq("id", id)
+  .single();
+// Debería verificar: if (campaign.status !== 'draft') redirect...
+```
 
 ---
 
-## 📋 Propuestas de Mejora
+### 4. ❌ Falta estado "sending" al iniciar (Envío duplicado)
 
-### Cambios a la Base de Datos
+| Campo         | Detalle                                                                          |
+| ------------- | -------------------------------------------------------------------------------- |
+| **Archivo**   | `src/pages/admin/newsletter/send/[id].astro` (script cliente)                    |
+| **Severidad** | 🔴 **CRÍTICO**                                                                   |
+| **Problema**  | No se marca `status: 'sending'` al iniciar el proceso                            |
+| **Impacto**   | Usuario puede abrir otra pestaña e iniciar envío duplicado simultáneo            |
+
+**Flujo actual defectuoso:**
+```
+Usuario → Click "Comenzar Envío" → Inicia chunks → (otra pestaña) → Click de nuevo → DUPLICADO
+```
+
+---
+
+### 5. ❌ No existe estado "failed" en schema
+
+| Campo         | Detalle                                                                  |
+| ------------- | ------------------------------------------------------------------------ |
+| **Archivo**   | `Doc/migrations/013_create_newsletter_tables.sql`                        |
+| **Severidad** | 🔴 **CRÍTICO**                                                           |
+| **Problema**  | CHECK constraint: `status IN ('draft', 'sending', 'sent')` - falta `failed` |
+| **Impacto**   | Si el envío falla a mitad, la campaña queda en `sending` eternamente     |
+
+---
+
+### 6. ❌ Falta confirmación antes de envío masivo
+
+| Campo         | Detalle                                                                |
+| ------------- | ---------------------------------------------------------------------- |
+| **Archivo**   | `src/pages/admin/newsletter/send/[id].astro`                           |
+| **Severidad** | 🔴 **ALTO**                                                            |
+| **Problema**  | Botón "Comenzar Envío" ejecuta inmediatamente sin confirmación         |
+| **Impacto**   | Envío accidental de borrador incompleto a toda la lista                |
+
+---
+
+## 🟡 Problemas Importantes (Robustez Técnica)
+
+### 7. Magic Strings para estados de campaña
+
+| Archivos    | `index.astro`, `send-chunk.ts`, `mark-sent.ts`, `send/[id].astro` |
+| ----------- | ----------------------------------------------------------------- |
+| **Problema** | Estados hardcodeados: `'draft'`, `'sending'`, `'sent'` dispersos  |
+| **Solución** | Crear `src/lib/constants/newsletter.ts` con enums/constantes      |
+
+### 8. Plantillas de email duplicadas y hardcodeadas
+
+| Archivos    | `send-chunk.ts`, `subscribe.ts`                             |
+| ----------- | ----------------------------------------------------------- |
+| **Problema** | ~150 líneas de HTML duplicadas en ambos archivos            |
+| **Solución** | Extraer a `src/lib/email-templates/newsletter-templates.ts` |
+
+### 9. Validación de email insuficiente
+
+| Archivo     | `subscribe.ts` línea 10                            |
+| ----------- | -------------------------------------------------- |
+| **Problema** | Solo verifica `email.includes('@')` - muy básico   |
+| **Solución** | Regex RFC 5322 o librería `email-validator`        |
+
+```typescript
+// Actual - Insuficiente
+if (!email || !email.includes('@')) { ... }
+
+// Requerido - Validación robusta
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+if (!email || !EMAIL_REGEX.test(email)) { ... }
+```
+
+### 10. Lógica de reintentos sin límite
+
+| Archivo     | `send/[id].astro` líneas 156-167                                  |
+| ----------- | ----------------------------------------------------------------- |
+| **Problema** | `while(true)` con retry infinito en cliente                       |
+| **Impacto** | Si hay error persistente, bucle infinito                          |
+| **Solución** | Máximo 3 reintentos con backoff exponencial (3s, 6s, 12s)         |
+
+### 11. Errores de envío no persistidos
+
+| Archivo     | `send-chunk.ts` líneas 83-87                                |
+| ----------- | ----------------------------------------------------------- |
+| **Problema** | `console.error()` pero no se guarda en DB                   |
+| **Impacto** | Imposible saber qué emails fallaron para reintentar         |
+| **Solución** | Crear tabla `newsletter_send_logs`                          |
+
+### 12. Toggle de suscriptor sin feedback
+
+| Archivo     | `subscribers.astro` script cliente                   |
+| ----------- | ---------------------------------------------------- |
+| **Problema** | Catch silencioso con `console.error`                 |
+| **Solución** | Mostrar toast de error al usuario                    |
+
+### 13. No existe página de edición de campañas
+
+| Problema    | No hay `/admin/newsletter/edit/[id].astro`         |
+| ----------- | -------------------------------------------------- |
+| **Impacto** | Para editar un borrador hay que crear uno nuevo    |
+| **Solución** | Crear página reutilizando componentes de `new.astro` |
+
+### 14. Suscriptores sin paginación
+
+| Archivo     | `subscribers.astro`                                       |
+| ----------- | --------------------------------------------------------- |
+| **Problema** | Carga TODOS los suscriptores en memoria                   |
+| **Impacto** | Con miles de registros, la página será muy lenta          |
+| **Solución** | Paginación server-side con offset/limit                   |
+
+### 15. Emails de bienvenida también sin link de baja
+
+| Archivo     | `subscribe.ts` función `sendWelcomeEmail()`               |
+| ----------- | --------------------------------------------------------- |
+| **Problema** | El email de bienvenida tampoco tiene opción de darse baja |
+| **Impacto** | Incluso el primer email viola GDPR                        |
+
+---
+
+## 💡 Mejoras de UX para Marketing Manager
+
+### 16. Editor HTML puro (Inutilizable para no-técnicos)
+
+| Archivo     | `new.astro` líneas 47-66                                   |
+| ----------- | ---------------------------------------------------------- |
+| **Problema** | Solo `<textarea>` con HTML manual                          |
+| **Impacto** | Un Marketing Manager no puede crear emails                 |
+| **Solución** | Integrar TipTap, Quill, o Unlayer (react-email-editor)     |
+
+### 17. Sin búsqueda/filtros de suscriptores
+
+| Archivo     | `subscribers.astro`                                  |
+| ----------- | ---------------------------------------------------- |
+| **Problema** | Lista plana sin buscar por email ni filtrar estado   |
+| **Solución** | Input de búsqueda + dropdown filtro activo/inactivo  |
+
+### 18. Sin exportación de lista
+
+| Problema    | No hay forma de exportar suscriptores a CSV          |
+| ----------- | ---------------------------------------------------- |
+| **Solución** | Botón "Exportar CSV" con descarga client-side        |
+
+### 19. Sin preview de email antes de enviar
+
+| Archivo     | `send/[id].astro`                                   |
+| ----------- | --------------------------------------------------- |
+| **Problema** | Admin no ve cómo queda el email antes de enviar     |
+| **Solución** | Iframe con preview del HTML renderizado             |
+
+### 20. Sin envío de prueba
+
+| Problema    | No hay forma de enviar test a un email específico    |
+| ----------- | ---------------------------------------------------- |
+| **Solución** | Botón "Enviar prueba a mi email" antes de masivo     |
+
+### 21. Sin estadísticas de campañas
+
+| Problema    | No hay tracking de apertura, clics, bounces           |
+| ----------- | ----------------------------------------------------- |
+| **Solución** | Integrar Resend Analytics o pixel tracking propio     |
+
+---
+
+## 📋 Propuestas de Mejora - Código
+
+### Migración SQL Requerida (Fase 1)
 
 ```sql
--- Añadir estado 'failed' a campañas
+-- ============================================
+-- MIGRATION: 034_newsletter_gdpr_compliance.sql
+-- ============================================
+
+-- 1. Añadir estado 'failed' y 'paused' a campañas
 ALTER TABLE newsletter_campaigns
   DROP CONSTRAINT IF EXISTS newsletter_campaigns_status_check;
+
 ALTER TABLE newsletter_campaigns
   ADD CONSTRAINT newsletter_campaigns_status_check
   CHECK (status IN ('draft', 'sending', 'sent', 'failed', 'paused'));
 
--- Añadir campo token único para unsubscribe
+-- 2. Añadir token único para unsubscribe (GDPR CRÍTICO)
 ALTER TABLE newsletter_subscribers
-  ADD COLUMN unsubscribe_token UUID DEFAULT uuid_generate_v4() UNIQUE;
+  ADD COLUMN IF NOT EXISTS unsubscribe_token UUID DEFAULT uuid_generate_v4() UNIQUE;
 
--- Tabla de logs de envío
-CREATE TABLE newsletter_send_logs (
+-- Generar tokens para suscriptores existentes
+UPDATE newsletter_subscribers
+SET unsubscribe_token = uuid_generate_v4()
+WHERE unsubscribe_token IS NULL;
+
+-- 3. Tabla de logs de envío (auditoría y reintentos)
+CREATE TABLE IF NOT EXISTS newsletter_send_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   campaign_id UUID REFERENCES newsletter_campaigns(id) ON DELETE CASCADE,
+  subscriber_id UUID REFERENCES newsletter_subscribers(id) ON DELETE SET NULL,
   subscriber_email TEXT NOT NULL,
-  status TEXT CHECK (status IN ('sent', 'failed', 'bounced')),
+  status TEXT CHECK (status IN ('sent', 'failed', 'bounced', 'opened', 'clicked')),
   error_message TEXT,
+  metadata JSONB DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Index para queries frecuentes
+CREATE INDEX idx_send_logs_campaign ON newsletter_send_logs(campaign_id);
+CREATE INDEX idx_send_logs_status ON newsletter_send_logs(status);
+CREATE INDEX idx_send_logs_email ON newsletter_send_logs(subscriber_email);
+
+-- 4. RLS para logs
+ALTER TABLE newsletter_send_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admins can manage send logs"
+  ON newsletter_send_logs
+  FOR ALL
+  TO authenticated
+  USING (
+    (auth.jwt() -> 'user_metadata' ->> 'is_admin')::boolean = true
+  );
+
+-- 5. Añadir contador de errores a campaña
+ALTER TABLE newsletter_campaigns
+  ADD COLUMN IF NOT EXISTS failed_count INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS last_error TEXT;
+```
+
+### Constantes de Estado (Fase 2)
+
+```typescript
+// src/lib/constants/newsletter.ts
+
+export const CAMPAIGN_STATUS = {
+  DRAFT: 'draft',
+  SENDING: 'sending',
+  SENT: 'sent',
+  FAILED: 'failed',
+  PAUSED: 'paused',
+} as const;
+
+export type CampaignStatus = typeof CAMPAIGN_STATUS[keyof typeof CAMPAIGN_STATUS];
+
+export const SEND_LOG_STATUS = {
+  SENT: 'sent',
+  FAILED: 'failed',
+  BOUNCED: 'bounced',
+  OPENED: 'opened',
+  CLICKED: 'clicked',
+} as const;
+
+// Configuración de envío
+export const NEWSLETTER_CONFIG = {
+  CHUNK_SIZE: 5,           // Emails por request
+  DELAY_MS: 1000,          // Delay entre emails
+  MAX_RETRIES: 3,          // Reintentos máximos
+  RETRY_BACKOFF: [3000, 6000, 12000], // Backoff exponencial
+} as const;
+
+// Regex validación email (RFC 5322 simplificado)
+export const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
 ```
 
 ---
 
 ## 🚀 Plan de Acción por Fases
 
-### Fase 1: Correcciones Críticas (Legalidad/GDPR)
+### Fase 1: Correcciones Críticas GDPR/Seguridad (BLOQUEANTE)
 
 > [!CAUTION]
-> Estos cambios son **OBLIGATORIOS** antes de cualquier envío en producción. Sin el link de unsubscribe estamos en violación del GDPR.
+> **Estos cambios son OBLIGATORIOS antes de cualquier envío en producción.**
+> Sin el link de unsubscribe estamos en violación directa del GDPR y CAN-SPAM Act.
 
-| Tarea                                           | Archivo              | Prioridad  |
-| ----------------------------------------------- | -------------------- | ---------- |
-| Crear API `/api/newsletter/unsubscribe`         | `[NEW]`              | 🔴 Crítico |
-| Añadir campo `unsubscribe_token` a suscriptores | Migration SQL        | 🔴 Crítico |
-| Añadir link de baja en template de email        | `send-chunk.ts`      | 🔴 Crítico |
-| Añadir honeypot al formulario de suscripción    | `NewsletterForm.tsx` | 🔴 Crítico |
-| Implementar rate limiting en subscribe          | `subscribe.ts`       | 🔴 Crítico |
-| Añadir estado `failed` al schema                | Migration SQL        | 🔴 Crítico |
-| Modal de confirmación antes de envío            | `send/[id].astro`    | 🟡 Alto    |
-| Actualizar status a "sending" al iniciar        | `send/[id].astro`    | 🟡 Alto    |
-| Validar campaña no ya enviada                   | `send/[id].astro`    | 🟡 Alto    |
+| #   | Tarea                                       | Archivo(s)                     | Esfuerzo | Estado          |
+| --- | ------------------------------------------- | ------------------------------ | -------- | --------------- |
+| 1.1 | Crear migración GDPR compliance             | `034_newsletter_gdpr.sql`      | 1h       | ✅ Completado   |
+| 1.2 | Crear API `/api/newsletter/unsubscribe`     | `unsubscribe.ts`               | 2h       | ✅ Completado   |
+| 1.3 | Crear página `/newsletter/unsubscribe`      | `unsubscribe.astro`            | 1h       | ✅ Completado   |
+| 1.4 | Añadir link de baja en template newsletter  | `send-chunk.ts`                | 30min    | ✅ Completado   |
+| 1.5 | Añadir link de baja en email de bienvenida  | `subscribe.ts`                 | 30min    | ✅ Completado   |
+| 1.6 | Añadir honeypot al formulario               | `NewsletterForm.tsx`           | 1h       | ✅ Completado   |
+| 1.7 | Implementar rate limiting por IP            | `subscribe.ts`                 | 1h       | ✅ Completado   |
+| 1.8 | Validar estado campaña antes de enviar      | `send/[id].astro`              | 30min    | ✅ Completado   |
+| 1.9 | Marcar `sending` al iniciar proceso         | `send/[id].astro`              | 30min    | ✅ Completado   |
+| 1.10| Añadir modal de confirmación antes de envío | `send/[id].astro`              | 1h       | ✅ Completado   |
+
+**Archivos creados/modificados:**
+- ✅ `Doc/migrations/034_newsletter_gdpr_compliance.sql` - Migración completa
+- ✅ `src/lib/constants/newsletter.ts` - Constantes centralizadas
+- ✅ `src/pages/api/newsletter/unsubscribe.ts` - API de baja GDPR
+- ✅ `src/pages/newsletter/unsubscribe.astro` - Página de confirmación de baja
+- ✅ `src/pages/api/admin/newsletter/update-status.ts` - API para cambiar estado
+- ✅ `src/pages/api/admin/newsletter/send-chunk.ts` - Con logs y unsubscribe link
+- ✅ `src/pages/api/newsletter/subscribe.ts` - Con honeypot y rate limiting
+- ✅ `src/components/islands/NewsletterForm.tsx` - Con campo honeypot
+- ✅ `src/pages/admin/newsletter/send/[id].astro` - Con modal y validación
+- ✅ `src/pages/admin/newsletter/index.astro` - Con constantes y estado failed
+
+**Tiempo estimado Fase 1:** 9 horas → **✅ Completado**
 
 ---
 
-### Fase 2: Mejoras de Calidad de Código
+### Fase 2: Robustez Técnica y Calidad de Código
 
-| Tarea                                  | Archivo                       | Prioridad |
-| -------------------------------------- | ----------------------------- | --------- |
-| Crear constantes de estado de campaña  | `[NEW]` campaign-status.ts    | 🟡 Medio  |
-| Extraer templates a archivos separados | `[NEW]` email-templates/\*.ts | 🟡 Medio  |
-| Mejorar validación de email (regex)    | `subscribe.ts`                | 🟡 Medio  |
-| Crear tabla de logs de envío           | Migration SQL                 | 🟡 Medio  |
-| Persistir errores en tabla de logs     | `send-chunk.ts`               | 🟡 Medio  |
-| Límite de reintentos con backoff       | `send/[id].astro`             | 🟡 Medio  |
+| #   | Tarea                                      | Archivo(s)                         | Esfuerzo | Estado          |
+| --- | ------------------------------------------ | ---------------------------------- | -------- | --------------- |
+| 2.1 | Crear constantes de estado                 | `src/lib/constants/newsletter.ts`  | 30min    | ✅ Completado   |
+| 2.2 | Extraer templates a módulo separado        | `src/lib/email-templates/`         | 2h       | ✅ Completado   |
+| 2.3 | Mejorar validación de email (RFC 5322)     | `subscribe.ts`                     | 30min    | ✅ Completado   |
+| 2.4 | Persistir errores en tabla de logs         | `send-chunk.ts`                    | 1h       | ✅ Completado   |
+| 2.5 | Límite de reintentos con backoff           | `send/[id].astro`                  | 1h       | ✅ Completado   |
+| 2.6 | Reemplazar magic strings por constantes    | Múltiples archivos                 | 1h       | ✅ Completado   |
+| 2.7 | Añadir feedback de error en toggle         | `subscribers.astro`                | 30min    | ✅ Completado   |
+
+**Archivos creados/modificados en Fase 2:**
+- ✅ `src/lib/email-templates/newsletter-templates.ts` - Templates centralizados con unsubscribe
+- ✅ `src/pages/api/admin/newsletter/campaigns.ts` - Usando constantes
+- ✅ `src/pages/admin/newsletter/subscribers.astro` - Con toast de feedback
+
+**Tiempo estimado Fase 2:** 6.5 horas → **✅ Completado**
 
 ---
 
 ### Fase 3: Mejoras de UX para Marketing Manager
 
-| Tarea                              | Archivo                 | Prioridad |
-| ---------------------------------- | ----------------------- | --------- |
-| Editor WYSIWYG (TipTap/Quill)      | `new.astro`             | 🟢 Mejora |
-| Búsqueda y filtros de suscriptores | `subscribers.astro`     | 🟢 Mejora |
-| Exportar suscriptores a CSV        | `subscribers.astro`     | 🟢 Mejora |
-| Preview del email antes de enviar  | `send/[id].astro`       | 🟢 Mejora |
-| Envío de email de prueba           | `send/[id].astro`       | 🟢 Mejora |
-| Página de edición de campañas      | `[NEW]` edit/[id].astro | 🟢 Mejora |
-| Paginación de suscriptores         | `subscribers.astro`     | 🟢 Mejora |
+| #   | Tarea                                | Archivo(s)                         | Esfuerzo | Estado          |
+| --- | ------------------------------------ | ---------------------------------- | -------- | --------------- |
+| 3.1 | Búsqueda y filtros de suscriptores   | `subscribers.astro`                | 2h       | ✅ Completado   |
+| 3.2 | Exportar suscriptores a CSV          | `subscribers.astro`                | 1h       | ✅ Completado   |
+| 3.3 | Paginación de suscriptores           | `subscribers.astro`                | 2h       | ⏳ Pendiente    |
+| 3.4 | Preview del email antes de enviar    | `send/[id].astro`                  | 2h       | ✅ Completado   |
+| 3.5 | Envío de email de prueba             | `send/[id].astro` + API            | 2h       | ✅ Completado   |
+| 3.6 | Página de edición de campañas        | `[NEW] edit/[id].astro`            | 3h       | ⏳ Pendiente    |
+| 3.7 | Editor WYSIWYG (TipTap o Quill)      | `new.astro` + componente React     | 8h       | ⏳ Pendiente    |
+
+**Archivos creados/modificados en Fase 3:**
+- ✅ `src/pages/admin/newsletter/subscribers.astro` - Búsqueda, filtros y exportación CSV
+- ✅ `src/pages/admin/newsletter/send/[id].astro` - Preview HTML y envío de prueba
+- ✅ `src/pages/api/admin/newsletter/send-test.ts` - API para envío de prueba
+
+**Tiempo estimado Fase 3:** 20 horas → **9 horas completadas**
 
 ---
 
-### Fase 4 (Futura): Optimización y Analytics
+### Fase 4 (Futura): Analytics y Optimización
 
-| Tarea                        | Descripción                        |
-| ---------------------------- | ---------------------------------- |
-| Dashboard de estadísticas    | Tasa de apertura, clics, bounces   |
-| Integración Resend Analytics | Tracking automático de métricas    |
-| Segmentación de audiencia    | Enviar a grupos específicos        |
-| Plantillas prediseñadas      | Galería de templates reutilizables |
-| Programación de envíos       | Enviar en fecha/hora específica    |
+| Tarea                        | Descripción                               | Complejidad |
+| ---------------------------- | ----------------------------------------- | ----------- |
+| Dashboard de estadísticas    | Tasa de apertura, clics, bounces          | Alta        |
+| Integración Resend Analytics | Webhooks + storage de eventos             | Media       |
+| Segmentación de audiencia    | Enviar a grupos específicos               | Alta        |
+| Plantillas prediseñadas      | Galería de templates reutilizables        | Media       |
+| Programación de envíos       | Cron + job queue para fecha/hora futura   | Alta        |
+| A/B Testing                  | Múltiples versiones de asunto             | Alta        |
 
 ---
 
-## 📋 Verificación
+## 📋 Checklist de Verificación
 
-### Pruebas Manuales Fase 1
+### ✅ Tests Manuales Fase 1
 
-1. **Test Unsubscribe**:
-   - Suscribirse con un email
-   - Crear campaña y enviar a ese email
-   - Verificar que el email contiene link de baja
-   - Hacer clic en el link y confirmar que el suscriptor se desactiva
+- [ ] **Test Unsubscribe GDPR**:
+  - Suscribirse con email de prueba
+  - Crear campaña y enviar
+  - Verificar link de baja visible en footer
+  - Click en link → confirma que desactiva suscriptor
+  - Verificar que no recibe más emails
 
-2. **Test Honeypot**:
-   - Llenar el campo honeypot (debe ser invisible)
-   - Verificar que la suscripción es rechazada silenciosamente
+- [ ] **Test Honeypot**:
+  - Llenar campo honeypot (invisible al usuario)
+  - Enviar formulario → debe ser rechazado silenciosamente
+  - Verificar que NO se guarda en DB
 
-3. **Test Modal Confirmación**:
-   - Ir a página de envío
-   - Verificar que aparece modal de confirmación antes de enviar
-   - Cancelar y verificar que no se envía
+- [ ] **Test Rate Limiting**:
+  - Intentar suscribirse 6 veces en 1 minuto
+  - La 6ta debe ser bloqueada con mensaje apropiado
 
-4. **Test Estado "sending"**:
-   - Iniciar envío
-   - Verificar en DB que el status cambia a "sending"
-   - Abrir otra pestaña y verificar que no se puede iniciar otro envío
+- [ ] **Test Prevención Reenvío**:
+  - Enviar campaña completa
+  - Intentar acceder a `/admin/newsletter/send/[id]`
+  - Debe redirigir o mostrar "Ya enviada"
 
-### Comandos de Verificación
+- [ ] **Test Estado Sending**:
+  - Iniciar envío
+  - Verificar en DB: `status = 'sending'`
+  - Abrir otra pestaña → botón deshabilitado
+
+- [ ] **Test Modal Confirmación**:
+  - Click en "Comenzar Envío"
+  - Modal con resumen + checkbox obligatorio
+  - Cancelar → no inicia envío
+
+### 🛠️ Comandos de Verificación
 
 ```bash
-# Verificar build sin errores
+# Verificar build sin errores TypeScript
 npm run build
 
-# Verificar TypeScript
+# Verificar tipos
 npx tsc --noEmit
 
-# Iniciar servidor local para pruebas
+# Iniciar servidor local
 npm run dev
+
+# Verificar migración en Supabase
+supabase db push --dry-run
 ```
 
 ---
 
-## 📝 Notas Adicionales
+## 📝 Notas Importantes
 
 > [!IMPORTANT]
-> El problema más urgente es la **falta del link de unsubscribe**. Sin esto:
->
-> - Violamos GDPR (multas hasta 4% de facturación anual)
-> - Los emails serán marcados como spam por los usuarios
-> - Los proveedores de email (Gmail, Outlook) penalizarán el dominio
+> ### Prioridad #1: Link de Unsubscribe
+> Sin esto, cada email enviado es una **violación legal**:
+> - GDPR Art. 7.3: Derecho a retirar consentimiento en cualquier momento
+> - CAN-SPAM Act: Multas hasta $46,517 por email sin opción de baja
+> - Reputación: Gmail/Outlook penalizan dominios sin unsubscribe
 
 > [!NOTE]
-> El sistema de batching actual funciona correctamente para evitar timeouts. El chunk de 5 emails con 1 segundo de delay es apropiado para respetar los rate limits de Resend.
+> ### Batching Actual es Correcto
+> El sistema de chunks (5 emails/request, 1s delay) es apropiado para:
+> - Evitar timeouts del servidor
+> - Respetar rate limits de Resend (10 emails/segundo plan gratuito)
+> - Mantener barra de progreso responsive
+
+> [!WARNING]
+> ### No Usar en Producción
+> Hasta completar la Fase 1, el sistema **NO DEBE** usarse para enviar emails reales:
+> 1. Viola GDPR por falta de unsubscribe
+> 2. Vulnerable a spam por falta de protección
+> 3. Riesgo de envío duplicado por falta de estados
+
+---
+
+## 📊 Métricas de Éxito Post-Implementación
+
+| Métrica                     | Objetivo            | Método de Medición               |
+| --------------------------- | ------------------- | -------------------------------- |
+| Tasa de entrega             | > 95%               | Resend Dashboard                 |
+| Tasa de spam complaints     | < 0.1%              | Resend Analytics                 |
+| Tiempo de carga suscriptores| < 2s (1000 users)   | Performance testing              |
+| Errores de envío loggeados  | 100%                | Tabla `newsletter_send_logs`     |
+| Cobertura unsubscribe       | 100% emails         | Auditoría manual de templates    |
+
+---
+
+**Documento actualizado:** 18/01/2026  
+**Próxima revisión:** Tras completar Fase 1

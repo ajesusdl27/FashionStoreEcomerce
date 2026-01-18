@@ -2,11 +2,20 @@ import { useState } from 'react';
 
 export default function NewsletterForm() {
   const [email, setEmail] = useState('');
+  const [honeypot, setHoneypot] = useState(''); // Anti-bot honeypot field
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Honeypot check - if filled, silently reject (bots fill hidden fields)
+    if (honeypot) {
+      setStatus('success');
+      setMessage('¡Gracias por suscribirte! 🎉');
+      setEmail('');
+      return;
+    }
     
     if (!email || !email.includes('@')) {
       setStatus('error');
@@ -20,7 +29,7 @@ export default function NewsletterForm() {
       const response = await fetch('/api/newsletter/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, _hp: honeypot }),
       });
 
       const result = await response.json();
@@ -32,9 +41,10 @@ export default function NewsletterForm() {
       setStatus('success');
       setMessage('¡Gracias por suscribirte! 🎉');
       setEmail('');
-    } catch (error: any) {
+    } catch (error: unknown) {
       setStatus('error');
-      setMessage(error.message || 'Ha ocurrido un error');
+      const errorMessage = error instanceof Error ? error.message : 'Ha ocurrido un error';
+      setMessage(errorMessage);
     }
   };
 
@@ -53,6 +63,25 @@ export default function NewsletterForm() {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-3">
+          {/* Honeypot field - hidden from users, visible to bots */}
+          <input
+            type="text"
+            name="website"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+            autoComplete="off"
+            tabIndex={-1}
+            aria-hidden="true"
+            style={{ 
+              position: 'absolute', 
+              left: '-9999px', 
+              opacity: 0,
+              height: 0,
+              width: 0,
+              overflow: 'hidden'
+            }}
+          />
+          
           <div className="flex gap-2">
             <input
               type="email"

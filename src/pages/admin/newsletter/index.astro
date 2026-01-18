@@ -1,6 +1,7 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { supabase } from "@/lib/supabase";
+import { CAMPAIGN_STATUS, CAMPAIGN_STATUS_LABELS, CAMPAIGN_STATUS_COLORS, type CampaignStatus } from "@/lib/constants/newsletter";
 
 // Fetch campaigns and subscriber count
 const { data: campaigns } = await supabase
@@ -20,6 +21,15 @@ const formatDate = (date: string) => {
     year: "numeric",
   });
 };
+
+// Helper to get status label and color
+const getStatusInfo = (status: string) => {
+  const typedStatus = status as CampaignStatus;
+  return {
+    label: CAMPAIGN_STATUS_LABELS[typedStatus] || status,
+    color: CAMPAIGN_STATUS_COLORS[typedStatus] || 'bg-muted text-muted-foreground'
+  };
+};
 ---
 
 <AdminLayout title="Newsletter">
@@ -38,7 +48,7 @@ const formatDate = (date: string) => {
     </div>
 
     <!-- Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <div class="admin-card">
         <p class="text-sm text-muted-foreground">Suscriptores Activos</p>
         <p class="text-3xl font-bold text-primary">{subscriberCount || 0}</p>
@@ -46,13 +56,19 @@ const formatDate = (date: string) => {
       <div class="admin-card">
         <p class="text-sm text-muted-foreground">Campañas Enviadas</p>
         <p class="text-3xl font-bold text-foreground">
-          {campaigns?.filter((c) => c.status === "sent").length || 0}
+          {campaigns?.filter((c) => c.status === CAMPAIGN_STATUS.SENT).length || 0}
         </p>
       </div>
       <div class="admin-card">
         <p class="text-sm text-muted-foreground">Borradores</p>
         <p class="text-3xl font-bold text-foreground">
-          {campaigns?.filter((c) => c.status === "draft").length || 0}
+          {campaigns?.filter((c) => c.status === CAMPAIGN_STATUS.DRAFT).length || 0}
+        </p>
+      </div>
+      <div class="admin-card">
+        <p class="text-sm text-muted-foreground">Fallidas</p>
+        <p class="text-3xl font-bold text-red-400">
+          {campaigns?.filter((c) => c.status === CAMPAIGN_STATUS.FAILED).length || 0}
         </p>
       </div>
     </div>
@@ -86,48 +102,47 @@ const formatDate = (date: string) => {
           </div>
         ) : (
           <div class="divide-y divide-border">
-            {campaigns.map((campaign) => (
-              <div class="p-5 flex items-center justify-between hover:bg-muted/50 transition-colors">
-                <div class="flex-1">
-                  <h3 class="font-medium text-foreground">
-                    {campaign.subject}
-                  </h3>
-                  <p class="text-sm text-muted-foreground">
-                    {formatDate(campaign.created_at)}
-                    {campaign.status === "sent" && campaign.sent_count && (
-                      <span class="ml-2">
-                        · Enviado a {campaign.sent_count} suscriptores
-                      </span>
+            {campaigns.map((campaign) => {
+              const statusInfo = getStatusInfo(campaign.status);
+              return (
+                <div class="p-5 flex items-center justify-between hover:bg-muted/50 transition-colors">
+                  <div class="flex-1">
+                    <h3 class="font-medium text-foreground">
+                      {campaign.subject}
+                    </h3>
+                    <p class="text-sm text-muted-foreground">
+                      {formatDate(campaign.created_at)}
+                      {campaign.status === CAMPAIGN_STATUS.SENT && campaign.sent_count && (
+                        <span class="ml-2">
+                          · Enviado a {campaign.sent_count} suscriptores
+                          {campaign.failed_count > 0 && (
+                            <span class="text-red-400"> ({campaign.failed_count} fallidos)</span>
+                          )}
+                        </span>
+                      )}
+                      {campaign.status === CAMPAIGN_STATUS.FAILED && campaign.last_error && (
+                        <span class="ml-2 text-red-400">
+                          · Error: {campaign.last_error.substring(0, 50)}...
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <div class="flex items-center gap-4">
+                    <span class={`px-3 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                      {statusInfo.label}
+                    </span>
+                    {campaign.status === CAMPAIGN_STATUS.DRAFT && (
+                      <a
+                        href={`/admin/newsletter/send/${campaign.id}`}
+                        class="text-sm text-primary hover:underline"
+                      >
+                        Enviar
+                      </a>
                     )}
-                  </p>
+                  </div>
                 </div>
-                <div class="flex items-center gap-4">
-                  <span
-                    class={`px-3 py-1 rounded-full text-xs font-medium ${
-                      campaign.status === "sent"
-                        ? "bg-green-500/20 text-green-400"
-                        : campaign.status === "sending"
-                          ? "bg-yellow-500/20 text-yellow-400"
-                          : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {campaign.status === "sent"
-                      ? "Enviada"
-                      : campaign.status === "sending"
-                        ? "Enviando..."
-                        : "Borrador"}
-                  </span>
-                  {campaign.status === "draft" && (
-                    <a
-                      href={`/admin/newsletter/send/${campaign.id}`}
-                      class="text-sm text-primary hover:underline"
-                    >
-                      Enviar
-                    </a>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )
       }

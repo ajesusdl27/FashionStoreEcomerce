@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import ConfirmModal from '@/components/ui/ConfirmModal';
-import { RETURN_STATUS_CONFIG, type ReturnStatus } from '@/lib/constants/order-status';
 
 interface OrderItem {
   id: string;
@@ -45,7 +43,6 @@ export default function OrderActions({
   orderItems 
 }: OrderActionsProps) {
   const [isCancelling, setIsCancelling] = useState(false);
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -98,6 +95,10 @@ export default function OrderActions({
   }, [orderId, orderStatus]);
 
   const handleCancelOrder = async () => {
+    if (!confirm('¿Estás seguro de que deseas cancelar este pedido? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
     setIsCancelling(true);
     setError(null);
 
@@ -115,7 +116,6 @@ export default function OrderActions({
       console.error('Error cancelling order:', err);
       setError(err.message || 'Error al cancelar el pedido.');
       setIsCancelling(false);
-      setShowCancelConfirm(false);
     }
   };
 
@@ -204,7 +204,15 @@ export default function OrderActions({
   }
 
   const getReturnStatusBadge = (status: string) => {
-    return RETURN_STATUS_CONFIG[status as ReturnStatus] || RETURN_STATUS_CONFIG.requested;
+    const badges: { [key: string]: { bg: string; text: string; label: string } } = {
+      requested: { bg: 'bg-amber-500/10', text: 'text-amber-500', label: 'Pendiente' },
+      approved: { bg: 'bg-blue-500/10', text: 'text-blue-500', label: 'Aprobada' },
+      shipped: { bg: 'bg-purple-500/10', text: 'text-purple-500', label: 'Enviada' },
+      received: { bg: 'bg-cyan-500/10', text: 'text-cyan-500', label: 'En revisión' },
+      completed: { bg: 'bg-emerald-500/10', text: 'text-emerald-500', label: 'Completada' },
+      rejected: { bg: 'bg-red-500/10', text: 'text-red-500', label: 'Rechazada' },
+    };
+    return badges[status] || badges.requested;
   };
 
   return (
@@ -287,7 +295,7 @@ export default function OrderActions({
         {/* Cancel Order Button */}
         {canCancel && (
           <button
-            onClick={() => setShowCancelConfirm(true)}
+            onClick={handleCancelOrder}
             disabled={isCancelling}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-600 dark:text-red-400 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -309,19 +317,6 @@ export default function OrderActions({
             )}
           </button>
         )}
-
-        {/* Cancel Confirmation Modal */}
-        <ConfirmModal
-          isOpen={showCancelConfirm}
-          title="Cancelar Pedido"
-          message="¿Estás seguro de que deseas cancelar este pedido? Los artículos volverán a estar disponibles en el inventario. Esta acción no se puede deshacer."
-          confirmText="Sí, cancelar pedido"
-          cancelText="No, mantener pedido"
-          variant="danger"
-          isLoading={isCancelling}
-          onConfirm={handleCancelOrder}
-          onCancel={() => setShowCancelConfirm(false)}
-        />
 
         {/* Request Return Button */}
         {canRequestReturn && (
