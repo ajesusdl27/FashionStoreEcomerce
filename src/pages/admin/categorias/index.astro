@@ -84,7 +84,7 @@ const categoriesWithCount = categories?.map((cat: any) => ({
                 </div>
 
                 {/* Actions */}
-                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div class="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   <button
                     class="edit-category p-2 rounded-lg hover:bg-muted transition-colors"
                     title="Editar"
@@ -112,6 +112,7 @@ const categoriesWithCount = categories?.map((cat: any) => ({
                     title="Eliminar"
                     data-id={cat.id}
                     data-name={cat.name}
+                    data-count={cat.productCount}
                   >
                     <svg
                       class="w-4 h-4 text-red-600 dark:text-red-400"
@@ -268,6 +269,24 @@ const categoriesWithCount = categories?.map((cat: any) => ({
               class="block text-sm font-medium text-foreground mb-2"
             >
               Slug (URL) <span class="text-red-500">*</span>
+              <span
+                class="ml-1 text-muted-foreground cursor-help"
+                title="El slug es la parte de la URL que identifica esta categoría. Ejemplo: /categoria/camisetas"
+              >
+                <svg
+                  class="w-4 h-4 inline -mt-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+              </span>
             </label>
             <div class="relative">
               <span
@@ -294,6 +313,12 @@ const categoriesWithCount = categories?.map((cat: any) => ({
                 >Auto-generar desde nombre</span
               >
             </label>
+            <p class="text-xs text-muted-foreground mt-2">
+              URL: <span class="font-mono text-primary">/categoria/</span><span
+                id="slug-value"
+                class="font-mono text-primary">...</span
+              >
+            </p>
           </div>
 
           <!-- Size Type Field -->
@@ -350,13 +375,16 @@ const categoriesWithCount = categories?.map((cat: any) => ({
     <div class="absolute inset-0 flex items-center justify-center p-4">
       <div class="admin-card max-w-md w-full">
         <h3 class="font-heading text-xl mb-4">¿Eliminar categoría?</h3>
-        <p class="text-zinc-400 mb-2">
+        <p class="text-muted-foreground mb-2">
           Vas a eliminar: <strong class="text-foreground" id="delete-name"
           ></strong>
         </p>
-        <p class="text-sm text-zinc-500 mb-6">
-          Los productos asociados se quedarán sin categoría.
-        </p>
+        <p id="delete-warning" class="text-sm text-muted-foreground mb-4"></p>
+        <div
+          id="delete-error"
+          class="hidden p-3 mb-4 bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 rounded-lg text-sm"
+        >
+        </div>
         <input type="hidden" id="delete-id" />
         <div class="flex justify-end gap-3">
           <button id="cancel-delete" class="admin-btn-secondary">
@@ -390,6 +418,36 @@ const categoriesWithCount = categories?.map((cat: any) => ({
     const autoSlugCheckbox = document.getElementById(
       "auto-slug"
     ) as HTMLInputElement;
+    const saveBtn = document.getElementById(
+      "save-category"
+    ) as HTMLButtonElement;
+    const deleteWarning = document.getElementById("delete-warning");
+    const deleteError = document.getElementById("delete-error");
+    const slugPreview = document.getElementById("slug-value");
+
+    // Toast helper
+    function showToast(message: string, type: "success" | "error" = "success") {
+      const toast = document.createElement("div");
+      toast.className = `fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-fade-in ${
+        type === "success" ? "bg-green-500 text-white" : "bg-red-500 text-white"
+      }`;
+      toast.innerHTML = `
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          ${
+            type === "success"
+              ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>'
+              : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>'
+          }
+        </svg>
+        <span>${message}</span>
+      `;
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transition = "opacity 0.3s";
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
 
     // Auto-generate slug (respects checkbox)
     categoryNameInput?.addEventListener("input", () => {
@@ -401,6 +459,17 @@ const categoriesWithCount = categories?.map((cat: any) => ({
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/^-|-$/g, "");
         categorySlugInput.value = slug;
+      }
+      // Update slug preview
+      if (slugPreview) {
+        slugPreview.textContent = categorySlugInput.value || "...";
+      }
+    });
+
+    // Update slug preview on direct input
+    categorySlugInput?.addEventListener("input", () => {
+      if (slugPreview) {
+        slugPreview.textContent = categorySlugInput.value || "...";
       }
     });
 
@@ -415,6 +484,7 @@ const categoriesWithCount = categories?.map((cat: any) => ({
         categorySizeTypeSelect.value = "clothing";
         autoSlugCheckbox.checked = true;
         formError?.classList.add("hidden");
+        if (slugPreview) slugPreview.textContent = "...";
         modal?.classList.remove("hidden");
       });
 
@@ -429,6 +499,7 @@ const categoriesWithCount = categories?.map((cat: any) => ({
         categorySizeTypeSelect.value = sizeType || "clothing";
         autoSlugCheckbox.checked = false; // Uncheck for editing to preserve existing slug
         formError?.classList.add("hidden");
+        if (slugPreview) slugPreview.textContent = slug || "...";
         modal?.classList.remove("hidden");
       });
     });
@@ -458,6 +529,17 @@ const categoriesWithCount = categories?.map((cat: any) => ({
           size_type: categorySizeTypeSelect.value,
         };
 
+        // Show loading state
+        const originalContent = saveBtn.innerHTML;
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = `
+          <svg class="animate-spin w-4 h-4 mr-2 inline" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          Guardando...
+        `;
+
         try {
           const response = await fetch("/api/admin/categorias", {
             method: id ? "PUT" : "POST",
@@ -471,8 +553,16 @@ const categoriesWithCount = categories?.map((cat: any) => ({
             throw new Error(result.error || "Error al guardar");
           }
 
-          window.location.reload();
+          showToast(
+            id ? "Categoría actualizada" : "Categoría creada",
+            "success"
+          );
+          setTimeout(() => window.location.reload(), 800);
         } catch (error: any) {
+          // Reset button
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = originalContent;
+
           if (formError) {
             formError.textContent = error.message;
             formError.classList.remove("hidden");
@@ -480,14 +570,28 @@ const categoriesWithCount = categories?.map((cat: any) => ({
         }
       });
 
-    // Delete modal
+    // Delete modal - show product count warning
     document.querySelectorAll(".delete-category").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const { id, name } = (btn as HTMLElement).dataset;
+        const { id, name, count } = (btn as HTMLElement).dataset;
+        const productCount = parseInt(count || "0");
+
         (document.getElementById("delete-id") as HTMLInputElement).value =
           id || "";
         (document.getElementById("delete-name") as HTMLElement).textContent =
           name || "";
+
+        // Dynamic warning based on product count
+        if (deleteWarning) {
+          deleteWarning.textContent =
+            productCount > 0
+              ? `⚠️ ${productCount} producto${productCount !== 1 ? "s" : ""} quedará${productCount !== 1 ? "n" : ""} sin categoría.`
+              : "Esta categoría no tiene productos asociados.";
+        }
+
+        // Hide previous errors
+        deleteError?.classList.add("hidden");
+
         deleteModal?.classList.remove("hidden");
       });
     });
@@ -501,6 +605,20 @@ const categoriesWithCount = categories?.map((cat: any) => ({
       ?.addEventListener("click", async () => {
         const id = (document.getElementById("delete-id") as HTMLInputElement)
           .value;
+        const confirmBtn = document.getElementById(
+          "confirm-delete"
+        ) as HTMLButtonElement;
+
+        // Show loading state
+        const originalContent = confirmBtn.innerHTML;
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = `
+          <svg class="animate-spin w-4 h-4 mr-2 inline" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          Eliminando...
+        `;
 
         try {
           const response = await fetch("/api/admin/categorias", {
@@ -510,13 +628,22 @@ const categoriesWithCount = categories?.map((cat: any) => ({
           });
 
           if (response.ok) {
-            window.location.reload();
+            showToast("Categoría eliminada", "success");
+            setTimeout(() => window.location.reload(), 800);
           } else {
             const result = await response.json();
-            alert("Error: " + result.error);
+            throw new Error(result.error || "Error al eliminar");
           }
         } catch (error: any) {
-          alert("Error: " + error.message);
+          // Reset button
+          confirmBtn.disabled = false;
+          confirmBtn.innerHTML = originalContent;
+
+          // Show inline error instead of alert
+          if (deleteError) {
+            deleteError.textContent = error.message;
+            deleteError.classList.remove("hidden");
+          }
         }
       });
   </script>
