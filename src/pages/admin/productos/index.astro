@@ -13,6 +13,7 @@ const { data: products, error } = await supabase
     variants:product_variants(id, size, stock)
   `
   )
+  .is("deleted_at", null) // Exclude soft-deleted products
   .order("created_at", { ascending: false });
 
 // Fetch categories for filter
@@ -376,7 +377,12 @@ const uniqueCategories = categories || [];
       }
     }
 
-    searchInput?.addEventListener("input", filterProducts);
+    // Debounce for search input
+    let debounceTimer: number;
+    searchInput?.addEventListener("input", () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = window.setTimeout(filterProducts, 300);
+    });
     categoryFilter?.addEventListener("change", filterProducts);
     statusFilter?.addEventListener("change", filterProducts);
 

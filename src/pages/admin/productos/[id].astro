@@ -437,6 +437,23 @@ const sortedImages =
       "form-message"
     ) as HTMLDivElement;
 
+    // Track form modifications for unsaved changes warning
+    let formModified = false;
+
+    // Detect changes in the form
+    form?.addEventListener("input", () => {
+      formModified = true;
+    });
+
+    // Warn before leaving with unsaved changes
+    window.addEventListener("beforeunload", (e) => {
+      if (formModified) {
+        e.preventDefault();
+        e.returnValue =
+          "¿Seguro que quieres salir? Los cambios no guardados se perderán.";
+      }
+    });
+
     form?.addEventListener("submit", async (e) => {
       e.preventDefault();
 
@@ -459,6 +476,17 @@ const sortedImages =
           is_offer: formData.get("is_offer") === "on",
           active: formData.get("active") === "on",
         };
+
+        // Frontend validation: offer price must be less than base price
+        const price = productData.price as number;
+        const offerPrice = productData.offer_price as number | null;
+        const isOffer = productData.is_offer as boolean;
+
+        if (isOffer && offerPrice != null && offerPrice >= price) {
+          throw new Error(
+            "El precio de oferta debe ser menor que el precio base"
+          );
+        }
 
         // Get stock values from dynamically rendered sizes
         const variants: { size: string; stock: number }[] = [];
@@ -499,6 +527,9 @@ const sortedImages =
 
         messageDiv.className = "p-4 rounded-lg bg-primary/20 text-primary";
         messageDiv.textContent = "✅ Cambios guardados correctamente";
+
+        // Clear form modified flag after successful save
+        formModified = false;
 
         submitBtn.disabled = false;
         submitBtn.textContent = "Guardar Cambios";
