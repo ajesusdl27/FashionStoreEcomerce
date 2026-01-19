@@ -44,6 +44,8 @@ export default function OrderActions({
 }: OrderActionsProps) {
   const [isCancelling, setIsCancelling] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -95,23 +97,32 @@ export default function OrderActions({
   }, [orderId, orderStatus]);
 
   const handleCancelOrder = async () => {
-    if (!confirm('¿Estás seguro de que deseas cancelar este pedido? Esta acción no se puede deshacer.')) {
-      return;
-    }
-
     setIsCancelling(true);
     setError(null);
 
     try {
-      const { error: rpcError } = await supabase.rpc('cancel_order', {
-        p_order_id: orderId
+      const response = await fetch('/api/orders/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          reason: cancelReason || 'Cancelación solicitada por el cliente'
+        }),
       });
 
-      if (rpcError) {
-        throw rpcError;
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Error al cancelar el pedido');
       }
 
-      window.location.reload();
+      setSuccess(result.message);
+      setShowCancelModal(false);
+      
+      // Reload page after brief delay to show success
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     } catch (err: any) {
       console.error('Error cancelling order:', err);
       setError(err.message || 'Error al cancelar el pedido.');
@@ -295,26 +306,14 @@ export default function OrderActions({
         {/* Cancel Order Button */}
         {canCancel && (
           <button
-            onClick={handleCancelOrder}
+            onClick={() => setShowCancelModal(true)}
             disabled={isCancelling}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-600 dark:text-red-400 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isCancelling ? (
-              <>
-                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Cancelando...
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Cancelar Pedido
-              </>
-            )}
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Cancelar Pedido
           </button>
         )}
 
@@ -522,6 +521,96 @@ export default function OrderActions({
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Cancel Order Modal */}
+        {showCancelModal && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+            <div 
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={() => !isCancelling && setShowCancelModal(false)}
+            />
+            
+            <div className="relative bg-card border border-border rounded-2xl max-w-md w-full shadow-2xl">
+              <button
+                onClick={() => setShowCancelModal(false)}
+                disabled={isCancelling}
+                className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors z-10 disabled:opacity-50"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              <div className="p-6 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-foreground">Cancelar Pedido</h2>
+                    <p className="text-sm text-muted-foreground">Esta acción no se puede deshacer</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+                  <p className="text-sm text-amber-600 dark:text-amber-400">
+                    <strong>💰 Reembolso automático:</strong> Se te devolverá el importe completo a tu método de pago original en 5-10 días hábiles.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Motivo de cancelación (opcional)
+                  </label>
+                  <textarea
+                    value={cancelReason}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                    placeholder="Cuéntanos por qué cancelas el pedido..."
+                    className="w-full px-4 py-3 bg-muted border border-border rounded-xl text-foreground min-h-[80px] resize-none"
+                  />
+                </div>
+
+                {error && (
+                  <div className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
+                    {error}
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowCancelModal(false)}
+                    disabled={isCancelling}
+                    className="flex-1 px-4 py-3 bg-muted text-foreground font-medium rounded-lg hover:bg-muted/80 transition-colors disabled:opacity-50"
+                  >
+                    Volver
+                  </button>
+                  <button
+                    onClick={handleCancelOrder}
+                    disabled={isCancelling}
+                    className="flex-1 px-4 py-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isCancelling ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Cancelando...
+                      </>
+                    ) : (
+                      'Confirmar Cancelación'
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

@@ -78,45 +78,50 @@ function formatDate(date: string): string {
 
 function getStatusBadge(status: string) {
   const badges: Record<string, { class: string; text: string }> = {
-    pending: { class: "bg-yellow-500/20 text-yellow-400", text: "Pendiente" },
-    paid: { class: "bg-emerald-500/20 text-emerald-400", text: "Pagado" },
-    shipped: { class: "bg-blue-500/20 text-blue-400", text: "Enviado" },
-    delivered: { class: "bg-primary/20 text-primary", text: "Entregado" },
-    cancelled: {
-      class: "bg-destructive/20 text-destructive",
-      text: "Cancelado",
-    },
-    // Estados de devolución
+    pending: { class: "bg-yellow-500/10 text-yellow-400", text: "Pendiente" },
+    paid: { class: "bg-emerald-500/10 text-emerald-400", text: "Pagado" },
+    shipped: { class: "bg-blue-500/10 text-blue-400", text: "Enviado" },
+    delivered: { class: "bg-primary/10 text-primary", text: "Entregado" },
+    cancelled: { class: "bg-red-500/10 text-red-400", text: "Cancelado" },
+
+    // Refund/Return statuses
     partially_refunded: {
-      class: "bg-orange-500/20 text-orange-400",
+      class: "bg-orange-500/10 text-orange-400",
       text: "Devolución Parcial",
     },
-    refunded: {
-      class: "bg-destructive/20 text-destructive",
-      text: "Reembolsado",
-    },
+    refunded: { class: "bg-red-500/10 text-red-400", text: "Reembolsado" },
+
     return_requested: {
-      class: "bg-blue-500/20 text-blue-400",
+      class: "bg-blue-500/10 text-blue-400",
       text: "Devolución Solicitada",
     },
     return_approved: {
-      class: "bg-indigo-500/20 text-indigo-400",
+      class: "bg-indigo-500/10 text-indigo-400",
       text: "Devolución Aprobada",
     },
     return_shipped: {
-      class: "bg-purple-500/20 text-purple-400",
+      class: "bg-purple-500/10 text-purple-400",
       text: "Devolución Enviada",
     },
     return_received: {
-      class: "bg-violet-500/20 text-violet-400",
+      class: "bg-violet-500/10 text-violet-400",
       text: "Devolución Recibida",
     },
     return_completed: {
-      class: "bg-orange-500/20 text-orange-400",
+      class: "bg-orange-500/10 text-orange-400",
       text: "Devolución Completada",
     },
+    return_rejected: {
+      class: "bg-red-500/10 text-red-400",
+      text: "Devolución Rechazada",
+    },
   };
-  return badges[status] || { class: "bg-muted", text: status };
+  return (
+    badges[status] || {
+      class: "bg-muted text-muted-foreground",
+      text: "Pendiente",
+    }
+  );
 }
 ---
 

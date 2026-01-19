@@ -147,7 +147,17 @@ const statusConfig: Record<
     bgClass: "bg-red-500/10",
     textClass: "text-red-400",
   },
-  // Estados de devolución
+  // Estados de devolución y reembolso
+  partially_refunded: {
+    label: "Devolución Parcial",
+    bgClass: "bg-orange-500/10",
+    textClass: "text-orange-400",
+  },
+  refunded: {
+    label: "Reembolsado",
+    bgClass: "bg-red-500/10",
+    textClass: "text-red-400",
+  },
   return_requested: {
     label: "Devolución Solicitada",
     bgClass: "bg-blue-500/10",
@@ -173,10 +183,10 @@ const statusConfig: Record<
     bgClass: "bg-orange-500/10",
     textClass: "text-orange-400",
   },
-  partially_refunded: {
-    label: "Devolución Parcial",
-    bgClass: "bg-orange-500/10",
-    textClass: "text-orange-400",
+  return_rejected: {
+    label: "Devolución Rechazada",
+    bgClass: "bg-red-500/10",
+    textClass: "text-red-400",
   },
 };
 

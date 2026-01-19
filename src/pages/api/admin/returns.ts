@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { createAuthenticatedClient } from "@/lib/supabase";
+import { sendReturnApproved, sendReturnRejected, sendRefundProcessed } from "@/lib/email";
 
 export const prerender = false;
 
@@ -136,13 +137,13 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Call the RPC function
+    // Call the RPC function with all parameters explicitly set
     const { data, error } = await supabase.rpc("process_return", {
       p_return_id: return_id,
       p_action: action,
-      p_notes: notes,
-      p_rejection_reason: rejection_reason,
-      p_return_label_url: return_label_url
+      p_notes: notes || null,
+      p_rejection_reason: rejection_reason || null,
+      p_return_label_url: return_label_url || null
     });
 
     if (error) {
@@ -153,8 +154,74 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       );
     }
 
+    // Send email notifications based on action
+    let emailSent = false;
+    try {
+      // Fetch return details for email
+      const { data: returnData } = await supabase
+        .from("returns")
+        .select(`
+          id,
+          order_id,
+          refund_amount,
+          orders:order_id (
+            id,
+            order_number,
+            customer_name,
+            customer_email
+          )
+        `)
+        .eq("id", return_id)
+        .single();
+
+      if (returnData && returnData.orders) {
+        const order = Array.isArray(returnData.orders) ? returnData.orders[0] : returnData.orders;
+        
+        if (!order) {
+          console.warn("No order data found for return email");
+        } else if (action === "approve") {
+          const result = await sendReturnApproved({
+            returnId: returnData.id,
+            orderId: order.id,
+            orderNumber: order.order_number,
+            customerName: order.customer_name,
+            customerEmail: order.customer_email,
+            returnLabelUrl: return_label_url,
+          });
+          emailSent = result.success;
+        } else if (action === "reject") {
+          const result = await sendReturnRejected({
+            returnId: returnData.id,
+            orderId: order.id,
+            orderNumber: order.order_number,
+            customerName: order.customer_name,
+            customerEmail: order.customer_email,
+            rejectionReason: rejection_reason,
+          });
+          emailSent = result.success;
+        } else if (action === "complete") {
+          const result = await sendRefundProcessed({
+            returnId: returnData.id,
+            orderId: order.id,
+            orderNumber: order.order_number,
+            customerName: order.customer_name,
+            customerEmail: order.customer_email,
+            refundAmount: Number(returnData.refund_amount) || 0,
+          });
+          emailSent = result.success;
+        }
+      }
+    } catch (emailError) {
+      console.warn("Failed to send return email:", emailError);
+      // Don't fail the request if email fails
+    }
+
     return new Response(
-      JSON.stringify({ success: true, message: `Devolución ${action === "approve" ? "aprobada" : action === "reject" ? "rechazada" : action === "receive" ? "marcada como recibida" : "completada"}` }),
+      JSON.stringify({ 
+        success: true, 
+        emailSent,
+        message: `Devolución ${action === "approve" ? "aprobada" : action === "reject" ? "rechazada" : action === "receive" ? "marcada como recibida" : "completada"}` 
+      }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
 
