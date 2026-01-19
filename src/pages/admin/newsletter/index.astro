@@ -1,7 +1,12 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
-import { supabase } from "@/lib/supabase";
+import { createAuthenticatedClient } from "@/lib/supabase";
 import { CAMPAIGN_STATUS, CAMPAIGN_STATUS_LABELS, CAMPAIGN_STATUS_COLORS, type CampaignStatus } from "@/lib/constants/newsletter";
+
+// Get auth tokens from cookies
+const accessToken = Astro.cookies.get('sb-access-token')?.value;
+const refreshToken = Astro.cookies.get('sb-refresh-token')?.value;
+const supabase = createAuthenticatedClient(accessToken, refreshToken);
 
 // Fetch campaigns and subscriber count
 const { data: campaigns } = await supabase

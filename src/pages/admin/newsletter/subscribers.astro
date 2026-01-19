@@ -1,6 +1,11 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
-import { supabase } from "@/lib/supabase";
+import { createAuthenticatedClient } from "@/lib/supabase";
+
+// Get auth tokens from cookies
+const accessToken = Astro.cookies.get('sb-access-token')?.value;
+const refreshToken = Astro.cookies.get('sb-refresh-token')?.value;
+const supabase = createAuthenticatedClient(accessToken, refreshToken);
 
 // Fetch all subscribers
 const { data: subscribers } = await supabase
