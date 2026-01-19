@@ -1,0 +1,61 @@
+# Docker Compose para desarrollo local (opcional)
+# Este archivo te permite probar el contenedor localmente antes de subirlo a Coolify
+
+version: '3.8'
+
+services:
+  fashionstore:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      # Core
+      - NODE_ENV=production
+      - HOST=0.0.0.0
+      - PORT=3000
+      - PUBLIC_SITE_URL=http://localhost:3000
+      
+      # Supabase (CONFIGURA TUS VALORES)
+      - PUBLIC_SUPABASE_URL=${PUBLIC_SUPABASE_URL}
+      - PUBLIC_SUPABASE_ANON_KEY=${PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      
+      # Cloudinary (opcional)
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      
+      # Stripe (opcional)
+      - PUBLIC_STRIPE_PUBLISHABLE_KEY=${PUBLIC_STRIPE_PUBLISHABLE_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      
+      # Resend (opcional)
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      
+      # Analytics (opcional)
+      - PUBLIC_GA_TRACKING_ID=${PUBLIC_GA_TRACKING_ID}
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Restart automático
+    restart: unless-stopped
+    
+    # Red (opcional, para conectar con otros servicios)
+    networks:
+      - fashionstore-network
+
+networks:
+  fashionstore-network:
+    driver: bridge
+
+# NOTA: Este archivo es para pruebas locales
+# En Coolify, solo necesitas el Dockerfile y las variables de entorno

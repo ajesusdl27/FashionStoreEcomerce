@@ -5,11 +5,12 @@ import node from "@astrojs/node";
 
 // https://astro.build/config
 export default defineConfig({
-  site: "http://localhost:4321",
+  site: process.env.PUBLIC_SITE_URL || "http://localhost:4321",
   output: "server",
   adapter: node({ mode: "standalone" }),
   server: {
-    host: true
+    host: process.env.HOST || "0.0.0.0",
+    port: parseInt(process.env.PORT || "3000")
   },
   integrations: [
     react(),

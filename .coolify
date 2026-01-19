@@ -1,0 +1,17 @@
+# Configuración específica para Coolify
+# Este archivo ayuda a Coolify a identificar tu proyecto
+
+# Puerto de la aplicación
+PORT=3000
+
+# Comando de build (se ejecutará durante el deployment)
+BUILD_COMMAND=npm run build
+
+# Comando de start (se ejecutará para iniciar la aplicación)
+START_COMMAND=npm run start
+
+# Health check (opcional)
+HEALTH_CHECK_PATH=/
+HEALTH_CHECK_INTERVAL=30
+HEALTH_CHECK_TIMEOUT=10
+HEALTH_CHECK_RETRIES=3
