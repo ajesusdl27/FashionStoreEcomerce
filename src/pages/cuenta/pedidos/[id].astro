@@ -38,7 +38,7 @@ const { data: order, error } = await supabase
         discount_value
       )
     )
-  `
+  `,
   )
   .eq("id", id)
   .eq("customer_email", user.email) // Security check
@@ -58,7 +58,7 @@ if (!order) {
 // Calculate totals
 const subtotal = order.items.reduce(
   (sum: number, item: any) => sum + item.price_at_purchase * item.quantity,
-  0
+  0,
 );
 
 // Get coupon info if any
@@ -147,12 +147,45 @@ const statusConfig: Record<
     bgClass: "bg-red-500/10",
     textClass: "text-red-400",
   },
+  // Estados de devolución
+  return_requested: {
+    label: "Devolución Solicitada",
+    bgClass: "bg-blue-500/10",
+    textClass: "text-blue-400",
+  },
+  return_approved: {
+    label: "Devolución Aprobada",
+    bgClass: "bg-indigo-500/10",
+    textClass: "text-indigo-400",
+  },
+  return_shipped: {
+    label: "Devolución Enviada",
+    bgClass: "bg-purple-500/10",
+    textClass: "text-purple-400",
+  },
+  return_received: {
+    label: "Devolución Recibida",
+    bgClass: "bg-violet-500/10",
+    textClass: "text-violet-400",
+  },
+  return_completed: {
+    label: "Devolución Completada",
+    bgClass: "bg-orange-500/10",
+    textClass: "text-orange-400",
+  },
+  partially_refunded: {
+    label: "Devolución Parcial",
+    bgClass: "bg-orange-500/10",
+    textClass: "text-orange-400",
+  },
 };
 
 const currentStatus = statusConfig[order.status] || statusConfig.pending;
 ---
 
-<PublicLayout title={`Pedido ${order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`} - FashionStore`}>
+<PublicLayout
+  title={`Pedido ${order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`} - FashionStore`}
+>
   <div class="container mx-auto px-4 py-12">
     <!-- Breadcrumb -->
     <div class="mb-8">
@@ -180,7 +213,11 @@ const currentStatus = statusConfig[order.status] || statusConfig.pending;
       >
         <div>
           <h1 class="font-display text-3xl text-foreground">
-            PEDIDO {order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8).toUpperCase()}`}
+            PEDIDO {
+              order.order_number
+                ? formatOrderId(order.order_number)
+                : `#${order.id.slice(0, 8).toUpperCase()}`
+            }
           </h1>
           <p class="text-muted-foreground mt-2">
             Realizado el {formatDate(order.created_at)}
@@ -418,7 +455,9 @@ const currentStatus = statusConfig[order.status] || statusConfig.pending;
         <InvoiceButton
           client:load
           orderId={order.id}
-          orderNumber={order.order_number ? formatOrderId(order.order_number) : order.id.slice(0, 8).toUpperCase()}
+          orderNumber={order.order_number
+            ? formatOrderId(order.order_number)
+            : order.id.slice(0, 8).toUpperCase()}
           orderStatus={order.status}
         />
 

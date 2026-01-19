@@ -103,6 +103,18 @@ function getStatusBadge(status: string) {
       class: "bg-indigo-500/20 text-indigo-400",
       text: "Devolución Aprobada",
     },
+    return_shipped: {
+      class: "bg-purple-500/20 text-purple-400",
+      text: "Devolución Enviada",
+    },
+    return_received: {
+      class: "bg-violet-500/20 text-violet-400",
+      text: "Devolución Recibida",
+    },
+    return_completed: {
+      class: "bg-orange-500/20 text-orange-400",
+      text: "Devolución Completada",
+    },
   };
   return badges[status] || { class: "bg-muted", text: status };
 }
