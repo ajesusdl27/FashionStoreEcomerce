@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabase';
 
 interface OrderItem {
@@ -340,7 +341,7 @@ export default function OrderActions({
         )}
 
         {/* Return Modal */}
-        {showReturnModal && (
+        {showReturnModal && createPortal(
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
             <div 
               className="absolute inset-0 bg-black/70 backdrop-blur-sm"
@@ -523,10 +524,10 @@ export default function OrderActions({
               </form>
             </div>
           </div>
-        )}
+        , document.body)}
 
         {/* Cancel Order Modal */}
-        {showCancelModal && (
+        {showCancelModal && createPortal(
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
             <div 
               className="absolute inset-0 bg-black/70 backdrop-blur-sm"
@@ -613,7 +614,7 @@ export default function OrderActions({
               </div>
             </div>
           </div>
-        )}
+        , document.body)}
       </div>
     </div>
   );
