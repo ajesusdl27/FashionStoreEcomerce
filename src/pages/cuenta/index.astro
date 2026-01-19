@@ -33,86 +33,6 @@ const formatDate = (date: string) => {
     year: "numeric",
   }).format(new Date(date));
 };
-interface StatusConfig {
-  label: string;
-  bgClass: string;
-  textClass: string;
-}
-
-const getStatusConfig = (status: string): StatusConfig => {
-  const configs: Record<string, StatusConfig> = {
-    pending: {
-      label: "Pendiente",
-      bgClass: "bg-yellow-500/10",
-      textClass: "text-yellow-400",
-    },
-    paid: {
-      label: "Pagado",
-      bgClass: "bg-emerald-500/10",
-      textClass: "text-emerald-400",
-    },
-    shipped: {
-      label: "Enviado",
-      bgClass: "bg-blue-500/10",
-      textClass: "text-blue-400",
-    },
-    delivered: {
-      label: "Entregado",
-      bgClass: "bg-primary/10",
-      textClass: "text-primary",
-    },
-    cancelled: {
-      label: "Cancelado",
-      bgClass: "bg-red-500/10",
-      textClass: "text-red-400",
-    },
-
-    // Refund/Return statuses
-    partially_refunded: {
-      label: "Devolución Parcial",
-      bgClass: "bg-orange-500/10",
-      textClass: "text-orange-400",
-    },
-    refunded: {
-      label: "Reembolsado",
-      bgClass: "bg-red-500/10",
-      textClass: "text-red-400",
-    },
-
-    return_requested: {
-      label: "Devolución Solicitada",
-      bgClass: "bg-blue-500/10",
-      textClass: "text-blue-400",
-    },
-    return_approved: {
-      label: "Devolución Aprobada",
-      bgClass: "bg-indigo-500/10",
-      textClass: "text-indigo-400",
-    },
-    return_shipped: {
-      label: "Devolución Enviada",
-      bgClass: "bg-purple-500/10",
-      textClass: "text-purple-400",
-    },
-    return_received: {
-      label: "Devolución Recibida",
-      bgClass: "bg-violet-500/10",
-      textClass: "text-violet-400",
-    },
-    return_completed: {
-      label: "Devolución Completada",
-      bgClass: "bg-orange-500/10",
-      textClass: "text-orange-400",
-    },
-    return_rejected: {
-      label: "Devolución Rechazada",
-      bgClass: "bg-red-500/10",
-      textClass: "text-red-400",
-    },
-  };
-
-  return (configs[status] || configs.pending) as StatusConfig;
-};
 ---
 
 <PublicLayout title="Mi Cuenta - FashionStore">
@@ -202,39 +122,48 @@ const getStatusConfig = (status: string): StatusConfig => {
             {
               recentOrders && recentOrders.length > 0 ? (
                 <div class="divide-y divide-border/50">
-                  {recentOrders.map((order) => {
-                    const status = getStatusConfig(order.status);
-                    return (
-                      <div class="flex items-center justify-between py-4 first:pt-0 last:pb-0">
-                        <div>
-                          <p class="font-mono text-sm text-muted-foreground">
-                            {order.order_number
-                              ? formatOrderId(order.order_number)
-                              : `#${order.id.slice(0, 8)}`}
-                          </p>
-                          <p class="text-sm font-medium mt-1">
-                            {formatPrice(order.total_amount)}
-                          </p>
-                          <p class="text-xs text-muted-foreground">
-                            {formatDate(order.created_at)}
-                          </p>
-                        </div>
-                        <div class="flex items-center gap-4">
-                          <span
-                            class={`text-xs px-2 py-1 rounded-full ${status.bgClass} ${status.textClass}`}
-                          >
-                            {status.label}
-                          </span>
-                          <a
-                            href={`/cuenta/pedidos/${order.id}`}
-                            class="text-sm text-primary hover:underline hover:text-primary/80 transition-colors"
-                          >
-                            Ver detalle
-                          </a>
-                        </div>
+                  {recentOrders.map((order) => (
+                    <div class="flex items-center justify-between py-4 first:pt-0 last:pb-0">
+                      <div>
+                        <p class="font-mono text-sm text-muted-foreground">
+                          {order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`}
+                        </p>
+                        <p class="text-sm font-medium mt-1">
+                          {formatPrice(order.total_amount)}
+                        </p>
+                        <p class="text-xs text-muted-foreground">
+                          {formatDate(order.created_at)}
+                        </p>
                       </div>
-                    );
-                  })}
+                      <div class="flex items-center gap-4">
+                        <span
+                          class={`text-xs px-2 py-1 rounded-full ${
+                            order.status === "paid"
+                              ? "bg-emerald-500/10 text-emerald-400"
+                              : order.status === "shipped"
+                                ? "bg-blue-500/10 text-blue-400"
+                                : order.status === "delivered"
+                                  ? "bg-primary/10 text-primary"
+                                  : "bg-yellow-500/10 text-yellow-400"
+                          }`}
+                        >
+                          {order.status === "paid"
+                            ? "Pagado"
+                            : order.status === "shipped"
+                              ? "Enviado"
+                              : order.status === "delivered"
+                                ? "Entregado"
+                                : "Pendiente"}
+                        </span>
+                        <a
+                          href={`/cuenta/pedidos`}
+                          class="text-sm text-primary hover:underline hover:text-primary/80 transition-colors"
+                        >
+                          Ver detalle
+                        </a>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div class="text-center py-8 text-muted-foreground">

@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { createAuthenticatedClient } from '@/lib/supabase';
 import { validateToken } from '@/lib/auth-utils';
-import { sendOrderShipped, sendOrderDelivered, sendOrderCancelled } from '@/lib/email';
+import { sendOrderShipped } from '@/lib/email';
 
 // UPDATE order status
 export const PUT: APIRoute = async ({ request, cookies }) => {
@@ -122,44 +122,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // Send email notifications for delivered and cancelled status
-    let emailSent = false;
-    if (status === 'delivered' || status === 'cancelled') {
-      try {
-        // Get order details for email
-        const { data: order } = await authClient
-          .from('orders')
-          .select('id, order_number, customer_name, customer_email')
-          .eq('id', id)
-          .single();
-
-        if (order) {
-          if (status === 'delivered') {
-            const result = await sendOrderDelivered({
-              orderId: order.id,
-              orderNumber: order.order_number,
-              customerName: order.customer_name,
-              customerEmail: order.customer_email,
-            });
-            emailSent = result.success;
-          } else if (status === 'cancelled') {
-            const result = await sendOrderCancelled({
-              orderId: order.id,
-              orderNumber: order.order_number,
-              customerName: order.customer_name,
-              customerEmail: order.customer_email,
-              reason: 'El pedido ha sido cancelado por el administrador.',
-            });
-            emailSent = result.success;
-          }
-        }
-      } catch (emailError) {
-        console.warn('Failed to send status change email:', emailError);
-        // Don't fail the request if email fails
-      }
-    }
-
-    return new Response(JSON.stringify({ success: true, emailSent }), { 
+    return new Response(JSON.stringify({ success: true }), { 
       status: 200, headers: { 'Content-Type': 'application/json' } 
     });
   } catch (error: any) {

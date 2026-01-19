@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { stripe } from '@/lib/stripe';
 import { supabase } from '@/lib/supabase';
-import { sendOrderConfirmation, sendOrderCancelled } from '@/lib/email';
+import { sendOrderConfirmation } from '@/lib/email';
 import { formatOrderId } from '@/lib/order-utils';
 import type Stripe from 'stripe';
 
@@ -234,28 +234,6 @@ export const POST: APIRoute = async ({ request }) => {
         console.error('Error updating order status to cancelled:', updateError);
       } else {
         console.log(`Order ${orderId} cancelled and stock restored`);
-        
-        // Send cancellation email to customer
-        try {
-          const { data: order } = await supabase
-            .from('orders')
-            .select('id, order_number, customer_name, customer_email')
-            .eq('id', orderId)
-            .single();
-          
-          if (order) {
-            await sendOrderCancelled({
-              orderId: order.id,
-              orderNumber: order.order_number,
-              customerName: order.customer_name,
-              customerEmail: order.customer_email,
-              reason: 'El pago no se completó a tiempo y la sesión de pago ha expirado.',
-            });
-            console.log(`Cancellation email sent to ${order.customer_email}`);
-          }
-        } catch (emailError) {
-          console.warn('Failed to send cancellation email:', emailError);
-        }
       }
 
       break;
