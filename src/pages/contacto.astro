@@ -1,5 +1,9 @@
 ---
 import PublicLayout from "@/layouts/PublicLayout.astro";
+import { getContactInfo } from "@/lib/settings";
+
+// Obtener información de contacto desde la base de datos
+const contactInfo = await getContactInfo();
 ---
 
 <PublicLayout title="Contacto | FashionStore">
@@ -49,7 +53,7 @@ import PublicLayout from "@/layouts/PublicLayout.astro";
           <h3 class="font-heading text-xl font-bold text-foreground mb-2">
             Email
           </h3>
-          <p class="text-primary font-medium mb-1">soporte@fashionstore.com</p>
+          <p class="text-primary font-medium mb-1">{contactInfo.email}</p>
           <p class="text-sm text-muted-foreground">
             Respondemos en menos de 24h
           </p>
@@ -79,7 +83,7 @@ import PublicLayout from "@/layouts/PublicLayout.astro";
           <h3 class="font-heading text-xl font-bold text-foreground mb-2">
             Teléfono
           </h3>
-          <p class="text-primary font-medium mb-1">+34 900 123 456</p>
+          <p class="text-primary font-medium mb-1">{contactInfo.phone}</p>
           <p class="text-sm text-muted-foreground">
             Lunes a Viernes, 9:00 - 18:00
           </p>
@@ -114,8 +118,8 @@ import PublicLayout from "@/layouts/PublicLayout.astro";
           <h3 class="font-heading text-xl font-bold text-foreground mb-2">
             Oficinas
           </h3>
-          <p class="text-primary font-medium mb-1">Calle de la Moda 123</p>
-          <p class="text-sm text-muted-foreground">28001 Madrid, España</p>
+          <p class="text-primary font-medium mb-1">{contactInfo.address}</p>
+          <p class="text-sm text-muted-foreground">España</p>
         </div>
       </div>
 

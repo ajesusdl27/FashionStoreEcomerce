@@ -1,21 +1,14 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
+// Re-export formatPrice desde formatters para mantener compatibilidad
+export { formatPrice } from './formatters';
+
 /**
  * Merge Tailwind classes with clsx
  */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
-}
-
-/**
- * Format price in EUR
- */
-export function formatPrice(price: number): string {
-  return new Intl.NumberFormat('es-ES', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(price);
 }
 
 /**

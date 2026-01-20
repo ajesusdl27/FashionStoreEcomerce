@@ -6,6 +6,7 @@ import ProductAddToCart from "@/components/islands/ProductAddToCart";
 import PromotionBanner from "@/components/ui/PromotionBanner";
 import { supabase } from "@/lib/supabase";
 import { getOptimizedUrl, isCloudinaryUrl } from "@/lib/cloudinary";
+import { formatPrice } from "@/lib/formatters";
 
 const { slug } = Astro.params;
 
@@ -37,13 +38,6 @@ const mainImage =
 
 const hasOffer = product.is_offer && product.offer_price;
 const displayPrice = hasOffer ? product.offer_price : product.price;
-
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat("es-ES", {
-    style: "currency",
-    currency: "EUR",
-  }).format(price);
-}
 
 function calculateDiscount(original: number, offer: number): number {
   return Math.round(((original - offer) / original) * 100);

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { addToCart } from '@/stores/cart';
+import { formatPrice } from '@/lib/formatters';
 
 interface Variant {
   id: string;
@@ -82,9 +83,6 @@ export default function ProductAddToCart({
       setTimeout(() => setStatus('idle'), 2000);
     }
   };
-
-  const formatPrice = (p: number) =>
-    new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(p);
 
   // Scroll to size selector when clicking the sticky bar without a size selected
   const scrollToSizeSelector = () => {

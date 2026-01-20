@@ -1,9 +1,23 @@
 ---
 import PublicLayout from "@/layouts/PublicLayout.astro";
 import Button from "@/components/ui/Button.astro";
+import { getShippingConfig } from "@/lib/settings";
+
+// Obtener configuración de envío desde la base de datos
+const shippingConfig = await getShippingConfig();
 ---
 
 <PublicLayout title="Carrito de Compra">
+  <!-- Pasar configuración al cliente de forma segura -->
+  <script 
+    id="shipping-config" 
+    type="application/json"
+    set:html={JSON.stringify({
+      freeShippingThreshold: shippingConfig.freeShippingThreshold,
+      shippingCostEuros: shippingConfig.shippingCostEuros
+    })}
+  />
+
   <div class="container mx-auto px-4 py-8">
     <!-- Header -->
     <h1 class="font-display text-4xl md:text-5xl mb-8">Tu Carrito</h1>
@@ -66,7 +80,7 @@ import Button from "@/components/ui/Button.astro";
             </div>
             <div class="flex justify-between">
               <span class="text-muted-foreground">Envío</span>
-              <span id="shipping">4,99 €</span>
+              <span id="shipping">{shippingConfig.shippingCostEuros.toFixed(2).replace('.', ',')} €</span>
             </div>
             <div
               class="border-t border-border pt-3 flex justify-between font-bold text-lg"
@@ -104,8 +118,14 @@ import Button from "@/components/ui/Button.astro";
       updateQuantity,
     } from "@/stores/cart";
 
-    const FREE_SHIPPING_THRESHOLD = 50;
-    const SHIPPING_COST = 4.99;
+    // Leer configuración de envío desde el servidor
+    const configElement = document.getElementById("shipping-config");
+    const shippingConfig = configElement 
+      ? JSON.parse(configElement.textContent || '{}')
+      : { freeShippingThreshold: 50, shippingCostEuros: 4.99 };
+    
+    const FREE_SHIPPING_THRESHOLD = shippingConfig.freeShippingThreshold;
+    const SHIPPING_COST = shippingConfig.shippingCostEuros;
 
     function formatPrice(price: number): string {
       return new Intl.NumberFormat("es-ES", {

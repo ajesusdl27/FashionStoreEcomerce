@@ -1,5 +1,11 @@
 ---
 import PublicLayout from "@/layouts/PublicLayout.astro";
+import { getShippingConfig, getSetting } from "@/lib/settings";
+import { formatPrice } from "@/lib/formatters";
+
+// Obtener configuración desde la base de datos
+const shippingConfig = await getShippingConfig();
+const returnWindowDays = await getSetting('returnWindowDays');
 ---
 
 <PublicLayout
@@ -42,9 +48,9 @@ import PublicLayout from "@/layouts/PublicLayout.astro";
           <div class="grid md:grid-cols-3 gap-6">
             <div class="bg-background/50 p-6 rounded-xl border border-border">
               <h3 class="font-bold text-lg mb-2">Envío Estándar</h3>
-              <p class="text-2xl font-display text-primary mb-1">4,99 €</p>
+              <p class="text-2xl font-display text-primary mb-1">{formatPrice(shippingConfig.shippingCostEuros)}</p>
               <p class="text-sm text-muted-foreground">
-                Gratis en pedidos +50€
+                Gratis en pedidos +{shippingConfig.freeShippingThreshold}€
               </p>
               <p class="mt-4 text-sm font-medium">
                 Entrega en 3-5 días laborables
@@ -115,7 +121,7 @@ import PublicLayout from "@/layouts/PublicLayout.astro";
                 Garantía de Satisfacción
               </h3>
               <p class="text-muted-foreground">
-                Tienes 30 días naturales desde la recepción de tu pedido para
+                Tienes {returnWindowDays} días naturales desde la recepción de tu pedido para
                 realizar cualquier cambio o devolución de forma totalmente
                 gratuita.
               </p>

@@ -4,6 +4,8 @@ import { supabase } from "@/lib/supabase";
 import OrderActions from "@/components/orders/OrderActions";
 import InvoiceButton from "@/components/InvoiceButton";
 import { formatOrderId } from "@/lib/order-utils";
+import { getShippingConfig } from "@/lib/settings";
+import { formatPrice } from "@/lib/formatters";
 
 const { id } = Astro.params;
 const user = Astro.locals.user;
@@ -80,12 +82,11 @@ if (coupon) {
 // Ensure discount doesn't exceed subtotal
 discountAmount = Math.min(discountAmount, subtotal);
 
-// Calculate shipping (re-calculate logic to be safe, though usually 50 is threshold)
-// Assuming logic: Free shipping if SUBTOTAL (pre-discount) >= 50?
-// Or post-discount? Usually pre-discount for "spend X to get free shipping".
-// Looking at create-session.ts: `subtotalCents >= FREE_SHIPPING_THRESHOLD * 100` (which is 50).
-// So it based on Subtotal.
-const shippingCost = subtotal >= 50 ? 0 : 4.99;
+// Obtener configuración de envío dinámica
+const shippingConfigData = await getShippingConfig();
+
+// Calculate shipping using dynamic settings
+const shippingCost = subtotal >= shippingConfigData.freeShippingThreshold ? 0 : shippingConfigData.shippingCostEuros;
 
 // Final total
 const finalTotal = subtotal + shippingCost - discountAmount;
@@ -100,13 +101,6 @@ if (error) {
 if (!order) {
   return Astro.redirect("/cuenta/pedidos");
 }
-
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat("es-ES", {
-    style: "currency",
-    currency: "EUR",
-  }).format(price);
-};
 
 const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString("es-ES", {

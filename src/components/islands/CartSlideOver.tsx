@@ -3,6 +3,7 @@ import { useStore } from '@nanostores/react';
 import { $cart, $cartSubtotal, removeFromCart, updateQuantity, $isCartOpen, closeCart } from '@/stores/cart';
 import QuantitySelector from '@/components/islands/QuantitySelector';
 import PromotionBanner from '@/components/ui/PromotionBanner';
+import { formatPrice } from '@/lib/formatters';
 
 interface CartSlideOverProps {
   freeShippingThreshold?: number;
@@ -44,9 +45,6 @@ export default function CartSlideOver({
       document.body.style.overflow = '';
     };
   }, [isOpen]);
-
-  const formatPrice = (price: number) => 
-    new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(price);
 
   if (!isOpen) return null;
 

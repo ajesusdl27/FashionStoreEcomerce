@@ -1,13 +1,6 @@
 import type { OrderEmailData } from './email';
 import { formatOrderId } from './order-utils';
-
-// Formatea precio a EUR
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat('es-ES', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(price);
-}
+import { formatPrice } from './formatters';
 
 // Genera el HTML del email de confirmación de pedido
 export function generateOrderConfirmationHTML(order: OrderEmailData, formattedOrderId: string): string {

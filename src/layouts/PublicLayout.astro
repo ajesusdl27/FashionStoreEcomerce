@@ -8,6 +8,7 @@ import AnnouncementBar from "@/components/islands/AnnouncementBar";
 import UserMenuWithAuth from "@/components/islands/UserMenuWithAuth";
 import HeaderNavigation from "@/components/islands/HeaderNavigation";
 import ThemeToggle from "@/components/ThemeToggle";
+import { getShippingConfig } from "@/lib/settings";
 
 interface Props {
   title: string;
@@ -16,14 +17,24 @@ interface Props {
 
 const { title, description } = Astro.props;
 const currentPath = Astro.url.pathname + Astro.url.search;
+
+// Obtener configuración de envío para el mini-carrito
+const shippingConfig = await getShippingConfig();
 ---
 
 <BaseLayout title={title} description={description ?? ""}>
   <!-- Cart Slide Over (React Island) -->
-  <CartSlideOver client:load />
+  <CartSlideOver 
+    client:load 
+    freeShippingThreshold={shippingConfig.freeShippingThreshold}
+    shippingCost={shippingConfig.shippingCostEuros}
+  />
 
   <!-- Announcement Bar (React Island) -->
-  <AnnouncementBar client:load />
+  <AnnouncementBar 
+    client:load 
+    message={`🚚 Envío GRATIS en pedidos superiores a ${shippingConfig.freeShippingThreshold}€`}
+  />
 
   <!-- Header -->
   <header class="sticky top-0 z-50 glass border-b border-border">

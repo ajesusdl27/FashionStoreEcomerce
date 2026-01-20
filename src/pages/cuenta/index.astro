@@ -2,6 +2,7 @@
 import PublicLayout from "@/layouts/PublicLayout.astro";
 import { supabase } from "@/lib/supabase";
 import { formatOrderId } from "@/lib/order-utils";
+import { formatPrice } from "@/lib/formatters";
 
 const user = Astro.locals.user;
 
@@ -18,13 +19,6 @@ const { data: recentOrders } = await supabase
   .eq("customer_email", user.email)
   .order("created_at", { ascending: false })
   .limit(5);
-
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat("es-ES", {
-    style: "currency",
-    currency: "EUR",
-  }).format(price);
-};
 
 const formatDate = (date: string) => {
   return new Intl.DateTimeFormat("es-ES", {

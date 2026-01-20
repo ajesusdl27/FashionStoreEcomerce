@@ -7,6 +7,7 @@ import {
   getBestSellingProduct,
   getSalesLast7Days,
 } from "@/lib/analytics";
+import { formatPrice } from "@/lib/formatters";
 
 // React Island Components
 import KPICard from "@/components/islands/KPICard";
@@ -166,13 +167,6 @@ try {
 } catch (error) {
   console.error("Analytics error:", error);
 }
-
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat("es-ES", {
-    style: "currency",
-    currency: "EUR",
-  }).format(price);
-};
 
 const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString("es-ES", {

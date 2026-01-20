@@ -2,6 +2,7 @@
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { supabase } from "@/lib/supabase";
 import { formatOrderId } from "@/lib/order-utils";
+import { formatPrice, formatDate } from "@/lib/formatters";
 
 // Fetch orders with pagination
 const page = parseInt(Astro.url.searchParams.get("page") || "1");
@@ -21,23 +22,6 @@ if (statusFilter) {
 const { data: orders, count } = await query.range(offset, offset + limit - 1);
 
 const totalPages = count ? Math.ceil(count / limit) : 0;
-
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat("es-ES", {
-    style: "currency",
-    currency: "EUR",
-  }).format(price);
-};
-
-const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString("es-ES", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
 
 const statusConfig: Record<
   string,

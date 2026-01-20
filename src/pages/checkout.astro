@@ -2,6 +2,10 @@
 import PublicLayout from "@/layouts/PublicLayout.astro";
 import CheckoutForm from "@/components/islands/CheckoutForm";
 import { createAuthenticatedClient } from "@/lib/supabase";
+import { getShippingConfig } from "@/lib/settings";
+
+// Obtener configuración de envío desde la BD
+const shippingConfig = await getShippingConfig();
 
 // Get user data if logged in
 const user = Astro.locals.user;
@@ -35,7 +39,12 @@ if (user) {
       Finalizar Compra
     </h1>
 
-    <CheckoutForm client:load userData={userData} />
+    <CheckoutForm 
+      client:load 
+      userData={userData} 
+      shippingCost={shippingConfig.shippingCostEuros}
+      freeShippingThreshold={shippingConfig.freeShippingThreshold}
+    />
   </div>
 </PublicLayout>
 

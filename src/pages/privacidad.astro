@@ -1,5 +1,10 @@
 ---
 import PublicLayout from "@/layouts/PublicLayout.astro";
+import { getContactInfo, getSetting } from "@/lib/settings";
+
+// Obtener información desde la base de datos
+const contactInfo = await getContactInfo();
+const storeName = await getSetting('storeName');
 
 const lastUpdate = new Date().toLocaleDateString("es-ES", {
   year: "numeric",
@@ -9,7 +14,7 @@ const lastUpdate = new Date().toLocaleDateString("es-ES", {
 ---
 
 <PublicLayout
-  title="Política de Privacidad - FashionStore"
+  title={`Política de Privacidad - ${storeName}`}
   description="Nuestra política de privacidad y protección de datos."
 >
   <div class="container mx-auto px-4 py-12 max-w-4xl">
@@ -28,15 +33,15 @@ const lastUpdate = new Date().toLocaleDateString("es-ES", {
           1. Responsable del Tratamiento
         </h2>
         <p>
-          En FashionStore, nos comprometemos a proteger y respetar tu
+          En {storeName}, nos comprometemos a proteger y respetar tu
           privacidad. Esta política explica cómo recopilamos, usamos y
           protegemos tus datos personales cuando visitas nuestro sitio web o
           realizas una compra.
         </p>
         <p class="mt-4">
-          <strong>Identidad:</strong> FashionStore S.L.<br />
-          <strong>Domicilio:</strong> Calle de la Moda 123, 28001 Madrid<br />
-          <strong>Email:</strong> privacidad@fashionstore.com
+          <strong>Identidad:</strong> {storeName} S.L.<br />
+          <strong>Domicilio:</strong> {contactInfo.address}<br />
+          <strong>Email:</strong> {contactInfo.email}
         </p>
       </section>
 
@@ -106,7 +111,7 @@ const lastUpdate = new Date().toLocaleDateString("es-ES", {
           Tienes derecho a acceder, rectificar, suprimir y oponerte al
           tratamiento de tus datos, así como otros derechos detallados en el
           RGPD. Para ejercerlos, envíanos un email a
-          privacidad@fashionstore.com.
+          {contactInfo.email}.
         </p>
       </section>
 

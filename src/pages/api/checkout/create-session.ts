@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { stripe, FREE_SHIPPING_THRESHOLD, SHIPPING_COST, STOCK_RESERVATION_MINUTES } from '@/lib/stripe';
+import { stripe, getShippingConfig, STOCK_RESERVATION_MINUTES } from '@/lib/stripe';
 import { supabase, createAuthenticatedClient } from '@/lib/supabase';
 import { formatOrderId } from '@/lib/order-utils';
 
@@ -52,9 +52,13 @@ export const POST: APIRoute = async ({ request, url, locals, cookies }) => {
       });
     }
 
+    // Obtener configuración de envío desde la BD
+    const shippingConfig = await getShippingConfig();
+    const { shippingCostCents, freeShippingThreshold } = shippingConfig;
+
     // Calculate subtotal in cents
     const subtotalCents = items.reduce((sum, item) => sum + Math.round(item.price * 100) * item.quantity, 0);
-    const shippingCents = subtotalCents >= FREE_SHIPPING_THRESHOLD * 100 ? 0 : SHIPPING_COST;
+    const shippingCents = subtotalCents >= freeShippingThreshold * 100 ? 0 : shippingCostCents;
     
     // Validate coupon if provided
     let validatedCoupon: { id: string; stripeCouponId: string; calculatedDiscount: number } | null = null;
@@ -190,7 +194,7 @@ export const POST: APIRoute = async ({ request, url, locals, cookies }) => {
             name: 'Gastos de envío',
             description: 'Envío estándar a España'
           },
-          unit_amount: SHIPPING_COST
+          unit_amount: shippingCents
         },
         quantity: 1
       });

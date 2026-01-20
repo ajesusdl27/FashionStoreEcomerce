@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '@nanostores/react';
 import { $cart, $cartSubtotal } from '@/stores/cart';
-
-const FREE_SHIPPING_THRESHOLD = 50;
-const SHIPPING_COST = 4.99;
+import { formatPrice } from '@/lib/formatters';
 
 interface FormData {
   customerName: string;
@@ -23,6 +21,8 @@ interface Props {
     city?: string;
     postalCode?: string;
   } | null;
+  shippingCost?: number;
+  freeShippingThreshold?: number;
 }
 
 const initialFormData: FormData = {
@@ -34,14 +34,11 @@ const initialFormData: FormData = {
   shippingPostalCode: ''
 };
 
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat('es-ES', {
-    style: 'currency',
-    currency: 'EUR'
-  }).format(price);
-}
-
-export default function CheckoutForm({ userData }: Props) {
+export default function CheckoutForm({ 
+  userData, 
+  shippingCost = 4.99, 
+  freeShippingThreshold = 50 
+}: Props) {
   const cart = useStore($cart);
   const subtotal = useStore($cartSubtotal);
   const [step, setStep] = useState(1);
@@ -60,7 +57,7 @@ export default function CheckoutForm({ userData }: Props) {
     calculatedDiscount: number;
   } | null>(null);
 
-  const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
+  const shipping = subtotal >= freeShippingThreshold ? 0 : shippingCost;
   const discount = appliedCoupon?.calculatedDiscount || 0;
   const total = subtotal + shipping - discount;
 

@@ -2,6 +2,7 @@
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { createAuthenticatedClient } from "@/lib/supabase";
 import { formatOrderId } from "@/lib/order-utils";
+import { formatPrice } from "@/lib/formatters";
 
 const { id } = Astro.params;
 
@@ -60,13 +61,6 @@ const formatDate = (date: string | null) => {
     hour: "2-digit",
     minute: "2-digit",
   });
-};
-
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat("es-ES", {
-    style: "currency",
-    currency: "EUR",
-  }).format(price);
 };
 
 const getStatusBadge = (status: string) => {

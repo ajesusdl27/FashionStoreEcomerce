@@ -2,6 +2,8 @@
 import PublicLayout from "@/layouts/PublicLayout.astro";
 import { supabase } from "@/lib/supabase";
 import { formatOrderId } from "@/lib/order-utils";
+import { getShippingConfig } from "@/lib/settings";
+import { formatPrice } from "@/lib/formatters";
 
 const user = Astro.locals.user;
 
@@ -33,12 +35,8 @@ const { data: orders } = await supabase
   .eq("customer_email", user.email)
   .order("created_at", { ascending: false });
 
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat("es-ES", {
-    style: "currency",
-    currency: "EUR",
-  }).format(price);
-}
+// Obtener configuración de envío dinámica (una sola vez)
+const shippingConfigData = await getShippingConfig();
 
 function calculateOrderTotal(order: any) {
   const items = order.order_items || [];
@@ -64,8 +62,8 @@ function calculateOrderTotal(order: any) {
   // Cap discount
   discountAmount = Math.min(discountAmount, subtotal);
 
-  // Calculate shipping (replicate logic: >= 50 free)
-  const shippingCost = subtotal >= 50 ? 0 : 4.99;
+  // Calculate shipping using dynamic settings
+  const shippingCost = subtotal >= shippingConfigData.freeShippingThreshold ? 0 : shippingConfigData.shippingCostEuros;
 
   return subtotal + shippingCost - discountAmount;
 }

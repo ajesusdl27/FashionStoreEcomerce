@@ -1,6 +1,7 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { supabase } from "@/lib/supabase";
+import { formatPrice } from "@/lib/formatters";
 
 // Fetch products with category and first image
 const { data: products, error } = await supabase
@@ -21,13 +22,6 @@ const { data: categories } = await supabase
   .from("categories")
   .select("id, name")
   .order("name");
-
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat("es-ES", {
-    style: "currency",
-    currency: "EUR",
-  }).format(price);
-};
 
 const getTotalStock = (variants: { stock: number }[]) => {
   return variants?.reduce((sum, v) => sum + v.stock, 0) || 0;

@@ -406,22 +406,36 @@ CREATE POLICY "Settings: Admin read all"
 
 ### Checklist Fase 1
 
-- [ ] **1.1.1** Crear servicio centralizado `src/lib/settings.ts`
-- [ ] **1.1.2** Refactorizar `stripe.ts` para usar settings dinámicos
-- [ ] **1.1.3** Actualizar `create-session.ts` con settings
-- [ ] **1.1.4** Actualizar `carrito.astro` con settings de envío
-- [ ] **1.1.5** Actualizar `contacto.astro` con settings
-- [ ] **1.1.6** Actualizar `privacidad.astro` con settings
-- [ ] **1.1.7** Actualizar `envios.astro` con settings dinámicos
-- [ ] **1.1.8** Actualizar `index.astro` (plazo devolución dinámico)
-- [ ] **1.1.9** Unificar `formatPrice` en un solo lugar
-- [ ] **1.1.10** Eliminar duplicados de formatPrice (10+ archivos)
-- [ ] **1.2.1** Instalar Zod y crear schema de validación
-- [ ] **1.2.2** Implementar validación en endpoint PUT
-- [ ] **1.2.3** Implementar endpoint GET
-- [ ] **1.2.4** Crear migración para RLS mejorado
-- [ ] **1.2.5** Ejecutar migración en Supabase
-- [ ] **Tests** Verificar que cambios en admin afectan checkout
+- [x] **1.1.1** Crear servicio centralizado `src/lib/settings.ts` ✅
+- [x] **1.1.2** Refactorizar `stripe.ts` para usar settings dinámicos ✅
+- [x] **1.1.3** Actualizar `create-session.ts` con settings ✅
+- [x] **1.1.4** Actualizar `carrito.astro` con settings de envío ✅
+- [x] **1.1.5** Actualizar `contacto.astro` con settings ✅
+- [x] **1.1.6** Actualizar `privacidad.astro` con settings ✅
+- [x] **1.1.7** Actualizar `envios.astro` con settings dinámicos ✅
+- [x] **1.1.8** Actualizar `index.astro` (plazo devolución dinámico) ✅
+- [x] **1.1.9** Unificar `formatPrice` en un solo lugar ✅
+- [x] **1.1.10** Eliminar duplicados de formatPrice (10+ archivos) ✅
+- [x] **1.2.1** Instalar Zod y crear schema de validación ✅
+- [x] **1.2.2** Implementar validación en endpoint PUT ✅
+- [x] **1.2.3** Implementar endpoint GET ✅
+- [x] **1.2.4** Crear migración para RLS mejorado ✅
+- [ ] **1.2.5** Ejecutar migración en Supabase - Pendiente (requiere acceso a DB)
+- [x] **Tests** Verificar que cambios en admin afectan checkout ✅
+
+#### Tareas Adicionales Completadas (no planificadas):
+- [x] Actualizar `checkout.astro` y `CheckoutForm.tsx` con props dinámicos ✅
+- [x] Actualizar `PublicLayout.astro` para pasar config a `CartSlideOver` ✅
+- [x] Actualizar `cuenta/pedidos/[id].astro` con settings dinámicos ✅
+- [x] Actualizar `cuenta/pedidos/index.astro` con settings dinámicos ✅
+- [x] Actualizar `checkout/cancelado.astro` con contactInfo dinámico ✅
+- [x] Actualizar `AnnouncementBar` con mensaje dinámico desde layout ✅
+- [x] Actualizar `index.astro` Trust Bar (Envío gratis + Devolución) ✅
+
+#### Valores pendientes de dinamizar (Fase 2):
+- [ ] `promotionTemplates.ts` línea 155: "En pedidos superiores a 50€"
+- [ ] `email.ts`: fallbacks hardcodeados de CONTACT_EMAIL
+- [ ] `pdf-generator.ts`: fallbacks hardcodeados de COMPANY_EMAIL
 
 ---
 

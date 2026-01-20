@@ -1,8 +1,14 @@
 ---
 import PublicLayout from "../layouts/PublicLayout.astro";
 import { supabase } from "@/lib/supabase";
+import { getSettings, getShippingConfig } from "@/lib/settings";
+import { formatPrice } from "@/lib/formatters";
 
 const now = new Date();
+
+// Fetch store settings for dynamic values
+const settings = await getSettings();
+const shippingConfig = await getShippingConfig();
 
 // Fetch categories and featured products
 const { data: categories } = await supabase
@@ -64,14 +70,6 @@ const offersEnabled = offersEnabledSetting &&
 
 // Pass end date to client as ISO string (for countdown)
 const flashOffersEndISO = flashOffersEndDate?.toISOString() || null;
-
-// Helper function
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat("es-ES", {
-    style: "currency",
-    currency: "EUR",
-  }).format(price);
-}
 
 // FETCH HERO PROMOTION
 // We fetch all active promotions (RLS handles date validation) and filter in JS for reliability
@@ -315,11 +313,11 @@ const promoStyles = heroPromotion ? getPromoStyles(heroPromotion.style_config) :
       >
         <div class="flex items-center gap-2">
           <span class="text-primary">📦</span>
-          <span>Envío gratis +50€</span>
+          <span>Envío gratis +{shippingConfig.freeShippingThreshold}€</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="text-primary">🔄</span>
-          <span>30 días devolución</span>
+          <span>{settings.returnWindowDays} días devolución</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="text-primary">🔒</span>
