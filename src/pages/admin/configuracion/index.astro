@@ -28,14 +28,83 @@ const getSettingBool = (key: string) => {
   // Fallback: check if value is 'true' string
   return setting?.value === "true";
 };
+
+// Tooltips para cada campo
+const tooltips: Record<string, string> = {
+  offers_enabled: "Muestra u oculta la sección de ofertas flash en la página principal. Útil para campañas temporales.",
+  flash_offers_end: "Cuando llegue esta fecha, la sección de ofertas se ocultará automáticamente. Déjalo vacío para ofertas permanentes.",
+  store_name: "El nombre que aparecerá en emails, facturas y la barra del navegador.",
+  store_email: "Email principal para comunicaciones con clientes. Asegúrate de que es válido.",
+  store_phone: "Teléfono de atención al cliente. Se muestra en el footer y página de contacto.",
+  store_address: "Dirección física del negocio. Aparece en facturas y página de contacto.",
+  free_shipping_threshold: "Pedidos con este importe o superior tendrán envío gratis. Pon 0 para desactivar.",
+  shipping_cost: "Coste del envío estándar cuando no se alcanza el umbral de envío gratis.",
+  social_instagram: "URL completa de tu perfil de Instagram (ej: https://instagram.com/tutienda).",
+  social_twitter: "URL completa de tu perfil de Twitter/X.",
+  social_tiktok: "URL completa de tu perfil de TikTok.",
+  social_youtube: "URL completa de tu canal de YouTube.",
+  tax_rate: "Porcentaje de IVA aplicable. Este valor se usa para calcular impuestos en facturas.",
+  prices_include_tax: "Si está activado, los precios mostrados ya incluyen IVA. Si no, el IVA se añade al total.",
+  return_window_days: "Número de días que tienen los clientes para solicitar una devolución desde la entrega.",
+  maintenance_mode: "⚠️ CUIDADO: Activar esto bloqueará el acceso a toda la tienda para visitantes.",
+  maintenance_message: "Mensaje personalizado que verán los visitantes durante el mantenimiento.",
+};
 ---
 
 <AdminLayout title="Configuración">
-  <div class="max-w-3xl mx-auto space-y-6">
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
+  
+  <!-- Unsaved Changes Banner -->
+  <div id="unsaved-banner" class="hidden fixed top-0 left-0 right-0 z-40 bg-yellow-500/90 text-yellow-950 py-2 px-4 text-center font-medium backdrop-blur-sm">
+    <span class="inline-flex items-center gap-2">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+      Tienes cambios sin guardar
+      <span class="text-sm opacity-80">(Ctrl+S para guardar)</span>
+    </span>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirm-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="modal-backdrop"></div>
+    <div class="relative bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200">
+      <div class="flex items-center gap-4 mb-4">
+        <div class="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
+          <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="font-heading text-lg" id="modal-title">Confirmar acción</h3>
+          <p class="text-sm text-muted-foreground" id="modal-message">¿Estás seguro?</p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3">
+        <button type="button" id="modal-cancel" class="px-4 py-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors">
+          Cancelar
+        </button>
+        <button type="button" id="modal-confirm" class="px-4 py-2 rounded-lg bg-yellow-500 text-yellow-950 hover:bg-yellow-400 transition-colors font-medium">
+          Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-3xl mx-auto space-y-6 pb-8">
     <!-- Header -->
-    <div>
-      <h1 class="font-display text-3xl text-primary">Configuración</h1>
-      <p class="text-muted-foreground mt-1">Ajustes generales de la tienda</p>
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="font-display text-3xl text-primary">Configuración</h1>
+        <p class="text-muted-foreground mt-1">Ajustes generales de la tienda</p>
+      </div>
+      <div class="flex items-center gap-2 text-sm text-muted-foreground">
+        <kbd class="px-2 py-1 bg-muted rounded text-xs font-mono">Ctrl</kbd>
+        <span>+</span>
+        <kbd class="px-2 py-1 bg-muted rounded text-xs font-mono">S</kbd>
+        <span class="hidden sm:inline">para guardar</span>
+      </div>
     </div>
 
     <!-- Settings -->
@@ -63,13 +132,20 @@ const getSettingBool = (key: string) => {
         </div>
 
         <label
-          class="flex items-center justify-between cursor-pointer p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+          class="flex items-center justify-between cursor-pointer p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group"
         >
-          <div>
-            <span class="font-medium">Mostrar Flash Offers</span>
-            <p class="text-sm text-muted-foreground">
-              Activa/desactiva la sección de ofertas en la página principal
-            </p>
+          <div class="flex items-start gap-2">
+            <div>
+              <span class="font-medium">Mostrar Flash Offers</span>
+              <p class="text-sm text-muted-foreground">
+                Activa/desactiva la sección de ofertas en la página principal
+              </p>
+            </div>
+            <button type="button" class="tooltip-trigger shrink-0" data-tooltip={tooltips.offers_enabled}>
+              <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
           </div>
           <div class="relative">
             <input
@@ -77,7 +153,7 @@ const getSettingBool = (key: string) => {
               id="offers_enabled"
               name="offers_enabled"
               checked={getSettingBool("offers_enabled")}
-              class="sr-only peer"
+              class="sr-only peer setting-input"
             />
             <div
               class="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary transition-colors"
@@ -91,23 +167,26 @@ const getSettingBool = (key: string) => {
         </label>
 
         <div class="p-4 rounded-lg bg-muted/30">
-          <label
-            for="flash_offers_end"
-            class="block text-sm font-medium text-muted-foreground mb-2"
-          >
-            Fecha y hora de fin de ofertas
-          </label>
+          <div class="flex items-center gap-2 mb-2">
+            <label
+              for="flash_offers_end"
+              class="block text-sm font-medium text-muted-foreground"
+            >
+              Fecha y hora de fin de ofertas
+            </label>
+            <button type="button" class="tooltip-trigger" data-tooltip={tooltips.flash_offers_end}>
+              <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+          </div>
           <input
             type="datetime-local"
             id="flash_offers_end"
             name="flash_offers_end"
             value={getSettingValue("flash_offers_end", "")}
-            class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+            class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary setting-input"
           />
-          <p class="text-xs text-muted-foreground mt-2">
-            La sección de ofertas se ocultará automáticamente cuando llegue esta
-            fecha
-          </p>
         </div>
       </div>
 
@@ -136,62 +215,84 @@ const getSettingBool = (key: string) => {
 
         <div class="grid gap-4">
           <div>
-            <label
-              for="store_name"
-              class="block text-sm font-medium text-muted-foreground mb-2"
-            >
-              Nombre de la tienda
-            </label>
+            <div class="flex items-center gap-2 mb-2">
+              <label for="store_name" class="block text-sm font-medium text-muted-foreground">
+                Nombre de la tienda
+              </label>
+              <button type="button" class="tooltip-trigger" data-tooltip={tooltips.store_name}>
+                <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+            </div>
             <input
               type="text"
               id="store_name"
               name="store_name"
               value={getSettingValue("store_name", "FashionStore")}
-              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary setting-input"
+              required
             />
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label
-                for="store_email"
-                class="block text-sm font-medium text-muted-foreground mb-2"
-              >
-                Email de contacto
-              </label>
-              <input
-                type="email"
-                id="store_email"
-                name="store_email"
-                value={getSettingValue(
-                  "store_email",
-                  "contacto@fashionstore.com"
-                )}
-                class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
-              />
+              <div class="flex items-center gap-2 mb-2">
+                <label for="store_email" class="block text-sm font-medium text-muted-foreground">
+                  Email de contacto
+                </label>
+                <button type="button" class="tooltip-trigger" data-tooltip={tooltips.store_email}>
+                  <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </button>
+              </div>
+              <div class="relative">
+                <input
+                  type="email"
+                  id="store_email"
+                  name="store_email"
+                  value={getSettingValue("store_email", "contacto@fashionstore.com")}
+                  class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary setting-input peer"
+                  required
+                />
+                <div class="hidden peer-invalid:flex absolute right-3 top-1/2 -translate-y-1/2 text-red-400">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
             </div>
             <div>
-              <label
-                for="store_phone"
-                class="block text-sm font-medium text-muted-foreground mb-2"
-              >
-                Teléfono
-              </label>
+              <div class="flex items-center gap-2 mb-2">
+                <label for="store_phone" class="block text-sm font-medium text-muted-foreground">
+                  Teléfono
+                </label>
+                <button type="button" class="tooltip-trigger" data-tooltip={tooltips.store_phone}>
+                  <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </button>
+              </div>
               <input
                 type="tel"
                 id="store_phone"
                 name="store_phone"
                 value={getSettingValue("store_phone", "+34 600 000 000")}
-                class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary setting-input"
               />
             </div>
           </div>
           <div>
-            <label
-              for="store_address"
-              class="block text-sm font-medium text-muted-foreground mb-2"
-            >
-              Dirección
-            </label>
+            <div class="flex items-center gap-2 mb-2">
+              <label for="store_address" class="block text-sm font-medium text-muted-foreground">
+                Dirección
+              </label>
+              <button type="button" class="tooltip-trigger" data-tooltip={tooltips.store_address}>
+                <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+            </div>
             <input
               type="text"
               id="store_address"
@@ -231,12 +332,16 @@ const getSettingBool = (key: string) => {
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label
-              for="free_shipping_threshold"
-              class="block text-sm font-medium text-muted-foreground mb-2"
-            >
-              Envío gratis desde
-            </label>
+            <div class="flex items-center gap-2 mb-2">
+              <label for="free_shipping_threshold" class="block text-sm font-medium text-muted-foreground">
+                Envío gratis desde
+              </label>
+              <button type="button" class="tooltip-trigger" data-tooltip={tooltips.free_shipping_threshold}>
+                <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+            </div>
             <div class="relative">
               <input
                 type="number"
@@ -245,24 +350,22 @@ const getSettingBool = (key: string) => {
                 step="0.01"
                 min="0"
                 value={getSettingValue("free_shipping_threshold", "50")}
-                class="w-full px-4 py-3 pr-12 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                class="w-full px-4 py-3 pr-12 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary setting-input"
               />
-              <span
-                class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
-                >€</span
-              >
+              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">€</span>
             </div>
-            <p class="text-xs text-muted-foreground mt-1">
-              Pedidos superiores a este valor tienen envío gratis
-            </p>
           </div>
           <div>
-            <label
-              for="shipping_cost"
-              class="block text-sm font-medium text-muted-foreground mb-2"
-            >
-              Coste de envío estándar
-            </label>
+            <div class="flex items-center gap-2 mb-2">
+              <label for="shipping_cost" class="block text-sm font-medium text-muted-foreground">
+                Coste de envío estándar
+              </label>
+              <button type="button" class="tooltip-trigger" data-tooltip={tooltips.shipping_cost}>
+                <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+            </div>
             <div class="relative">
               <input
                 type="number"
@@ -271,12 +374,9 @@ const getSettingBool = (key: string) => {
                 step="0.01"
                 min="0"
                 value={getSettingValue("shipping_cost", "4.99")}
-                class="w-full px-4 py-3 pr-12 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                class="w-full px-4 py-3 pr-12 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary setting-input"
               />
-              <span
-                class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
-                >€</span
-              >
+              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">€</span>
             </div>
           </div>
         </div>
@@ -307,67 +407,83 @@ const getSettingBool = (key: string) => {
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label
-              for="social_instagram"
-              class="block text-sm font-medium text-muted-foreground mb-2"
-            >
-              Instagram
-            </label>
+            <div class="flex items-center gap-2 mb-2">
+              <label for="social_instagram" class="block text-sm font-medium text-muted-foreground">
+                Instagram
+              </label>
+              <button type="button" class="tooltip-trigger" data-tooltip={tooltips.social_instagram}>
+                <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+            </div>
             <input
               type="url"
               id="social_instagram"
               name="social_instagram"
               placeholder="https://instagram.com/tutienda"
               value={getSettingValue("social_instagram", "")}
-              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary setting-input"
             />
           </div>
           <div>
-            <label
-              for="social_twitter"
-              class="block text-sm font-medium text-muted-foreground mb-2"
-            >
-              Twitter / X
-            </label>
+            <div class="flex items-center gap-2 mb-2">
+              <label for="social_twitter" class="block text-sm font-medium text-muted-foreground">
+                Twitter / X
+              </label>
+              <button type="button" class="tooltip-trigger" data-tooltip={tooltips.social_twitter}>
+                <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+            </div>
             <input
               type="url"
               id="social_twitter"
               name="social_twitter"
               placeholder="https://twitter.com/tutienda"
               value={getSettingValue("social_twitter", "")}
-              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary setting-input"
             />
           </div>
           <div>
-            <label
-              for="social_tiktok"
-              class="block text-sm font-medium text-muted-foreground mb-2"
-            >
-              TikTok
-            </label>
+            <div class="flex items-center gap-2 mb-2">
+              <label for="social_tiktok" class="block text-sm font-medium text-muted-foreground">
+                TikTok
+              </label>
+              <button type="button" class="tooltip-trigger" data-tooltip={tooltips.social_tiktok}>
+                <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+            </div>
             <input
               type="url"
               id="social_tiktok"
               name="social_tiktok"
               placeholder="https://tiktok.com/@tutienda"
               value={getSettingValue("social_tiktok", "")}
-              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary setting-input"
             />
           </div>
           <div>
-            <label
-              for="social_youtube"
-              class="block text-sm font-medium text-muted-foreground mb-2"
-            >
-              YouTube
-            </label>
+            <div class="flex items-center gap-2 mb-2">
+              <label for="social_youtube" class="block text-sm font-medium text-muted-foreground">
+                YouTube
+              </label>
+              <button type="button" class="tooltip-trigger" data-tooltip={tooltips.social_youtube}>
+                <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+            </div>
             <input
               type="url"
               id="social_youtube"
               name="social_youtube"
               placeholder="https://youtube.com/tutienda"
               value={getSettingValue("social_youtube", "")}
-              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary setting-input"
             />
           </div>
         </div>
@@ -398,12 +514,16 @@ const getSettingBool = (key: string) => {
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label
-              for="tax_rate"
-              class="block text-sm font-medium text-muted-foreground mb-2"
-            >
-              IVA (%)
-            </label>
+            <div class="flex items-center gap-2 mb-2">
+              <label for="tax_rate" class="block text-sm font-medium text-muted-foreground">
+                IVA (%)
+              </label>
+              <button type="button" class="tooltip-trigger" data-tooltip={tooltips.tax_rate}>
+                <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+            </div>
             <div class="relative">
               <input
                 type="number"
@@ -413,20 +533,14 @@ const getSettingBool = (key: string) => {
                 min="0"
                 max="100"
                 value={getSettingValue("tax_rate", "21")}
-                class="w-full px-4 py-3 pr-12 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                class="w-full px-4 py-3 pr-12 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary setting-input"
               />
-              <span
-                class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
-                >%</span
-              >
+              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
             </div>
-            <p class="text-xs text-muted-foreground mt-1">
-              Porcentaje de IVA que se mostrará en facturas
-            </p>
           </div>
           <div class="flex items-center">
             <label
-              class="flex items-center gap-3 cursor-pointer p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors w-full"
+              class="flex items-center gap-3 cursor-pointer p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors w-full group"
             >
               <div class="relative">
                 <input
@@ -434,7 +548,7 @@ const getSettingBool = (key: string) => {
                   id="prices_include_tax"
                   name="prices_include_tax"
                   checked={getSettingBool("prices_include_tax")}
-                  class="sr-only peer"
+                  class="sr-only peer setting-input"
                 />
                 <div
                   class="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary transition-colors"
@@ -445,11 +559,18 @@ const getSettingBool = (key: string) => {
                 >
                 </div>
               </div>
-              <div>
-                <span class="font-medium">Los precios incluyen IVA</span>
-                <p class="text-xs text-muted-foreground">
-                  Marca esta casilla si los precios de productos ya tienen IVA incluido
-                </p>
+              <div class="flex items-start gap-2">
+                <div>
+                  <span class="font-medium">Los precios incluyen IVA</span>
+                  <p class="text-xs text-muted-foreground">
+                    Marca esta casilla si los precios ya incluyen el impuesto
+                  </p>
+                </div>
+                <button type="button" class="tooltip-trigger shrink-0" data-tooltip={tooltips.prices_include_tax}>
+                  <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </button>
               </div>
             </label>
           </div>
@@ -480,12 +601,16 @@ const getSettingBool = (key: string) => {
         </div>
 
         <div>
-          <label
-            for="return_window_days"
-            class="block text-sm font-medium text-muted-foreground mb-2"
-          >
-            Plazo de devolución
-          </label>
+          <div class="flex items-center gap-2 mb-2">
+            <label for="return_window_days" class="block text-sm font-medium text-muted-foreground">
+              Plazo de devolución
+            </label>
+            <button type="button" class="tooltip-trigger" data-tooltip={tooltips.return_window_days}>
+              <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+          </div>
           <div class="relative max-w-xs">
             <input
               type="number"
@@ -494,21 +619,18 @@ const getSettingBool = (key: string) => {
               min="1"
               max="365"
               value={getSettingValue("return_window_days", "30")}
-              class="w-full px-4 py-3 pr-16 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+              class="w-full px-4 py-3 pr-16 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary setting-input"
             />
             <span
               class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
               >días</span
             >
           </div>
-          <p class="text-xs text-muted-foreground mt-1">
-            Número de días que tienen los clientes para solicitar una devolución
-          </p>
         </div>
       </div>
 
       <!-- Maintenance Mode Section -->
-      <div class="admin-card space-y-4">
+      <div class="admin-card space-y-4 border-yellow-500/20">
         <div class="flex items-center gap-3">
           <div
             class="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center"
@@ -531,14 +653,19 @@ const getSettingBool = (key: string) => {
         </div>
 
         <div class="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
-          <label
-            class="flex items-center justify-between cursor-pointer"
-          >
-            <div>
-              <span class="font-medium text-yellow-400">⚠️ Activar Modo Mantenimiento</span>
-              <p class="text-sm text-muted-foreground">
-                Los visitantes verán una página de mantenimiento. Solo administradores podrán acceder.
-              </p>
+          <label class="flex items-center justify-between cursor-pointer">
+            <div class="flex items-start gap-2">
+              <div>
+                <span class="font-medium text-yellow-400">⚠️ Activar Modo Mantenimiento</span>
+                <p class="text-sm text-muted-foreground">
+                  Los visitantes verán una página de mantenimiento. Solo administradores podrán acceder.
+                </p>
+              </div>
+              <button type="button" class="tooltip-trigger shrink-0" data-tooltip={tooltips.maintenance_mode}>
+                <svg class="w-4 h-4 text-yellow-400/70 hover:text-yellow-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
             </div>
             <div class="relative">
               <input
@@ -546,7 +673,8 @@ const getSettingBool = (key: string) => {
                 id="maintenance_mode"
                 name="maintenance_mode"
                 checked={getSettingBool("maintenance_mode")}
-                class="sr-only peer"
+                class="sr-only peer setting-input"
+                data-critical="true"
               />
               <div
                 class="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-yellow-500 transition-colors"
@@ -561,28 +689,29 @@ const getSettingBool = (key: string) => {
         </div>
 
         <div>
-          <label
-            for="maintenance_message"
-            class="block text-sm font-medium text-muted-foreground mb-2"
-          >
-            Mensaje de mantenimiento
-          </label>
+          <div class="flex items-center gap-2 mb-2">
+            <label for="maintenance_message" class="block text-sm font-medium text-muted-foreground">
+              Mensaje de mantenimiento
+            </label>
+            <button type="button" class="tooltip-trigger" data-tooltip={tooltips.maintenance_message}>
+              <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+          </div>
           <textarea
             id="maintenance_message"
             name="maintenance_message"
             rows="3"
             placeholder="Estamos realizando mejoras. Volvemos pronto."
-            class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary resize-none"
+            class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary resize-none setting-input"
           >{getSettingValue("maintenance_message", "Estamos realizando mejoras. Volvemos pronto.")}</textarea>
-          <p class="text-xs text-muted-foreground mt-1">
-            Este mensaje se mostrará a los visitantes cuando el modo mantenimiento esté activo
-          </p>
         </div>
       </div>
 
       <!-- Actions -->
-      <div class="flex justify-end gap-4">
-        <button type="submit" id="save-btn" class="admin-btn-primary">
+      <div class="sticky bottom-4 flex justify-end gap-4 p-4 -mx-4 bg-gradient-to-t from-background via-background to-transparent">
+        <button type="submit" id="save-btn" class="admin-btn-primary shadow-lg">
           <svg
             class="w-5 h-5"
             fill="none"
@@ -604,12 +733,217 @@ const getSettingBool = (key: string) => {
   </div>
 
   <script>
+    // ============================================
+    // ELEMENTOS DEL DOM
+    // ============================================
     const form = document.getElementById("settings-form") as HTMLFormElement;
     const saveBtn = document.getElementById("save-btn") as HTMLButtonElement;
-    const messageDiv = document.getElementById(
-      "form-message"
-    ) as HTMLDivElement;
-
+    const messageDiv = document.getElementById("form-message") as HTMLDivElement;
+    const unsavedBanner = document.getElementById("unsaved-banner") as HTMLDivElement;
+    const toastContainer = document.getElementById("toast-container") as HTMLDivElement;
+    const confirmModal = document.getElementById("confirm-modal") as HTMLDivElement;
+    const modalBackdrop = document.getElementById("modal-backdrop") as HTMLDivElement;
+    const modalTitle = document.getElementById("modal-title") as HTMLHeadingElement;
+    const modalMessage = document.getElementById("modal-message") as HTMLParagraphElement;
+    const modalConfirm = document.getElementById("modal-confirm") as HTMLButtonElement;
+    const modalCancel = document.getElementById("modal-cancel") as HTMLButtonElement;
+    
+    // ============================================
+    // ESTADO
+    // ============================================
+    let hasUnsavedChanges = false;
+    let initialFormData: string = '';
+    let pendingMaintenanceToggle: HTMLInputElement | null = null;
+    
+    // Guardar estado inicial del formulario
+    function captureInitialState() {
+      initialFormData = new FormData(form).toString();
+    }
+    
+    // ============================================
+    // TOAST NOTIFICATIONS
+    // ============================================
+    function showToast(message: string, type: 'success' | 'error' | 'warning' = 'success') {
+      const toast = document.createElement('div');
+      const colors = {
+        success: 'bg-primary/90 text-primary-foreground',
+        error: 'bg-red-500/90 text-white',
+        warning: 'bg-yellow-500/90 text-yellow-950'
+      };
+      const icons = {
+        success: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />',
+        error: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />',
+        warning: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />'
+      };
+      
+      toast.className = `${colors[type]} px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-right duration-300`;
+      toast.innerHTML = `
+        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">${icons[type]}</svg>
+        <span class="font-medium">${message}</span>
+        <button class="ml-2 opacity-70 hover:opacity-100 transition-opacity">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      `;
+      
+      const closeBtn = toast.querySelector('button');
+      closeBtn?.addEventListener('click', () => removeToast(toast));
+      
+      toastContainer.appendChild(toast);
+      
+      // Auto-remove after 4 seconds
+      setTimeout(() => removeToast(toast), 4000);
+    }
+    
+    function removeToast(toast: HTMLElement) {
+      toast.classList.add('animate-out', 'slide-out-to-right', 'duration-200');
+      setTimeout(() => toast.remove(), 200);
+    }
+    
+    // ============================================
+    // TOOLTIPS
+    // ============================================
+    const tooltipTriggers = document.querySelectorAll('.tooltip-trigger');
+    let activeTooltip: HTMLElement | null = null;
+    
+    tooltipTriggers.forEach(trigger => {
+      trigger.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Remove existing tooltip
+        if (activeTooltip) {
+          activeTooltip.remove();
+          activeTooltip = null;
+        }
+        
+        const tooltipText = (trigger as HTMLElement).dataset.tooltip;
+        if (!tooltipText) return;
+        
+        const tooltip = document.createElement('div');
+        tooltip.className = 'fixed z-50 max-w-xs p-3 text-sm bg-card border border-border rounded-lg shadow-xl animate-in fade-in zoom-in-95 duration-150';
+        tooltip.textContent = tooltipText;
+        
+        document.body.appendChild(tooltip);
+        activeTooltip = tooltip;
+        
+        // Position tooltip
+        const rect = (trigger as HTMLElement).getBoundingClientRect();
+        const tooltipRect = tooltip.getBoundingClientRect();
+        
+        let top = rect.bottom + 8;
+        let left = rect.left - (tooltipRect.width / 2) + (rect.width / 2);
+        
+        // Keep within viewport
+        if (left < 8) left = 8;
+        if (left + tooltipRect.width > window.innerWidth - 8) {
+          left = window.innerWidth - tooltipRect.width - 8;
+        }
+        if (top + tooltipRect.height > window.innerHeight - 8) {
+          top = rect.top - tooltipRect.height - 8;
+        }
+        
+        tooltip.style.top = `${top}px`;
+        tooltip.style.left = `${left}px`;
+      });
+    });
+    
+    // Close tooltip when clicking elsewhere
+    document.addEventListener('click', (e) => {
+      if (activeTooltip && !(e.target as HTMLElement).closest('.tooltip-trigger')) {
+        activeTooltip.remove();
+        activeTooltip = null;
+      }
+    });
+    
+    // ============================================
+    // UNSAVED CHANGES DETECTION
+    // ============================================
+    function checkForChanges() {
+      const currentData = new FormData(form).toString();
+      hasUnsavedChanges = currentData !== initialFormData;
+      
+      if (hasUnsavedChanges) {
+        unsavedBanner.classList.remove('hidden');
+      } else {
+        unsavedBanner.classList.add('hidden');
+      }
+    }
+    
+    // Listen to all form inputs
+    const allInputs = form.querySelectorAll('.setting-input');
+    allInputs.forEach(input => {
+      input.addEventListener('change', checkForChanges);
+      input.addEventListener('input', checkForChanges);
+    });
+    
+    // Warn before leaving with unsaved changes
+    window.addEventListener('beforeunload', (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    });
+    
+    // ============================================
+    // CONFIRMATION MODAL FOR CRITICAL CHANGES
+    // ============================================
+    const maintenanceToggle = document.getElementById('maintenance_mode') as HTMLInputElement;
+    
+    maintenanceToggle?.addEventListener('change', (e) => {
+      if (maintenanceToggle.checked) {
+        e.preventDefault();
+        maintenanceToggle.checked = false;
+        pendingMaintenanceToggle = maintenanceToggle;
+        
+        modalTitle.textContent = '¿Activar modo mantenimiento?';
+        modalMessage.textContent = 'Los visitantes no podrán acceder a la tienda hasta que lo desactives. Solo los administradores podrán navegar.';
+        confirmModal.classList.remove('hidden');
+      }
+    });
+    
+    modalConfirm?.addEventListener('click', () => {
+      if (pendingMaintenanceToggle) {
+        pendingMaintenanceToggle.checked = true;
+        checkForChanges();
+      }
+      confirmModal.classList.add('hidden');
+      pendingMaintenanceToggle = null;
+    });
+    
+    modalCancel?.addEventListener('click', () => {
+      confirmModal.classList.add('hidden');
+      pendingMaintenanceToggle = null;
+    });
+    
+    modalBackdrop?.addEventListener('click', () => {
+      confirmModal.classList.add('hidden');
+      pendingMaintenanceToggle = null;
+    });
+    
+    // ============================================
+    // KEYBOARD SHORTCUTS
+    // ============================================
+    document.addEventListener('keydown', (e) => {
+      // Ctrl+S or Cmd+S to save
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (hasUnsavedChanges && !saveBtn.disabled) {
+          form.requestSubmit();
+        }
+      }
+      
+      // Escape to close modal
+      if (e.key === 'Escape' && !confirmModal.classList.contains('hidden')) {
+        confirmModal.classList.add('hidden');
+        pendingMaintenanceToggle = null;
+      }
+    });
+    
+    // ============================================
+    // FORM SUBMISSION
+    // ============================================
     form?.addEventListener("submit", async (e) => {
       e.preventDefault();
 
@@ -621,7 +955,6 @@ const getSettingBool = (key: string) => {
         </svg>
         Guardando...
       `;
-      messageDiv.className = "hidden";
 
       try {
         const formData = new FormData(form);
@@ -631,78 +964,46 @@ const getSettingBool = (key: string) => {
           // Boolean settings
           {
             key: "offers_enabled",
-            value_bool: (
-              document.getElementById("offers_enabled") as HTMLInputElement
-            ).checked,
+            value_bool: (document.getElementById("offers_enabled") as HTMLInputElement).checked,
           },
           {
             key: "prices_include_tax",
-            value_bool: (
-              document.getElementById("prices_include_tax") as HTMLInputElement
-            ).checked,
+            value_bool: (document.getElementById("prices_include_tax") as HTMLInputElement).checked,
           },
           {
             key: "maintenance_mode",
-            value_bool: (
-              document.getElementById("maintenance_mode") as HTMLInputElement
-            ).checked,
+            value_bool: (document.getElementById("maintenance_mode") as HTMLInputElement).checked,
           },
           // Text settings
           { key: "store_name", value: formData.get("store_name") as string },
           { key: "store_email", value: formData.get("store_email") as string },
           { key: "store_phone", value: formData.get("store_phone") as string },
-          {
-            key: "store_address",
-            value: formData.get("store_address") as string,
-          },
-          {
-            key: "maintenance_message",
-            value: formData.get("maintenance_message") as string,
-          },
+          { key: "store_address", value: formData.get("store_address") as string },
+          { key: "maintenance_message", value: formData.get("maintenance_message") as string },
           // Numeric settings
           {
             key: "free_shipping_threshold",
-            value_number:
-              parseFloat(formData.get("free_shipping_threshold") as string) ||
-              50,
+            value_number: parseFloat(formData.get("free_shipping_threshold") as string) || 50,
           },
           {
             key: "shipping_cost",
-            value_number:
-              parseFloat(formData.get("shipping_cost") as string) || 4.99,
+            value_number: parseFloat(formData.get("shipping_cost") as string) || 4.99,
           },
           {
             key: "tax_rate",
-            value_number:
-              parseFloat(formData.get("tax_rate") as string) || 21,
+            value_number: parseFloat(formData.get("tax_rate") as string) || 21,
           },
           {
             key: "return_window_days",
-            value_number:
-              parseInt(formData.get("return_window_days") as string) || 30,
+            value_number: parseInt(formData.get("return_window_days") as string) || 30,
           },
           // Social settings
-          {
-            key: "social_instagram",
-            value: formData.get("social_instagram") as string,
-          },
-          {
-            key: "social_twitter",
-            value: formData.get("social_twitter") as string,
-          },
-          {
-            key: "social_tiktok",
-            value: formData.get("social_tiktok") as string,
-          },
-          {
-            key: "social_youtube",
-            value: formData.get("social_youtube") as string,
-          },
+          { key: "social_instagram", value: formData.get("social_instagram") as string },
+          { key: "social_twitter", value: formData.get("social_twitter") as string },
+          { key: "social_tiktok", value: formData.get("social_tiktok") as string },
+          { key: "social_youtube", value: formData.get("social_youtube") as string },
           // Flash offers end date
-          {
-            key: "flash_offers_end",
-            value: formData.get("flash_offers_end") as string,
-          },
+          { key: "flash_offers_end", value: formData.get("flash_offers_end") as string },
         ];
 
         const response = await fetch("/api/admin/configuracion", {
@@ -717,16 +1018,14 @@ const getSettingBool = (key: string) => {
           throw new Error(result.error || "Error al guardar");
         }
 
-        messageDiv.className = "p-4 rounded-lg bg-primary/20 text-primary";
-        messageDiv.textContent = "✅ Configuración guardada correctamente";
-
-        // Auto-hide message after 3 seconds
-        setTimeout(() => {
-          messageDiv.className = "hidden";
-        }, 3000);
+        // Success!
+        showToast('Configuración guardada correctamente', 'success');
+        hasUnsavedChanges = false;
+        unsavedBanner.classList.add('hidden');
+        captureInitialState();
+        
       } catch (error: any) {
-        messageDiv.className = "p-4 rounded-lg bg-accent/20 text-accent";
-        messageDiv.textContent = "❌ " + error.message;
+        showToast(error.message || 'Error al guardar', 'error');
       } finally {
         saveBtn.disabled = false;
         saveBtn.innerHTML = `
@@ -737,5 +1036,43 @@ const getSettingBool = (key: string) => {
         `;
       }
     });
+    
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    captureInitialState();
   </script>
+  
+  <style>
+    @keyframes slide-in-from-right {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slide-out-to-right {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(100%); opacity: 0; }
+    }
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes zoom-in {
+      from { transform: scale(0.95); }
+      to { transform: scale(1); }
+    }
+    @keyframes zoom-in-95 {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .animate-in { animation-fill-mode: both; }
+    .animate-out { animation-fill-mode: both; }
+    .slide-in-from-right { animation-name: slide-in-from-right; }
+    .slide-out-to-right { animation-name: slide-out-to-right; }
+    .fade-in { animation-name: fade-in; }
+    .zoom-in { animation-name: zoom-in; }
+    .zoom-in-95 { animation-name: zoom-in-95; }
+    .duration-150 { animation-duration: 150ms; }
+    .duration-200 { animation-duration: 200ms; }
+    .duration-300 { animation-duration: 300ms; }
+  </style>
 </AdminLayout>
