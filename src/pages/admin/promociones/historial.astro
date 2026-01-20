@@ -108,7 +108,8 @@ const timeAgo = (date: string) => {
       {historyData.length > 0 ? (
         <div class="space-y-4">
           {historyData.map((entry: any, index: number) => {
-            const config = actionConfig[entry.action] || actionConfig.updated;
+            const defaultConfig = { label: "Cambio", icon: "📝", color: "text-muted-foreground", bgColor: "bg-muted" };
+            const config = actionConfig[entry.action] ?? defaultConfig;
             const promotionTitle = entry.promotions?.title || 
               (entry.changes?.old?.title) || 
               (entry.changes?.new?.title) || 

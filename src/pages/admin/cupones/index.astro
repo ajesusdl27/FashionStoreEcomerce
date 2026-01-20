@@ -8,7 +8,7 @@ const refreshToken = Astro.cookies.get("sb-refresh-token")?.value;
 const authClient = createAuthenticatedClient(accessToken, refreshToken);
 
 // Fetch coupons
-const { data: coupons, error } = await authClient
+const { data: coupons, error: _error } = await authClient
   .from("coupons")
   .select("*")
   .order("created_at", { ascending: false });
@@ -38,7 +38,7 @@ const getCouponStatus = (coupon: any) => {
   if (coupon.end_date) {
     const daysLeft = Math.ceil(
       (new Date(coupon.end_date).getTime() - now.getTime()) /
-        (1000 * 60 * 60 * 24)
+        (1000 * 60 * 60 * 24),
     );
     if (daysLeft <= 7 && daysLeft > 0)
       return { label: `Expira en ${daysLeft}d`, class: "badge-warning" };
@@ -152,7 +152,7 @@ const getCouponStatus = (coupon: any) => {
                       <td class="font-medium">
                         {formatDiscount(
                           coupon.discount_type,
-                          coupon.discount_value
+                          coupon.discount_value,
                         )}
                       </td>
                       <td>
@@ -638,7 +638,7 @@ const getCouponStatus = (coupon: any) => {
   // Toast function
   function showToast(
     message: string,
-    type: "success" | "error" | "info" = "info"
+    type: "success" | "error" | "info" = "info",
   ) {
     const container = document.getElementById("toast-container");
     const toast = document.createElement("div");
@@ -668,10 +668,10 @@ const getCouponStatus = (coupon: any) => {
 
   // Search and filter
   const searchInput = document.getElementById(
-    "search-coupon"
+    "search-coupon",
   ) as HTMLInputElement;
   const filterSelect = document.getElementById(
-    "filter-status"
+    "filter-status",
   ) as HTMLSelectElement;
   const tableRows = document.querySelectorAll("#coupons-table tbody tr");
 
@@ -769,14 +769,14 @@ const getCouponStatus = (coupon: any) => {
   const editForm = document.getElementById("edit-form") as HTMLFormElement;
   const btnEditCancel = document.getElementById("btn-edit-cancel");
   const editFormError = document.getElementById(
-    "edit-form-error"
+    "edit-form-error",
   ) as HTMLElement;
   const btnEditSubmit = document.getElementById(
-    "btn-edit-submit"
+    "btn-edit-submit",
   ) as HTMLButtonElement;
   const btnEditText = document.getElementById("btn-edit-text") as HTMLElement;
   const btnEditSpinner = document.getElementById(
-    "btn-edit-spinner"
+    "btn-edit-spinner",
   ) as HTMLElement;
 
   document.querySelectorAll(".edit-coupon-btn").forEach((btn) => {
@@ -797,19 +797,19 @@ const getCouponStatus = (coupon: any) => {
           : `${couponData.discount_value}€`;
       (
         editForm.querySelector(
-          '[name="min_purchase_amount"]'
+          '[name="min_purchase_amount"]',
         ) as HTMLInputElement
       ).value = couponData.min_purchase_amount || "";
       (
         editForm.querySelector(
-          '[name="max_discount_amount"]'
+          '[name="max_discount_amount"]',
         ) as HTMLInputElement
       ).value = couponData.max_discount_amount || "";
       (editForm.querySelector('[name="max_uses"]') as HTMLInputElement).value =
         couponData.max_uses || "";
       (
         editForm.querySelector(
-          '[name="max_uses_per_customer"]'
+          '[name="max_uses_per_customer"]',
         ) as HTMLInputElement
       ).value = couponData.max_uses_per_customer || 1;
 
@@ -914,7 +914,7 @@ const getCouponStatus = (coupon: any) => {
         if (response.ok) {
           showToast(
             `Cupón ${isActive ? "desactivado" : "activado"}`,
-            "success"
+            "success",
           );
           setTimeout(() => window.location.reload(), 500);
         } else {

@@ -9,7 +9,7 @@ const refreshToken = Astro.cookies.get("sb-refresh-token")?.value;
 const authClient = createAuthenticatedClient(accessToken, refreshToken);
 
 // Fetch returns with related data
-const { data: returns, error } = await authClient
+const { data: returns, error: _error } = await authClient
   .from("returns")
   .select(
     `
@@ -21,7 +21,7 @@ const { data: returns, error } = await authClient
       customer_email,
       total_amount
     )
-  `
+  `,
   )
   .order("created_at", { ascending: false });
 
@@ -36,7 +36,14 @@ const formatDate = (date: string | null) => {
   });
 };
 
-const getStatusBadge = (status: string) => {
+const getStatusBadge = (
+  status: string,
+): { bg: string; text: string; label: string } => {
+  const defaultBadge = {
+    bg: "bg-gray-500/10",
+    text: "text-gray-500",
+    label: "Desconocido",
+  };
   const badges: { [key: string]: { bg: string; text: string; label: string } } =
     {
       requested: {
@@ -70,7 +77,7 @@ const getStatusBadge = (status: string) => {
         label: "Rechazada",
       },
     };
-  return badges[status] || badges.requested;
+  return badges[status] ?? defaultBadge;
 };
 
 // Filter params
@@ -200,7 +207,9 @@ const statusCounts = {
                           href={`/admin/pedidos/${returnItem.order_id}`}
                           class="text-primary hover:underline font-mono text-sm"
                         >
-                          {returnItem.orders?.order_number ? formatOrderId(returnItem.orders.order_number) : `#${returnItem.order_id.slice(0, 8).toUpperCase()}`}
+                          {returnItem.orders?.order_number
+                            ? formatOrderId(returnItem.orders.order_number)
+                            : `#${returnItem.order_id.slice(0, 8).toUpperCase()}`}
                         </a>
                       </td>
                       <td>

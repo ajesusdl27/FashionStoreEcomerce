@@ -658,7 +658,12 @@ const timeAgo = (date: string) => {
         historyData.length > 0 ? (
           <div class="space-y-3">
             {historyData.map((entry: any) => {
-              const config = actionConfig[entry.action] || actionConfig.updated;
+              const defaultConfig = {
+                label: "Cambio",
+                icon: "📝",
+                color: "text-muted-foreground",
+              };
+              const config = actionConfig[entry.action] ?? defaultConfig;
               return (
                 <div class="flex items-start gap-3 text-sm">
                   <span class="text-lg">{config.icon}</span>
@@ -853,7 +858,7 @@ const timeAgo = (date: string) => {
 
   // Title validation
   const titleInputEl = document.getElementById(
-    "title-input"
+    "title-input",
   ) as HTMLInputElement;
   titleInputEl?.addEventListener("blur", () => {
     const value = titleInputEl.value.trim();
@@ -863,13 +868,13 @@ const timeAgo = (date: string) => {
       showFieldError(
         "title-input",
         "title-error",
-        "El título debe tener al menos 3 caracteres"
+        "El título debe tener al menos 3 caracteres",
       );
     } else if (value.length > 100) {
       showFieldError(
         "title-input",
         "title-error",
-        "El título no puede superar los 100 caracteres"
+        "El título no puede superar los 100 caracteres",
       );
     } else {
       clearFieldError("title-input", "title-error");
@@ -885,7 +890,7 @@ const timeAgo = (date: string) => {
 
   // Location validation - at least one must be selected
   const locationCheckboxes = document.querySelectorAll(
-    'input[name="locations"]'
+    'input[name="locations"]',
   ) as NodeListOf<HTMLInputElement>;
   const locationContainer = locationCheckboxes[0]?.closest(".grid");
 
@@ -917,7 +922,7 @@ const timeAgo = (date: string) => {
 
   // Priority validation
   const priorityInput = document.querySelector(
-    'input[name="priority"]'
+    'input[name="priority"]',
   ) as HTMLInputElement;
   priorityInput?.addEventListener("blur", () => {
     const value = parseInt(priorityInput.value);
@@ -931,10 +936,10 @@ const timeAgo = (date: string) => {
 
   // Date validation - end date should be after start date
   const startDateInput = document.querySelector(
-    'input[name="start_date"]'
+    'input[name="start_date"]',
   ) as HTMLInputElement;
   const endDateInput = document.querySelector(
-    'input[name="end_date"]'
+    'input[name="end_date"]',
   ) as HTMLInputElement;
 
   function validateDates() {
@@ -968,10 +973,10 @@ const timeAgo = (date: string) => {
 
   // ========== CTA LINK SELECTOR ==========
   const ctaLinkSelect = document.getElementById(
-    "cta-link-select"
+    "cta-link-select",
   ) as HTMLSelectElement;
   const ctaLinkCustom = document.getElementById(
-    "cta-link-custom"
+    "cta-link-custom",
   ) as HTMLInputElement;
 
   ctaLinkSelect?.addEventListener("change", () => {

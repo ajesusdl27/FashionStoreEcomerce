@@ -1,7 +1,6 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { createAuthenticatedClient } from "@/lib/supabase";
-import { formatOrderId } from "@/lib/order-utils";
 
 const { id } = Astro.params;
 
@@ -69,7 +68,8 @@ const formatPrice = (price: number) => {
   }).format(price);
 };
 
-const getStatusBadge = (status: string) => {
+const getStatusBadge = (status: string): { bg: string; text: string; label: string } => {
+  const defaultBadge = { bg: "bg-gray-500/10", text: "text-gray-500", label: "Desconocido" };
   const badges: { [key: string]: { bg: string; text: string; label: string } } = {
     requested: { bg: "bg-amber-500/10", text: "text-amber-500", label: "Pendiente" },
     approved: { bg: "bg-blue-500/10", text: "text-blue-500", label: "Aprobada" },
@@ -78,7 +78,7 @@ const getStatusBadge = (status: string) => {
     completed: { bg: "bg-emerald-500/10", text: "text-emerald-500", label: "Completada" },
     rejected: { bg: "bg-red-500/10", text: "text-red-500", label: "Rechazada" },
   };
-  return badges[status] || badges.requested;
+  return badges[status] ?? defaultBadge;
 };
 
 const getReasonLabel = (reason: string) => {
