@@ -6,7 +6,7 @@ interface RequestInvoiceModalProps {
   orderNumber: string;
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (invoiceNumber: string) => void;
+  onSuccess: (invoiceNumber: string, invoiceUrl?: string) => void;
 }
 
 export default function RequestInvoiceModal({

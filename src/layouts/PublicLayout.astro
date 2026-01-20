@@ -18,7 +18,7 @@ const { title, description } = Astro.props;
 const currentPath = Astro.url.pathname + Astro.url.search;
 ---
 
-<BaseLayout title={title} description={description}>
+<BaseLayout title={title} description={description ?? ""}>
   <!-- Cart Slide Over (React Island) -->
   <CartSlideOver client:load />
 

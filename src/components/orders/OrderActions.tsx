@@ -38,7 +38,7 @@ export default function OrderActions({
   orderId,
   orderNumber,
   orderStatus, 
-  customerEmail, 
+  customerEmail: _customerEmail, 
   deliveredAt,
   orderItems 
 }: OrderActionsProps) {
@@ -120,17 +120,34 @@ export default function OrderActions({
   };
 
   const handleItemSelect = (itemId: string, selected: boolean) => {
-    setSelectedItems(prev => ({
-      ...prev,
-      [itemId]: { ...prev[itemId], selected }
-    }));
+    setSelectedItems(prev => {
+      const existing = prev[itemId];
+      return {
+        ...prev,
+        [itemId]: { 
+          selected, 
+          quantity: existing?.quantity ?? 1, 
+          reason: existing?.reason ?? 'size_mismatch', 
+          reason_details: existing?.reason_details ?? '' 
+        }
+      };
+    });
   };
 
   const handleItemChange = (itemId: string, field: string, value: any) => {
-    setSelectedItems(prev => ({
-      ...prev,
-      [itemId]: { ...prev[itemId], [field]: value }
-    }));
+    setSelectedItems(prev => {
+      const existing = prev[itemId];
+      return {
+        ...prev,
+        [itemId]: { 
+          selected: existing?.selected ?? false, 
+          quantity: existing?.quantity ?? 1, 
+          reason: existing?.reason ?? 'size_mismatch', 
+          reason_details: existing?.reason_details ?? '',
+          [field]: value 
+        }
+      };
+    });
   };
 
   const handleSubmitReturn = async (e: React.FormEvent) => {
@@ -204,6 +221,7 @@ export default function OrderActions({
   }
 
   const getReturnStatusBadge = (status: string) => {
+    const defaultBadge = { bg: 'bg-gray-500/10', text: 'text-gray-500', label: 'Desconocido' };
     const badges: { [key: string]: { bg: string; text: string; label: string } } = {
       requested: { bg: 'bg-amber-500/10', text: 'text-amber-500', label: 'Pendiente' },
       approved: { bg: 'bg-blue-500/10', text: 'text-blue-500', label: 'Aprobada' },
@@ -212,7 +230,7 @@ export default function OrderActions({
       completed: { bg: 'bg-emerald-500/10', text: 'text-emerald-500', label: 'Completada' },
       rejected: { bg: 'bg-red-500/10', text: 'text-red-500', label: 'Rechazada' },
     };
-    return badges[status] || badges.requested;
+    return badges[status] ?? defaultBadge;
   };
 
   return (

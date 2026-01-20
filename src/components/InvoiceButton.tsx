@@ -11,7 +11,7 @@ interface InvoiceButtonProps {
 interface InvoiceInfo {
   id: string;
   invoice_number: string;
-  pdf_url?: string;
+  pdf_url?: string | undefined;
 }
 
 export default function InvoiceButton({ orderId, orderNumber, orderStatus }: InvoiceButtonProps) {
@@ -48,7 +48,7 @@ export default function InvoiceButton({ orderId, orderNumber, orderStatus }: Inv
     setInvoice({ 
       id: '', 
       invoice_number: invoiceNumber,
-      pdf_url: invoiceUrl 
+      pdf_url: invoiceUrl
     });
   };
 

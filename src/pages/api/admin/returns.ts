@@ -67,7 +67,18 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     }
 
     if (returnId) {
-      query = query.eq("id", returnId).single();
+      const { data, error } = await query.eq("id", returnId).single();
+      if (error) {
+        console.error("Error fetching return:", error);
+        return new Response(
+          JSON.stringify({ error: "Error al obtener devolución" }),
+          { status: 500, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      return new Response(JSON.stringify(data), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const { data, error } = await query;
@@ -138,7 +149,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     }
 
     // Call the RPC function with all parameters explicitly set
-    const { data, error } = await supabase.rpc("process_return", {
+    const { error } = await supabase.rpc("process_return", {
       p_return_id: return_id,
       p_action: action,
       p_notes: notes || null,
@@ -206,7 +217,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
             orderNumber: order.order_number,
             customerName: order.customer_name,
             customerEmail: order.customer_email,
-            refundAmount: Number(returnData.refund_amount) || 0,
+            amount: Number(returnData.refund_amount) || 0,
           });
           emailSent = result.success;
         }
@@ -277,7 +288,7 @@ export const PATCH: APIRoute = async ({ request, cookies }) => {
     }
 
     // Call the RPC function
-    const { data, error } = await supabase.rpc("inspect_return_item", {
+    const { error } = await supabase.rpc("inspect_return_item", {
       p_item_id: item_id,
       p_status: status,
       p_restock: restock || false,

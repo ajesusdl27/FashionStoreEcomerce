@@ -33,7 +33,7 @@ interface TransformOptions {
  */
 export async function uploadImage(
   buffer: Buffer,
-  filename: string
+  _filename: string
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
@@ -76,7 +76,7 @@ export function getPublicIdFromUrl(url: string): string | null {
 
   // URL format: https://res.cloudinary.com/cloud_name/image/upload/v123/folder/filename.ext
   const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)(?:\.[^.]+)?$/);
-  return match ? match[1] : null;
+  return match?.[1] ?? null;
 }
 
 /**

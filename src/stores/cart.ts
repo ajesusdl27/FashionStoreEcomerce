@@ -35,7 +35,7 @@ export const $cart = atom<CartItem[]>(loadCart());
 
 // Subscribe to changes and persist
 $cart.subscribe((items) => {
-  saveCart(items);
+  saveCart([...items]);
 });
 
 // Computed values
@@ -57,11 +57,14 @@ export function addToCart(item: Omit<CartItem, 'id' | 'quantity'>, quantity = 1)
   if (existingIndex >= 0) {
     // Update quantity
     const updated = [...items];
-    updated[existingIndex] = {
-      ...updated[existingIndex],
-      quantity: updated[existingIndex].quantity + quantity,
-    };
-    $cart.set(updated);
+    const existingItem = updated[existingIndex];
+    if (existingItem) {
+      updated[existingIndex] = {
+        ...existingItem,
+        quantity: existingItem.quantity + quantity,
+      };
+      $cart.set(updated);
+    }
   } else {
     // Add new item
     const newItem: CartItem = {

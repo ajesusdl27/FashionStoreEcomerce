@@ -78,7 +78,7 @@ function getEmailWrapper(content: string, siteUrl: string, unsubscribeUrl: strin
  * Newsletter campaign email template
  */
 export function generateNewsletterHTML(options: NewsletterTemplateOptions): string {
-  const { subject, content, siteUrl, unsubscribeUrl } = options;
+  const { subject: _subject, content, siteUrl, unsubscribeUrl } = options;
   
   const bodyContent = `
     <!-- Content -->

@@ -38,7 +38,7 @@ export default function AnnouncementBar({
         
         // Handle coupons as object or array (Supabase join quirk)
         const couponData = topPromo.coupons;
-        if (Array.isArray(couponData) && couponData.length > 0) {
+        if (Array.isArray(couponData) && couponData.length > 0 && couponData[0]) {
            setPromoCoupon(couponData[0].code);
         } else if (couponData && typeof couponData === 'object' && 'code' in couponData) {
            // @ts-ignore

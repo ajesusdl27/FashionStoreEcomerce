@@ -60,7 +60,8 @@ function getSpainMidnightUTC(date: Date = new Date()): Date {
   });
   
   const [datePart] = spainTimeStr.split(', ');
-  const [month, day, year] = datePart.split('/');
+  const parts = datePart?.split('/') ?? [];
+  const [month = '01', day = '01', year = '2024'] = parts;
   const spainDate = new Date(`${year}-${month}-${day}T00:00:00Z`);
   
   // Detect if DST is active (GMT+2) or not (GMT+1)

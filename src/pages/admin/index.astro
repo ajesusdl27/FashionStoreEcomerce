@@ -37,8 +37,9 @@ function getSpainMidnightUTC(): Date {
   });
 
   // Parse it back to create a Date object at Spain's current time
-  const [datePart, timePart] = spainTimeStr.split(", ");
-  const [month, day, year] = datePart.split("/");
+  const [datePart, _timePart] = spainTimeStr.split(", ");
+  const parts = datePart?.split("/") ?? [];
+  const [month = "01", day = "01", year = "2024"] = parts;
   const spainDate = new Date(`${year}-${month}-${day}T00:00:00Z`);
 
   // This gives us midnight in Spain, represented in UTC
@@ -112,7 +113,7 @@ const [
       size,
       stock,
       product:products(id, name)
-    `
+    `,
     )
     .lt("stock", 5)
     .order("stock", { ascending: true })

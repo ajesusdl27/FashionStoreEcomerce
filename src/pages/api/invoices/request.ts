@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabase } from '@/lib/supabase';
 import { generateInvoicePDF } from '@/lib/pdf-generator';
-import { formatOrderId, formatInvoiceNumber } from '@/lib/order-utils';
+import { formatOrderId } from '@/lib/order-utils';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
