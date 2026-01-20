@@ -28,38 +28,34 @@ const getSettingBool = (key: string) => {
   // Fallback: check if value is 'true' string
   return setting?.value === "true";
 };
-
-// Tooltips para cada campo
-const tooltips: Record<string, string> = {
-  offers_enabled: "Muestra u oculta la sección de ofertas flash en la página principal. Útil para campañas temporales.",
-  flash_offers_end: "Cuando llegue esta fecha, la sección de ofertas se ocultará automáticamente. Déjalo vacío para ofertas permanentes.",
-  store_name: "El nombre que aparecerá en emails, facturas y la barra del navegador.",
-  store_email: "Email principal para comunicaciones con clientes. Asegúrate de que es válido.",
-  store_phone: "Teléfono de atención al cliente. Se muestra en el footer y página de contacto.",
-  store_address: "Dirección física del negocio. Aparece en facturas y página de contacto.",
-  free_shipping_threshold: "Pedidos con este importe o superior tendrán envío gratis. Pon 0 para desactivar.",
-  shipping_cost: "Coste del envío estándar cuando no se alcanza el umbral de envío gratis.",
-  social_instagram: "URL completa de tu perfil de Instagram (ej: https://instagram.com/tutienda).",
-  social_twitter: "URL completa de tu perfil de Twitter/X.",
-  social_tiktok: "URL completa de tu perfil de TikTok.",
-  social_youtube: "URL completa de tu canal de YouTube.",
-  tax_rate: "Porcentaje de IVA aplicable. Este valor se usa para calcular impuestos en facturas.",
-  prices_include_tax: "Si está activado, los precios mostrados ya incluyen IVA. Si no, el IVA se añade al total.",
-  return_window_days: "Número de días que tienen los clientes para solicitar una devolución desde la entrega.",
-  maintenance_mode: "⚠️ CUIDADO: Activar esto bloqueará el acceso a toda la tienda para visitantes.",
-  maintenance_message: "Mensaje personalizado que verán los visitantes durante el mantenimiento.",
-};
 ---
 
 <AdminLayout title="Configuración">
   <!-- Toast Container -->
-  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
-  
+  <div
+    id="toast-container"
+    class="fixed top-4 right-4 z-50 flex flex-col gap-2"
+  >
+  </div>
+
   <!-- Unsaved Changes Banner -->
-  <div id="unsaved-banner" class="hidden fixed top-0 left-0 right-0 z-40 bg-yellow-500/90 text-yellow-950 py-2 px-4 text-center font-medium backdrop-blur-sm">
+  <div
+    id="unsaved-banner"
+    class="hidden fixed top-0 left-0 right-0 z-40 bg-yellow-500/90 text-yellow-950 py-2 px-4 text-center font-medium backdrop-blur-sm"
+  >
     <span class="inline-flex items-center gap-2">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      <svg
+        class="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+        ></path>
       </svg>
       Tienes cambios sin guardar
       <span class="text-sm opacity-80">(Ctrl+S para guardar)</span>
@@ -67,25 +63,58 @@ const tooltips: Record<string, string> = {
   </div>
 
   <!-- Confirmation Modal -->
-  <div id="confirm-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="modal-backdrop"></div>
-    <div class="relative bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200">
+  <div
+    id="confirm-modal"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4"
+  >
+    <div
+      class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+      id="modal-backdrop"
+    >
+    </div>
+    <div
+      class="relative bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200"
+    >
       <div class="flex items-center gap-4 mb-4">
-        <div class="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
-          <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        <div
+          class="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center"
+        >
+          <svg
+            class="w-6 h-6 text-yellow-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            ></path>
           </svg>
         </div>
         <div>
-          <h3 class="font-heading text-lg" id="modal-title">Confirmar acción</h3>
-          <p class="text-sm text-muted-foreground" id="modal-message">¿Estás seguro?</p>
+          <h3 class="font-heading text-lg" id="modal-title">
+            Confirmar acción
+          </h3>
+          <p class="text-sm text-muted-foreground" id="modal-message">
+            ¿Estás seguro?
+          </p>
         </div>
       </div>
       <div class="flex justify-end gap-3">
-        <button type="button" id="modal-cancel" class="px-4 py-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors">
+        <button
+          type="button"
+          id="modal-cancel"
+          class="px-4 py-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
+        >
           Cancelar
         </button>
-        <button type="button" id="modal-confirm" class="px-4 py-2 rounded-lg bg-yellow-500 text-yellow-950 hover:bg-yellow-400 transition-colors font-medium">
+        <button
+          type="button"
+          id="modal-confirm"
+          class="px-4 py-2 rounded-lg bg-yellow-500 text-yellow-950 hover:bg-yellow-400 transition-colors font-medium"
+        >
           Confirmar
         </button>
       </div>
@@ -141,11 +170,6 @@ const tooltips: Record<string, string> = {
                 Activa/desactiva la sección de ofertas en la página principal
               </p>
             </div>
-            <button type="button" class="tooltip-trigger shrink-0" data-tooltip={tooltips.offers_enabled}>
-              <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </button>
           </div>
           <div class="relative">
             <input
@@ -174,11 +198,6 @@ const tooltips: Record<string, string> = {
             >
               Fecha y hora de fin de ofertas
             </label>
-            <button type="button" class="tooltip-trigger" data-tooltip={tooltips.flash_offers_end}>
-              <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </button>
           </div>
           <input
             type="datetime-local"
@@ -216,14 +235,12 @@ const tooltips: Record<string, string> = {
         <div class="grid gap-4">
           <div>
             <div class="flex items-center gap-2 mb-2">
-              <label for="store_name" class="block text-sm font-medium text-muted-foreground">
+              <label
+                for="store_name"
+                class="block text-sm font-medium text-muted-foreground"
+              >
                 Nombre de la tienda
               </label>
-              <button type="button" class="tooltip-trigger" data-tooltip={tooltips.store_name}>
-                <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
             </div>
             <input
               type="text"
@@ -237,41 +254,52 @@ const tooltips: Record<string, string> = {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <div class="flex items-center gap-2 mb-2">
-                <label for="store_email" class="block text-sm font-medium text-muted-foreground">
+                <label
+                  for="store_email"
+                  class="block text-sm font-medium text-muted-foreground"
+                >
                   Email de contacto
                 </label>
-                <button type="button" class="tooltip-trigger" data-tooltip={tooltips.store_email}>
-                  <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </button>
               </div>
               <div class="relative">
                 <input
                   type="email"
                   id="store_email"
                   name="store_email"
-                  value={getSettingValue("store_email", "contacto@fashionstore.com")}
+                  value={getSettingValue(
+                    "store_email",
+                    "contacto@fashionstore.com",
+                  )}
                   class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary setting-input peer"
                   required
                 />
-                <div class="hidden peer-invalid:flex absolute right-3 top-1/2 -translate-y-1/2 text-red-400">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <div
+                  class="hidden peer-invalid:flex absolute right-3 top-1/2 -translate-y-1/2 text-red-400"
+                >
+                  <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    ></path>
                   </svg>
                 </div>
               </div>
             </div>
             <div>
               <div class="flex items-center gap-2 mb-2">
-                <label for="store_phone" class="block text-sm font-medium text-muted-foreground">
+                <label
+                  for="store_phone"
+                  class="block text-sm font-medium text-muted-foreground"
+                >
                   Teléfono
                 </label>
-                <button type="button" class="tooltip-trigger" data-tooltip={tooltips.store_phone}>
-                  <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </button>
               </div>
               <input
                 type="tel"
@@ -284,14 +312,12 @@ const tooltips: Record<string, string> = {
           </div>
           <div>
             <div class="flex items-center gap-2 mb-2">
-              <label for="store_address" class="block text-sm font-medium text-muted-foreground">
+              <label
+                for="store_address"
+                class="block text-sm font-medium text-muted-foreground"
+              >
                 Dirección
               </label>
-              <button type="button" class="tooltip-trigger" data-tooltip={tooltips.store_address}>
-                <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
             </div>
             <input
               type="text"
@@ -299,10 +325,208 @@ const tooltips: Record<string, string> = {
               name="store_address"
               value={getSettingValue(
                 "store_address",
-                "Calle Moda, 123, 28001 Madrid"
+                "Calle Moda, 123, 28001 Madrid",
               )}
               class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
             />
+          </div>
+        </div>
+      </div>
+
+      <!-- Branding Section -->
+      <div class="admin-card space-y-4">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-lg bg-pink-500/20 flex items-center justify-center"
+          >
+            <svg
+              class="w-5 h-5 text-pink-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+              ></path>
+            </svg>
+          </div>
+          <h2 class="font-heading text-lg">Branding e Identidad</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Logo Upload -->
+          <div class="space-y-3">
+            <div class="flex items-center gap-2">
+              <label class="block text-sm font-medium text-muted-foreground">
+                Logo de la tienda
+              </label>
+              <button
+                type="button"
+                class="tooltip-trigger"
+                data-tooltip="El logo aparecerá en la cabecera del sitio, emails y facturas. Recomendado: PNG o SVG con fondo transparente."
+              >
+                <svg
+                  class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+              </button>
+            </div>
+            <div class="flex items-center gap-4">
+              <div
+                id="logo-preview"
+                class="w-24 h-24 border border-dashed border-border rounded-lg flex items-center justify-center bg-muted/30 overflow-hidden"
+              >
+                {
+                  getSettingValue("store_logo") ? (
+                    <img
+                      src={getSettingValue("store_logo")}
+                      alt="Logo"
+                      class="max-w-full max-h-full object-contain"
+                    />
+                  ) : (
+                    <svg
+                      class="w-8 h-8 text-muted-foreground"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.5"
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                  )
+                }
+              </div>
+              <div class="flex flex-col gap-2">
+                <label
+                  class="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg cursor-pointer transition-colors text-sm font-medium text-center"
+                >
+                  Subir logo
+                  <input
+                    type="file"
+                    id="logo-file-input"
+                    accept="image/*"
+                    class="hidden"
+                  />
+                </label>
+                <button
+                  type="button"
+                  id="remove-logo-btn"
+                  class={`px-4 py-2 text-sm text-accent hover:text-accent/80 transition-colors ${!getSettingValue("store_logo") ? "hidden" : ""}`}
+                >
+                  Eliminar
+                </button>
+              </div>
+              <input
+                type="hidden"
+                id="store_logo"
+                name="store_logo"
+                value={getSettingValue("store_logo", "")}
+                class="setting-input"
+              />
+            </div>
+            <p class="text-xs text-muted-foreground">PNG o SVG, máx 2MB</p>
+          </div>
+
+          <!-- Favicon Upload -->
+          <div class="space-y-3">
+            <div class="flex items-center gap-2">
+              <label class="block text-sm font-medium text-muted-foreground">
+                Favicon
+              </label>
+              <button
+                type="button"
+                class="tooltip-trigger"
+                data-tooltip="Icono pequeño que aparece en la pestaña del navegador. Recomendado: cuadrado, 32x32 o 64x64 px."
+              >
+                <svg
+                  class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+              </button>
+            </div>
+            <div class="flex items-center gap-4">
+              <div
+                id="favicon-preview"
+                class="w-16 h-16 border border-dashed border-border rounded-lg flex items-center justify-center bg-muted/30 overflow-hidden"
+              >
+                {
+                  getSettingValue("store_favicon") ? (
+                    <img
+                      src={getSettingValue("store_favicon")}
+                      alt="Favicon"
+                      class="max-w-full max-h-full object-contain"
+                    />
+                  ) : (
+                    <svg
+                      class="w-6 h-6 text-muted-foreground"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.5"
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                  )
+                }
+              </div>
+              <div class="flex flex-col gap-2">
+                <label
+                  class="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg cursor-pointer transition-colors text-sm font-medium text-center"
+                >
+                  Subir favicon
+                  <input
+                    type="file"
+                    id="favicon-file-input"
+                    accept="image/*"
+                    class="hidden"
+                  />
+                </label>
+                <button
+                  type="button"
+                  id="remove-favicon-btn"
+                  class={`px-4 py-2 text-sm text-accent hover:text-accent/80 transition-colors ${!getSettingValue("store_favicon") ? "hidden" : ""}`}
+                >
+                  Eliminar
+                </button>
+              </div>
+              <input
+                type="hidden"
+                id="store_favicon"
+                name="store_favicon"
+                value={getSettingValue("store_favicon", "")}
+                class="setting-input"
+              />
+            </div>
+            <p class="text-xs text-muted-foreground">PNG, ICO o SVG, máx 1MB</p>
           </div>
         </div>
       </div>
@@ -333,14 +557,12 @@ const tooltips: Record<string, string> = {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <div class="flex items-center gap-2 mb-2">
-              <label for="free_shipping_threshold" class="block text-sm font-medium text-muted-foreground">
+              <label
+                for="free_shipping_threshold"
+                class="block text-sm font-medium text-muted-foreground"
+              >
                 Envío gratis desde
               </label>
-              <button type="button" class="tooltip-trigger" data-tooltip={tooltips.free_shipping_threshold}>
-                <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
             </div>
             <div class="relative">
               <input
@@ -352,19 +574,20 @@ const tooltips: Record<string, string> = {
                 value={getSettingValue("free_shipping_threshold", "50")}
                 class="w-full px-4 py-3 pr-12 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary setting-input"
               />
-              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">€</span>
+              <span
+                class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
+                >€</span
+              >
             </div>
           </div>
           <div>
             <div class="flex items-center gap-2 mb-2">
-              <label for="shipping_cost" class="block text-sm font-medium text-muted-foreground">
+              <label
+                for="shipping_cost"
+                class="block text-sm font-medium text-muted-foreground"
+              >
                 Coste de envío estándar
               </label>
-              <button type="button" class="tooltip-trigger" data-tooltip={tooltips.shipping_cost}>
-                <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
             </div>
             <div class="relative">
               <input
@@ -376,7 +599,10 @@ const tooltips: Record<string, string> = {
                 value={getSettingValue("shipping_cost", "4.99")}
                 class="w-full px-4 py-3 pr-12 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary setting-input"
               />
-              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">€</span>
+              <span
+                class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
+                >€</span
+              >
             </div>
           </div>
         </div>
@@ -408,14 +634,12 @@ const tooltips: Record<string, string> = {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <div class="flex items-center gap-2 mb-2">
-              <label for="social_instagram" class="block text-sm font-medium text-muted-foreground">
+              <label
+                for="social_instagram"
+                class="block text-sm font-medium text-muted-foreground"
+              >
                 Instagram
               </label>
-              <button type="button" class="tooltip-trigger" data-tooltip={tooltips.social_instagram}>
-                <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
             </div>
             <input
               type="url"
@@ -428,14 +652,12 @@ const tooltips: Record<string, string> = {
           </div>
           <div>
             <div class="flex items-center gap-2 mb-2">
-              <label for="social_twitter" class="block text-sm font-medium text-muted-foreground">
+              <label
+                for="social_twitter"
+                class="block text-sm font-medium text-muted-foreground"
+              >
                 Twitter / X
               </label>
-              <button type="button" class="tooltip-trigger" data-tooltip={tooltips.social_twitter}>
-                <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
             </div>
             <input
               type="url"
@@ -448,14 +670,12 @@ const tooltips: Record<string, string> = {
           </div>
           <div>
             <div class="flex items-center gap-2 mb-2">
-              <label for="social_tiktok" class="block text-sm font-medium text-muted-foreground">
+              <label
+                for="social_tiktok"
+                class="block text-sm font-medium text-muted-foreground"
+              >
                 TikTok
               </label>
-              <button type="button" class="tooltip-trigger" data-tooltip={tooltips.social_tiktok}>
-                <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
             </div>
             <input
               type="url"
@@ -468,14 +688,12 @@ const tooltips: Record<string, string> = {
           </div>
           <div>
             <div class="flex items-center gap-2 mb-2">
-              <label for="social_youtube" class="block text-sm font-medium text-muted-foreground">
+              <label
+                for="social_youtube"
+                class="block text-sm font-medium text-muted-foreground"
+              >
                 YouTube
               </label>
-              <button type="button" class="tooltip-trigger" data-tooltip={tooltips.social_youtube}>
-                <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
             </div>
             <input
               type="url"
@@ -515,14 +733,12 @@ const tooltips: Record<string, string> = {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <div class="flex items-center gap-2 mb-2">
-              <label for="tax_rate" class="block text-sm font-medium text-muted-foreground">
+              <label
+                for="tax_rate"
+                class="block text-sm font-medium text-muted-foreground"
+              >
                 IVA (%)
               </label>
-              <button type="button" class="tooltip-trigger" data-tooltip={tooltips.tax_rate}>
-                <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
             </div>
             <div class="relative">
               <input
@@ -535,7 +751,10 @@ const tooltips: Record<string, string> = {
                 value={getSettingValue("tax_rate", "21")}
                 class="w-full px-4 py-3 pr-12 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary setting-input"
               />
-              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+              <span
+                class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
+                >%</span
+              >
             </div>
           </div>
           <div class="flex items-center">
@@ -566,11 +785,6 @@ const tooltips: Record<string, string> = {
                     Marca esta casilla si los precios ya incluyen el impuesto
                   </p>
                 </div>
-                <button type="button" class="tooltip-trigger shrink-0" data-tooltip={tooltips.prices_include_tax}>
-                  <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </button>
               </div>
             </label>
           </div>
@@ -602,14 +816,12 @@ const tooltips: Record<string, string> = {
 
         <div>
           <div class="flex items-center gap-2 mb-2">
-            <label for="return_window_days" class="block text-sm font-medium text-muted-foreground">
+            <label
+              for="return_window_days"
+              class="block text-sm font-medium text-muted-foreground"
+            >
               Plazo de devolución
             </label>
-            <button type="button" class="tooltip-trigger" data-tooltip={tooltips.return_window_days}>
-              <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </button>
           </div>
           <div class="relative max-w-xs">
             <input
@@ -652,20 +864,20 @@ const tooltips: Record<string, string> = {
           <h2 class="font-heading text-lg">Modo Mantenimiento</h2>
         </div>
 
-        <div class="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+        <div
+          class="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30"
+        >
           <label class="flex items-center justify-between cursor-pointer">
             <div class="flex items-start gap-2">
               <div>
-                <span class="font-medium text-yellow-400">⚠️ Activar Modo Mantenimiento</span>
+                <span class="font-medium text-yellow-400"
+                  >⚠️ Activar Modo Mantenimiento</span
+                >
                 <p class="text-sm text-muted-foreground">
-                  Los visitantes verán una página de mantenimiento. Solo administradores podrán acceder.
+                  Los visitantes verán una página de mantenimiento. Solo
+                  administradores podrán acceder.
                 </p>
               </div>
-              <button type="button" class="tooltip-trigger shrink-0" data-tooltip={tooltips.maintenance_mode}>
-                <svg class="w-4 h-4 text-yellow-400/70 hover:text-yellow-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
             </div>
             <div class="relative">
               <input
@@ -690,14 +902,12 @@ const tooltips: Record<string, string> = {
 
         <div>
           <div class="flex items-center gap-2 mb-2">
-            <label for="maintenance_message" class="block text-sm font-medium text-muted-foreground">
+            <label
+              for="maintenance_message"
+              class="block text-sm font-medium text-muted-foreground"
+            >
               Mensaje de mantenimiento
             </label>
-            <button type="button" class="tooltip-trigger" data-tooltip={tooltips.maintenance_message}>
-              <svg class="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </button>
           </div>
           <textarea
             id="maintenance_message"
@@ -705,12 +915,20 @@ const tooltips: Record<string, string> = {
             rows="3"
             placeholder="Estamos realizando mejoras. Volvemos pronto."
             class="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary resize-none setting-input"
-          >{getSettingValue("maintenance_message", "Estamos realizando mejoras. Volvemos pronto.")}</textarea>
+            >{
+              getSettingValue(
+                "maintenance_message",
+                "Estamos realizando mejoras. Volvemos pronto.",
+              )
+            }</textarea
+          >
         </div>
       </div>
 
       <!-- Actions -->
-      <div class="sticky bottom-4 flex justify-end gap-4 p-4 -mx-4 bg-gradient-to-t from-background via-background to-transparent">
+      <div
+        class="sticky bottom-4 flex justify-end gap-4 p-4 -mx-4 bg-gradient-to-t from-background via-background to-transparent"
+      >
         <button type="submit" id="save-btn" class="admin-btn-primary shadow-lg">
           <svg
             class="w-5 h-5"
@@ -738,44 +956,68 @@ const tooltips: Record<string, string> = {
     // ============================================
     const form = document.getElementById("settings-form") as HTMLFormElement;
     const saveBtn = document.getElementById("save-btn") as HTMLButtonElement;
-    const messageDiv = document.getElementById("form-message") as HTMLDivElement;
-    const unsavedBanner = document.getElementById("unsaved-banner") as HTMLDivElement;
-    const toastContainer = document.getElementById("toast-container") as HTMLDivElement;
-    const confirmModal = document.getElementById("confirm-modal") as HTMLDivElement;
-    const modalBackdrop = document.getElementById("modal-backdrop") as HTMLDivElement;
-    const modalTitle = document.getElementById("modal-title") as HTMLHeadingElement;
-    const modalMessage = document.getElementById("modal-message") as HTMLParagraphElement;
-    const modalConfirm = document.getElementById("modal-confirm") as HTMLButtonElement;
-    const modalCancel = document.getElementById("modal-cancel") as HTMLButtonElement;
-    
+    const messageDiv = document.getElementById(
+      "form-message",
+    ) as HTMLDivElement;
+    const unsavedBanner = document.getElementById(
+      "unsaved-banner",
+    ) as HTMLDivElement;
+    const toastContainer = document.getElementById(
+      "toast-container",
+    ) as HTMLDivElement;
+    const confirmModal = document.getElementById(
+      "confirm-modal",
+    ) as HTMLDivElement;
+    const modalBackdrop = document.getElementById(
+      "modal-backdrop",
+    ) as HTMLDivElement;
+    const modalTitle = document.getElementById(
+      "modal-title",
+    ) as HTMLHeadingElement;
+    const modalMessage = document.getElementById(
+      "modal-message",
+    ) as HTMLParagraphElement;
+    const modalConfirm = document.getElementById(
+      "modal-confirm",
+    ) as HTMLButtonElement;
+    const modalCancel = document.getElementById(
+      "modal-cancel",
+    ) as HTMLButtonElement;
+
     // ============================================
     // ESTADO
     // ============================================
     let hasUnsavedChanges = false;
-    let initialFormData: string = '';
+    let initialFormData: string = "";
     let pendingMaintenanceToggle: HTMLInputElement | null = null;
-    
+
     // Guardar estado inicial del formulario
     function captureInitialState() {
       initialFormData = new FormData(form).toString();
     }
-    
+
     // ============================================
     // TOAST NOTIFICATIONS
     // ============================================
-    function showToast(message: string, type: 'success' | 'error' | 'warning' = 'success') {
-      const toast = document.createElement('div');
+    function showToast(
+      message: string,
+      type: "success" | "error" | "warning" = "success",
+    ) {
+      const toast = document.createElement("div");
       const colors = {
-        success: 'bg-primary/90 text-primary-foreground',
-        error: 'bg-red-500/90 text-white',
-        warning: 'bg-yellow-500/90 text-yellow-950'
+        success: "bg-primary/90 text-primary-foreground",
+        error: "bg-red-500/90 text-white",
+        warning: "bg-yellow-500/90 text-yellow-950",
       };
       const icons = {
-        success: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />',
-        error: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />',
-        warning: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />'
+        success:
+          '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />',
+        error:
+          '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />',
+        warning:
+          '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />',
       };
-      
+
       toast.className = `${colors[type]} px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-right duration-300`;
       toast.innerHTML = `
         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">${icons[type]}</svg>
@@ -786,161 +1028,235 @@ const tooltips: Record<string, string> = {
           </svg>
         </button>
       `;
-      
-      const closeBtn = toast.querySelector('button');
-      closeBtn?.addEventListener('click', () => removeToast(toast));
-      
+
+      const closeBtn = toast.querySelector("button");
+      closeBtn?.addEventListener("click", () => removeToast(toast));
+
       toastContainer.appendChild(toast);
-      
+
       // Auto-remove after 4 seconds
       setTimeout(() => removeToast(toast), 4000);
     }
-    
+
     function removeToast(toast: HTMLElement) {
-      toast.classList.add('animate-out', 'slide-out-to-right', 'duration-200');
+      toast.classList.add("animate-out", "slide-out-to-right", "duration-200");
       setTimeout(() => toast.remove(), 200);
     }
-    
-    // ============================================
-    // TOOLTIPS
-    // ============================================
-    const tooltipTriggers = document.querySelectorAll('.tooltip-trigger');
-    let activeTooltip: HTMLElement | null = null;
-    
-    tooltipTriggers.forEach(trigger => {
-      trigger.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // Remove existing tooltip
-        if (activeTooltip) {
-          activeTooltip.remove();
-          activeTooltip = null;
-        }
-        
-        const tooltipText = (trigger as HTMLElement).dataset.tooltip;
-        if (!tooltipText) return;
-        
-        const tooltip = document.createElement('div');
-        tooltip.className = 'fixed z-50 max-w-xs p-3 text-sm bg-card border border-border rounded-lg shadow-xl animate-in fade-in zoom-in-95 duration-150';
-        tooltip.textContent = tooltipText;
-        
-        document.body.appendChild(tooltip);
-        activeTooltip = tooltip;
-        
-        // Position tooltip
-        const rect = (trigger as HTMLElement).getBoundingClientRect();
-        const tooltipRect = tooltip.getBoundingClientRect();
-        
-        let top = rect.bottom + 8;
-        let left = rect.left - (tooltipRect.width / 2) + (rect.width / 2);
-        
-        // Keep within viewport
-        if (left < 8) left = 8;
-        if (left + tooltipRect.width > window.innerWidth - 8) {
-          left = window.innerWidth - tooltipRect.width - 8;
-        }
-        if (top + tooltipRect.height > window.innerHeight - 8) {
-          top = rect.top - tooltipRect.height - 8;
-        }
-        
-        tooltip.style.top = `${top}px`;
-        tooltip.style.left = `${left}px`;
-      });
-    });
-    
-    // Close tooltip when clicking elsewhere
-    document.addEventListener('click', (e) => {
-      if (activeTooltip && !(e.target as HTMLElement).closest('.tooltip-trigger')) {
-        activeTooltip.remove();
-        activeTooltip = null;
-      }
-    });
-    
+
     // ============================================
     // UNSAVED CHANGES DETECTION
     // ============================================
     function checkForChanges() {
       const currentData = new FormData(form).toString();
       hasUnsavedChanges = currentData !== initialFormData;
-      
+
       if (hasUnsavedChanges) {
-        unsavedBanner.classList.remove('hidden');
+        unsavedBanner.classList.remove("hidden");
       } else {
-        unsavedBanner.classList.add('hidden');
+        unsavedBanner.classList.add("hidden");
       }
     }
-    
+
     // Listen to all form inputs
-    const allInputs = form.querySelectorAll('.setting-input');
-    allInputs.forEach(input => {
-      input.addEventListener('change', checkForChanges);
-      input.addEventListener('input', checkForChanges);
+    const allInputs = form.querySelectorAll(".setting-input");
+    allInputs.forEach((input) => {
+      input.addEventListener("change", checkForChanges);
+      input.addEventListener("input", checkForChanges);
     });
-    
+
     // Warn before leaving with unsaved changes
-    window.addEventListener('beforeunload', (e) => {
+    window.addEventListener("beforeunload", (e) => {
       if (hasUnsavedChanges) {
         e.preventDefault();
-        e.returnValue = '';
+        e.returnValue = "";
       }
     });
-    
+
     // ============================================
     // CONFIRMATION MODAL FOR CRITICAL CHANGES
     // ============================================
-    const maintenanceToggle = document.getElementById('maintenance_mode') as HTMLInputElement;
-    
-    maintenanceToggle?.addEventListener('change', (e) => {
+    const maintenanceToggle = document.getElementById(
+      "maintenance_mode",
+    ) as HTMLInputElement;
+
+    maintenanceToggle?.addEventListener("change", (e) => {
       if (maintenanceToggle.checked) {
         e.preventDefault();
         maintenanceToggle.checked = false;
         pendingMaintenanceToggle = maintenanceToggle;
-        
-        modalTitle.textContent = '¿Activar modo mantenimiento?';
-        modalMessage.textContent = 'Los visitantes no podrán acceder a la tienda hasta que lo desactives. Solo los administradores podrán navegar.';
-        confirmModal.classList.remove('hidden');
+
+        modalTitle.textContent = "¿Activar modo mantenimiento?";
+        modalMessage.textContent =
+          "Los visitantes no podrán acceder a la tienda hasta que lo desactives. Solo los administradores podrán navegar.";
+        confirmModal.classList.remove("hidden");
       }
     });
-    
-    modalConfirm?.addEventListener('click', () => {
+
+    modalConfirm?.addEventListener("click", () => {
       if (pendingMaintenanceToggle) {
         pendingMaintenanceToggle.checked = true;
         checkForChanges();
       }
-      confirmModal.classList.add('hidden');
+      confirmModal.classList.add("hidden");
       pendingMaintenanceToggle = null;
     });
-    
-    modalCancel?.addEventListener('click', () => {
-      confirmModal.classList.add('hidden');
+
+    // ============================================
+    // IMAGE UPLOAD HANDLERS (Logo/Favicon)
+    // ============================================
+    async function uploadImage(file: File): Promise<string> {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || "Error al subir la imagen");
+      }
+
+      const data = await response.json();
+      return data.url;
+    }
+
+    function setupImageUploader(
+      fileInputId: string,
+      hiddenInputId: string,
+      previewId: string,
+      removeButtonId: string,
+      maxSizeMB: number = 2,
+    ) {
+      const fileInput = document.getElementById(
+        fileInputId,
+      ) as HTMLInputElement;
+      const hiddenInput = document.getElementById(
+        hiddenInputId,
+      ) as HTMLInputElement;
+      const preview = document.getElementById(previewId) as HTMLDivElement;
+      const removeBtn = document.getElementById(
+        removeButtonId,
+      ) as HTMLButtonElement;
+
+      if (!fileInput || !hiddenInput || !preview) return;
+
+      fileInput.addEventListener("change", async (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith("image/")) {
+          showToast("El archivo debe ser una imagen", "error");
+          return;
+        }
+
+        // Validate file size
+        if (file.size > maxSizeMB * 1024 * 1024) {
+          showToast(
+            `El archivo es demasiado grande (máx ${maxSizeMB}MB)`,
+            "error",
+          );
+          return;
+        }
+
+        // Show loading state
+        preview.innerHTML =
+          '<div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>';
+
+        try {
+          const url = await uploadImage(file);
+
+          // Update preview
+          preview.innerHTML = `<img src="${url}" alt="Preview" class="max-w-full max-h-full object-contain" />`;
+
+          // Update hidden input and trigger change detection
+          hiddenInput.value = url;
+          checkForChanges();
+
+          // Show remove button
+          if (removeBtn) {
+            removeBtn.classList.remove("hidden");
+          }
+
+          showToast("Imagen subida correctamente", "success");
+        } catch (err: any) {
+          showToast(err.message || "Error al subir la imagen", "error");
+          // Restore placeholder
+          preview.innerHTML = `
+            <svg class="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          `;
+        }
+
+        // Reset file input
+        fileInput.value = "";
+      });
+
+      // Remove button handler
+      if (removeBtn) {
+        removeBtn.addEventListener("click", () => {
+          hiddenInput.value = "";
+          preview.innerHTML = `
+            <svg class="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          `;
+          removeBtn.classList.add("hidden");
+          checkForChanges();
+        });
+      }
+    }
+
+    // Setup logo uploader
+    setupImageUploader(
+      "logo-file-input",
+      "store_logo",
+      "logo-preview",
+      "remove-logo-btn",
+      2,
+    );
+
+    // Setup favicon uploader
+    setupImageUploader(
+      "favicon-file-input",
+      "store_favicon",
+      "favicon-preview",
+      "remove-favicon-btn",
+      1,
+    );
+
+    modalCancel?.addEventListener("click", () => {
+      confirmModal.classList.add("hidden");
       pendingMaintenanceToggle = null;
     });
-    
-    modalBackdrop?.addEventListener('click', () => {
-      confirmModal.classList.add('hidden');
+
+    modalBackdrop?.addEventListener("click", () => {
+      confirmModal.classList.add("hidden");
       pendingMaintenanceToggle = null;
     });
-    
+
     // ============================================
     // KEYBOARD SHORTCUTS
     // ============================================
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener("keydown", (e) => {
       // Ctrl+S or Cmd+S to save
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
         if (hasUnsavedChanges && !saveBtn.disabled) {
           form.requestSubmit();
         }
       }
-      
+
       // Escape to close modal
-      if (e.key === 'Escape' && !confirmModal.classList.contains('hidden')) {
-        confirmModal.classList.add('hidden');
+      if (e.key === "Escape" && !confirmModal.classList.contains("hidden")) {
+        confirmModal.classList.add("hidden");
         pendingMaintenanceToggle = null;
       }
     });
-    
+
     // ============================================
     // FORM SUBMISSION
     // ============================================
@@ -964,30 +1280,45 @@ const tooltips: Record<string, string> = {
           // Boolean settings
           {
             key: "offers_enabled",
-            value_bool: (document.getElementById("offers_enabled") as HTMLInputElement).checked,
+            value_bool: (
+              document.getElementById("offers_enabled") as HTMLInputElement
+            ).checked,
           },
           {
             key: "prices_include_tax",
-            value_bool: (document.getElementById("prices_include_tax") as HTMLInputElement).checked,
+            value_bool: (
+              document.getElementById("prices_include_tax") as HTMLInputElement
+            ).checked,
           },
           {
             key: "maintenance_mode",
-            value_bool: (document.getElementById("maintenance_mode") as HTMLInputElement).checked,
+            value_bool: (
+              document.getElementById("maintenance_mode") as HTMLInputElement
+            ).checked,
           },
           // Text settings
           { key: "store_name", value: formData.get("store_name") as string },
           { key: "store_email", value: formData.get("store_email") as string },
           { key: "store_phone", value: formData.get("store_phone") as string },
-          { key: "store_address", value: formData.get("store_address") as string },
-          { key: "maintenance_message", value: formData.get("maintenance_message") as string },
+          {
+            key: "store_address",
+            value: formData.get("store_address") as string,
+          },
+          {
+            key: "maintenance_message",
+            value: formData.get("maintenance_message") as string,
+          },
           // Numeric settings
           {
             key: "free_shipping_threshold",
-            value_number: parseFloat(formData.get("free_shipping_threshold") as string) || 50,
+            value_number:
+              parseFloat(formData.get("free_shipping_threshold") as string) ||
+              50,
           },
           {
             key: "shipping_cost",
-            value_number: parseFloat(formData.get("shipping_cost") as string) || 4.99,
+            value_number:
+              parseFloat(formData.get("shipping_cost") as string) || 4.99,
           },
           {
             key: "tax_rate",
@@ -995,15 +1326,44 @@ const tooltips: Record<string, string> = {
           },
           {
             key: "return_window_days",
-            value_number: parseInt(formData.get("return_window_days") as string) || 30,
+            value_number:
+              parseInt(formData.get("return_window_days") as string) || 30,
           },
           // Social settings
-          { key: "social_instagram", value: formData.get("social_instagram") as string },
-          { key: "social_twitter", value: formData.get("social_twitter") as string },
-          { key: "social_tiktok", value: formData.get("social_tiktok") as string },
-          { key: "social_youtube", value: formData.get("social_youtube") as string },
+          {
+            key: "social_instagram",
+            value: formData.get("social_instagram") as string,
+          },
+          {
+            key: "social_twitter",
+            value: formData.get("social_twitter") as string,
+          },
+          {
+            key: "social_tiktok",
+            value: formData.get("social_tiktok") as string,
+          },
+          {
+            key: "social_youtube",
+            value: formData.get("social_youtube") as string,
+          },
           // Flash offers end date
-          { key: "flash_offers_end", value: formData.get("flash_offers_end") as string },
+          {
+            key: "flash_offers_end",
+            value: formData.get("flash_offers_end") as string,
+          },
+          // Branding settings
+          {
+            key: "store_logo",
+            value:
+              (document.getElementById("store_logo") as HTMLInputElement)
+                ?.value || "",
+          },
+          {
+            key: "store_favicon",
+            value:
+              (document.getElementById("store_favicon") as HTMLInputElement)
+                ?.value || "",
+          },
         ];
 
         const response = await fetch("/api/admin/configuracion", {
@@ -1019,13 +1379,12 @@ const tooltips: Record<string, string> = {
         }
 
         // Success!
-        showToast('Configuración guardada correctamente', 'success');
+        showToast("Configuración guardada correctamente", "success");
         hasUnsavedChanges = false;
-        unsavedBanner.classList.add('hidden');
+        unsavedBanner.classList.add("hidden");
         captureInitialState();
-        
       } catch (error: any) {
-        showToast(error.message || 'Error al guardar', 'error');
+        showToast(error.message || "Error al guardar", "error");
       } finally {
         saveBtn.disabled = false;
         saveBtn.innerHTML = `
@@ -1036,43 +1395,89 @@ const tooltips: Record<string, string> = {
         `;
       }
     });
-    
+
     // ============================================
     // INITIALIZATION
     // ============================================
     captureInitialState();
   </script>
-  
+
   <style>
     @keyframes slide-in-from-right {
-      from { transform: translateX(100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
     }
     @keyframes slide-out-to-right {
-      from { transform: translateX(0); opacity: 1; }
-      to { transform: translateX(100%); opacity: 0; }
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(100%);
+        opacity: 0;
+      }
     }
     @keyframes fade-in {
-      from { opacity: 0; }
-      to { opacity: 1; }
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
     }
     @keyframes zoom-in {
-      from { transform: scale(0.95); }
-      to { transform: scale(1); }
+      from {
+        transform: scale(0.95);
+      }
+      to {
+        transform: scale(1);
+      }
     }
     @keyframes zoom-in-95 {
-      from { transform: scale(0.95); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
+      from {
+        transform: scale(0.95);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
     }
-    .animate-in { animation-fill-mode: both; }
-    .animate-out { animation-fill-mode: both; }
-    .slide-in-from-right { animation-name: slide-in-from-right; }
-    .slide-out-to-right { animation-name: slide-out-to-right; }
-    .fade-in { animation-name: fade-in; }
-    .zoom-in { animation-name: zoom-in; }
-    .zoom-in-95 { animation-name: zoom-in-95; }
-    .duration-150 { animation-duration: 150ms; }
-    .duration-200 { animation-duration: 200ms; }
-    .duration-300 { animation-duration: 300ms; }
+    .animate-in {
+      animation-fill-mode: both;
+    }
+    .animate-out {
+      animation-fill-mode: both;
+    }
+    .slide-in-from-right {
+      animation-name: slide-in-from-right;
+    }
+    .slide-out-to-right {
+      animation-name: slide-out-to-right;
+    }
+    .fade-in {
+      animation-name: fade-in;
+    }
+    .zoom-in {
+      animation-name: zoom-in;
+    }
+    .zoom-in-95 {
+      animation-name: zoom-in-95;
+    }
+    .duration-150 {
+      animation-duration: 150ms;
+    }
+    .duration-200 {
+      animation-duration: 200ms;
+    }
+    .duration-300 {
+      animation-duration: 300ms;
+    }
   </style>
 </AdminLayout>

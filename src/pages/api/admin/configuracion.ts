@@ -51,6 +51,8 @@ const ALLOWED_KEYS = new Set([
   'social_instagram', 'social_twitter', 'social_tiktok', 'social_youtube',
   // SEO
   'meta_title', 'meta_description',
+  // Branding
+  'store_logo', 'store_favicon',
   // Sistema
   'maintenance_mode', 'maintenance_message',
 ]);

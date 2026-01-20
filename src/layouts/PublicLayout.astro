@@ -8,7 +8,7 @@ import AnnouncementBar from "@/components/islands/AnnouncementBar";
 import UserMenuWithAuth from "@/components/islands/UserMenuWithAuth";
 import HeaderNavigation from "@/components/islands/HeaderNavigation";
 import ThemeToggle from "@/components/ThemeToggle";
-import { getShippingConfig } from "@/lib/settings";
+import { getShippingConfig, getSettings } from "@/lib/settings";
 
 interface Props {
   title: string;
@@ -18,21 +18,22 @@ interface Props {
 const { title, description } = Astro.props;
 const currentPath = Astro.url.pathname + Astro.url.search;
 
-// Obtener configuración de envío para el mini-carrito
+// Obtener configuración de envío y branding
 const shippingConfig = await getShippingConfig();
+const settings = await getSettings();
 ---
 
 <BaseLayout title={title} description={description ?? ""}>
   <!-- Cart Slide Over (React Island) -->
-  <CartSlideOver 
-    client:load 
+  <CartSlideOver
+    client:load
     freeShippingThreshold={shippingConfig.freeShippingThreshold}
     shippingCost={shippingConfig.shippingCostEuros}
   />
 
   <!-- Announcement Bar (React Island) -->
-  <AnnouncementBar 
-    client:load 
+  <AnnouncementBar
+    client:load
     message={`🚚 Envío GRATIS en pedidos superiores a ${shippingConfig.freeShippingThreshold}€`}
   />
 
@@ -63,9 +64,21 @@ const shippingConfig = await getShippingConfig();
         <!-- Logo -->
         <a
           href="/"
-          class="font-display text-2xl tracking-wider text-primary hover:animate-pulse-glow transition-all"
+          class="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
-          FASHIONSTORE
+          {
+            settings.storeLogo ? (
+              <img
+                src={settings.storeLogo}
+                alt={settings.storeName || "FashionStore"}
+                class="h-10 w-auto max-w-[160px] object-contain"
+              />
+            ) : (
+              <span class="font-display text-2xl tracking-wider text-primary">
+                {settings.storeName || "FASHIONSTORE"}
+              </span>
+            )
+          }
         </a>
 
         <!-- Desktop Navigation (React Island) -->
@@ -101,7 +114,19 @@ const shippingConfig = await getShippingConfig();
       id="mobile-menu-panel"
     >
       <div class="flex items-center justify-between mb-8">
-        <span class="font-display text-xl text-primary">FASHIONSTORE</span>
+        {
+          settings.storeLogo ? (
+            <img
+              src={settings.storeLogo}
+              alt={settings.storeName || "FashionStore"}
+              class="h-8 w-auto max-w-[120px] object-contain"
+            />
+          ) : (
+            <span class="font-display text-xl text-primary">
+              {settings.storeName || "FASHIONSTORE"}
+            </span>
+          )
+        }
         <button
           id="mobile-menu-close"
           class="touch-target"
@@ -166,7 +191,19 @@ const shippingConfig = await getShippingConfig();
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         <!-- Brand -->
         <div>
-          <span class="font-display text-2xl text-primary">FASHIONSTORE</span>
+          {
+            settings.storeLogo ? (
+              <img
+                src={settings.storeLogo}
+                alt={settings.storeName || "FashionStore"}
+                class="h-10 w-auto max-w-[140px] object-contain"
+              />
+            ) : (
+              <span class="font-display text-2xl text-primary">
+                {settings.storeName || "FASHIONSTORE"}
+              </span>
+            )
+          }
           <p class="mt-4 text-sm text-muted-foreground">
             Tu tienda de streetwear premium con las mejores marcas urbanas.
           </p>

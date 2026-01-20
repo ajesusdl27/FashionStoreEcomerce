@@ -49,6 +49,10 @@ export interface StoreSettings {
   metaTitle: string;
   metaDescription: string;
   
+  // Branding
+  storeLogo: string;
+  storeFavicon: string;
+  
   // Sistema
   maintenanceMode: boolean;
   maintenanceMessage: string;
@@ -100,6 +104,10 @@ const DEFAULTS: StoreSettings = {
   // SEO
   metaTitle: 'FashionStore - Streetwear Premium',
   metaDescription: 'Tu tienda de streetwear premium con las mejores marcas urbanas.',
+  
+  // Branding
+  storeLogo: '',
+  storeFavicon: '',
   
   // Sistema
   maintenanceMode: false,
@@ -294,6 +302,10 @@ function mapSettingsFromCache(cache: Map<string, SettingRow>): StoreSettings {
     // SEO
     metaTitle: getTextValue(cache, 'meta_title', DEFAULTS.metaTitle),
     metaDescription: getTextValue(cache, 'meta_description', DEFAULTS.metaDescription),
+    
+    // Branding
+    storeLogo: getTextValue(cache, 'store_logo', ''),
+    storeFavicon: getTextValue(cache, 'store_favicon', ''),
     
     // Sistema
     maintenanceMode: getBoolValue(cache, 'maintenance_mode', DEFAULTS.maintenanceMode),
