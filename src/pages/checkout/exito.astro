@@ -10,6 +10,7 @@ const sessionId = Astro.url.searchParams.get("session_id");
 
 let order = null;
 let orderItems: any[] = [];
+let emailSent = false;
 
 if (sessionId) {
   try {
@@ -25,10 +26,8 @@ if (sessionId) {
         .single();
 
       const wasAlreadyPaid = existingOrder?.status === "paid";
-
-      console.log(
-        `Order status before update: ${existingOrder?.status}, wasAlreadyPaid: ${wasAlreadyPaid}`,
-      );
+      
+      console.log(`Order status before update: ${existingOrder?.status}, wasAlreadyPaid: ${wasAlreadyPaid}`);
 
       // Update order status to paid (backup in case webhook didn't fire)
       const { error: updateError } = await supabase.rpc("update_order_status", {
@@ -39,7 +38,7 @@ if (sessionId) {
       if (updateError) {
         console.error(
           "Error updating order status in success page:",
-          updateError,
+          updateError
         );
       } else {
         console.log("Order status updated to paid via success page");
@@ -62,7 +61,7 @@ if (sessionId) {
           if (couponError.code !== "23505") {
             console.error(
               "Error recording coupon usage in success page:",
-              couponError,
+              couponError
             );
           } else {
             console.log("Coupon already recorded (likely by webhook)");
@@ -84,9 +83,7 @@ if (sessionId) {
       }
 
       order = orderData;
-      console.log(
-        `Order fetched: ${order ? "YES" : "NO"}, order_number: ${order?.order_number}, email: ${order?.customer_email}`,
-      );
+      console.log(`Order fetched: ${order ? 'YES' : 'NO'}, order_number: ${order?.order_number}, email: ${order?.customer_email}`);
 
       if (order) {
         // Get order items with product info
@@ -97,7 +94,7 @@ if (sessionId) {
             *,
             products (name),
             product_variants (size)
-          `,
+          `
           )
           .eq("order_id", order.id);
 
@@ -105,15 +102,11 @@ if (sessionId) {
 
         // Send confirmation email if webhook didn't already do it
         // (check if order was already paid before we updated it)
-        console.log(
-          `Checking email sending: wasAlreadyPaid=${wasAlreadyPaid}, customerEmail=${order.customer_email}`,
-        );
-
+        console.log(`Checking email sending: wasAlreadyPaid=${wasAlreadyPaid}, customerEmail=${order.customer_email}`);
+        
         if (!wasAlreadyPaid && order.customer_email) {
-          console.log(
-            "Attempting to send confirmation email from success page...",
-          );
-
+          console.log("Attempting to send confirmation email from success page...");
+          
           try {
             const emailItems = orderItems.map((item: any) => ({
               productName: item.products?.name || "Producto",
@@ -137,21 +130,17 @@ if (sessionId) {
               items: emailItems,
             });
 
-            const emailSent = result.success;
-            if (!emailSent) {
+            emailSent = result.success;
+            if (!result.success) {
               console.error("Failed to send confirmation email:", result.error);
             } else {
-              console.log(
-                "✅ Confirmation email sent successfully from success page",
-              );
+              console.log("✅ Confirmation email sent successfully from success page");
             }
           } catch (emailError) {
             console.error("Exception sending confirmation email:", emailError);
           }
         } else {
-          console.log(
-            `Email NOT sent: wasAlreadyPaid=${wasAlreadyPaid}, has email=${!!order.customer_email}`,
-          );
+          console.log(`Email NOT sent: wasAlreadyPaid=${wasAlreadyPaid}, has email=${!!order.customer_email}`);
         }
       }
     }
@@ -215,9 +204,7 @@ function formatDate(date: string): string {
               <div>
                 <p class="text-sm text-muted-foreground">Número de pedido</p>
                 <p class="font-mono text-sm mt-1">
-                  {order.order_number
-                    ? formatOrderId(order.order_number)
-                    : order.id?.slice(0, 8).toUpperCase()}
+                  {order.order_number ? formatOrderId(order.order_number) : order.id?.slice(0, 8).toUpperCase()}
                 </p>
               </div>
               <div class="text-right">
@@ -294,7 +281,7 @@ function formatDate(date: string): string {
 
     // Confetti animation
     const canvas = document.getElementById(
-      "confetti-canvas",
+      "confetti-canvas"
     ) as HTMLCanvasElement;
     const ctx = canvas.getContext("2d");
 
