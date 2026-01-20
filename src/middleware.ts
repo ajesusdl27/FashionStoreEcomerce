@@ -1,5 +1,38 @@
 import { defineMiddleware } from 'astro:middleware';
 import { validateToken, refreshSession } from '@/lib/auth-utils';
+import { supabase } from '@/lib/supabase';
+
+// Cache para el estado de mantenimiento (evitar múltiples queries)
+let maintenanceCache: { enabled: boolean; message: string; timestamp: number } | null = null;
+const MAINTENANCE_CACHE_TTL = 30 * 1000; // 30 segundos
+
+async function getMaintenanceStatus(): Promise<{ enabled: boolean; message: string }> {
+  const now = Date.now();
+  
+  // Usar caché si es válido
+  if (maintenanceCache && (now - maintenanceCache.timestamp) < MAINTENANCE_CACHE_TTL) {
+    return { enabled: maintenanceCache.enabled, message: maintenanceCache.message };
+  }
+  
+  try {
+    const { data } = await supabase
+      .from('settings')
+      .select('key, value, value_bool')
+      .in('key', ['maintenance_mode', 'maintenance_message']);
+    
+    const modeRow = data?.find(s => s.key === 'maintenance_mode');
+    const msgRow = data?.find(s => s.key === 'maintenance_message');
+    
+    const enabled = modeRow?.value_bool === true || modeRow?.value === 'true';
+    const message = msgRow?.value || 'Estamos realizando mejoras. Volvemos pronto.';
+    
+    maintenanceCache = { enabled, message, timestamp: now };
+    return { enabled, message };
+  } catch (error) {
+    console.error('Error checking maintenance mode:', error);
+    return { enabled: false, message: '' };
+  }
+}
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
@@ -75,6 +108,30 @@ export const onRequest = defineMiddleware(async (context, next) => {
       
       if (!isAdmin) {
         return context.redirect('/admin/login?error=unauthorized');
+      }
+    }
+  }
+
+  // ============================================
+  // MODO MANTENIMIENTO
+  // ============================================
+  // Verificar solo para rutas públicas (no admin, no API, no assets)
+  const isPublicPage = !pathname.startsWith('/admin') && 
+                       !pathname.startsWith('/api') &&
+                       pathname !== '/mantenimiento' &&
+                       !pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/);
+
+  if (isPublicPage) {
+    const maintenance = await getMaintenanceStatus();
+    
+    if (maintenance.enabled) {
+      // Si el usuario es admin, permitir acceso
+      const isAdmin = context.locals.user?.user_metadata?.is_admin === true;
+      
+      if (!isAdmin) {
+        // Pasar el mensaje de mantenimiento a la página
+        context.locals.maintenanceMessage = maintenance.message;
+        return context.redirect('/mantenimiento');
       }
     }
   }

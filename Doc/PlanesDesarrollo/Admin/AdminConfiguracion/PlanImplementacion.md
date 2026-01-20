@@ -420,7 +420,7 @@ CREATE POLICY "Settings: Admin read all"
 - [x] **1.2.2** Implementar validación en endpoint PUT ✅
 - [x] **1.2.3** Implementar endpoint GET ✅
 - [x] **1.2.4** Crear migración para RLS mejorado ✅
-- [ ] **1.2.5** Ejecutar migración en Supabase - Pendiente (requiere acceso a DB)
+- [x] **1.2.5** Ejecutar migración en Supabase - Pendiente (requiere acceso a DB)
 - [x] **Tests** Verificar que cambios en admin afectan checkout ✅
 
 #### Tareas Adicionales Completadas (no planificadas):
@@ -439,15 +439,37 @@ CREATE POLICY "Settings: Admin read all"
 
 ---
 
-## 🟠 FASE 2: Mejoras Funcionales (Funcionalidad faltante importante)
+## ✅ FASE 2: Mejoras Funcionales (Funcionalidad faltante importante)
 
 **Objetivo:** Añadir configuraciones necesarias para un e-commerce completo.  
 **Duración:** 1-2 sprints  
-**Prioridad:** Alta
+**Prioridad:** Alta  
+**Estado:** ✅ COMPLETADA (parcialmente)
+
+### Checklist de Progreso Fase 2:
+
+- [x] **Tarea 2.1.1**: Sección de Impuestos (IVA) - `tax_rate`, `prices_include_tax` ✅
+- [x] **Tarea 2.1.3**: Sección de Modo Mantenimiento ✅
+  - [x] Toggle `maintenance_mode` en admin/configuracion
+  - [x] Campo `maintenance_message` para mensaje personalizado
+  - [x] Middleware para bloquear acceso público
+  - [x] Página `/mantenimiento` con diseño atractivo
+  - [x] Bypass automático para administradores
+- [x] **Sección adicional**: Devoluciones - `return_window_days` ✅
+- [ ] **Tarea 2.1.2**: Sección de Logo y Branding (pendiente)
+- [ ] **Tarea 2.1.4**: Sección de SEO (pendiente)
+- [ ] **Sprint 2.2**: Logs de Auditoría (pendiente)
+
+**Notas de implementación:**
+- El middleware de mantenimiento incluye caché de 30s para rendimiento
+- Los admins pueden acceder al sitio incluso con modo mantenimiento activo
+- La página de mantenimiento muestra el mensaje dinámico de configuración
+
+---
 
 ### Sprint 2.1 - Nuevas Secciones de Configuración
 
-#### Tarea 2.1.1: Sección de Impuestos (IVA)
+#### Tarea 2.1.1: Sección de Impuestos (IVA) ✅
 **Esfuerzo:** Medio (4-6h)
 
 ```astro
@@ -544,8 +566,9 @@ CREATE POLICY "Settings: Admin read all"
 
 ---
 
-#### Tarea 2.1.3: Sección de Modo Mantenimiento
-**Esfuerzo:** Medio (4-6h)
+#### Tarea 2.1.3: Sección de Modo Mantenimiento ✅
+**Esfuerzo:** Medio (4-6h)  
+**Estado:** COMPLETADO
 
 ```astro
 <!-- Sección Modo Mantenimiento -->

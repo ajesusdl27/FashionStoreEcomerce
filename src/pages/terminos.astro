@@ -1,5 +1,9 @@
 ---
 import PublicLayout from "@/layouts/PublicLayout.astro";
+import { getSetting } from "@/lib/settings";
+
+// Obtener información desde la base de datos
+const storeName = await getSetting('storeName');
 
 const lastUpdate = new Date().toLocaleDateString("es-ES", {
   year: "numeric",
@@ -9,7 +13,7 @@ const lastUpdate = new Date().toLocaleDateString("es-ES", {
 ---
 
 <PublicLayout
-  title="Términos y Condiciones - FashionStore"
+  title={`Términos y Condiciones - ${storeName}`}
   description="Condiciones generales de compra y uso del sitio web."
 >
   <div class="container mx-auto px-4 py-12 max-w-4xl">
@@ -28,7 +32,7 @@ const lastUpdate = new Date().toLocaleDateString("es-ES", {
           1. Introducción
         </h2>
         <p>
-          Bienvenido a FashionStore. Estos términos y condiciones rigen el uso
+          Bienvenido a {storeName}. Estos términos y condiciones rigen el uso
           de nuestro sitio web y la compra de productos en el mismo. Al acceder
           y usar este sitio, aceptas cumplir con estos términos en su totalidad.
         </p>
@@ -83,7 +87,7 @@ const lastUpdate = new Date().toLocaleDateString("es-ES", {
         </h2>
         <p>
           Todo el contenido de este sitio web (imágenes, textos, diseños, logos)
-          es propiedad de FashionStore o sus licenciantes y está protegido por
+          es propiedad de {storeName} o sus licenciantes y está protegido por
           las leyes de propiedad intelectual. No está permitido su uso sin
           nuestro consentimiento expreso.
         </p>

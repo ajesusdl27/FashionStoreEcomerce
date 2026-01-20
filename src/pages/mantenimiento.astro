@@ -1,0 +1,188 @@
+---
+import { getSettings, getContactInfo } from "@/lib/settings";
+
+// Obtener configuración
+const settings = await getSettings();
+const contactInfo = await getContactInfo();
+
+// Si no está en mantenimiento, redirigir a home
+if (!settings.maintenanceMode) {
+  return Astro.redirect('/');
+}
+---
+
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Mantenimiento - {settings.storeName}</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  
+  <style>
+    :root {
+      --primary: #ccff00;
+      --background: #0a0a0a;
+      --foreground: #fafafa;
+      --muted: #262626;
+      --muted-foreground: #a3a3a3;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    
+    .container {
+      text-align: center;
+      max-width: 500px;
+    }
+    
+    .icon-container {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 2rem;
+      background: linear-gradient(135deg, rgba(204, 255, 0, 0.1), rgba(204, 255, 0, 0.05));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.8; }
+    }
+    
+    .icon {
+      width: 60px;
+      height: 60px;
+      color: var(--primary);
+    }
+    
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      background: linear-gradient(90deg, var(--foreground), var(--primary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .message {
+      font-size: 1.125rem;
+      color: var(--muted-foreground);
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+    
+    .contact-card {
+      background: var(--muted);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-top: 2rem;
+    }
+    
+    .contact-title {
+      font-size: 0.875rem;
+      color: var(--muted-foreground);
+      margin-bottom: 1rem;
+    }
+    
+    .contact-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+      transition: opacity 0.2s;
+    }
+    
+    .contact-link:hover {
+      opacity: 0.8;
+    }
+    
+    .contact-link svg {
+      width: 20px;
+      height: 20px;
+    }
+    
+    .progress-bar {
+      width: 200px;
+      height: 4px;
+      background: var(--muted);
+      border-radius: 2px;
+      margin: 2rem auto;
+      overflow: hidden;
+    }
+    
+    .progress-bar::after {
+      content: '';
+      display: block;
+      width: 40%;
+      height: 100%;
+      background: var(--primary);
+      border-radius: 2px;
+      animation: progress 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes progress {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(350%); }
+    }
+    
+    .store-name {
+      font-size: 0.875rem;
+      color: var(--muted-foreground);
+      margin-top: 3rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon-container">
+      <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    </div>
+    
+    <h1>En Mantenimiento</h1>
+    
+    <p class="message">{settings.maintenanceMessage}</p>
+    
+    <div class="progress-bar"></div>
+    
+    <div class="contact-card">
+      <p class="contact-title">¿Necesitas ayuda urgente?</p>
+      <a href={`mailto:${contactInfo.email}`} class="contact-link">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        {contactInfo.email}
+      </a>
+    </div>
+    
+    <p class="store-name">{settings.storeName}</p>
+  </div>
+</body>
+</html>
