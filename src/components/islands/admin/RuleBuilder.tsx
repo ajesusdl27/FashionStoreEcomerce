@@ -72,17 +72,18 @@ export default function RuleBuilder({ initialRules = [], onChange }: RuleBuilder
   }, [onChange]);
 
   const addRule = (type: RuleType) => {
-    const defaultValues: Partial<Rule> = {
+    const defaultValues: Record<RuleType, Partial<Omit<Rule, 'id' | 'type'>>> = {
       cart_value: { operator: 'greater_than' as Operator, value: 50 },
       day_of_week: { value: ['1', '2', '3', '4', '5'] },
-      first_visit: { value: true },
-      new_customer: { value: true },
-      returning_customer: { value: true }
+      first_visit: { value: true as unknown as string },
+      new_customer: { value: true as unknown as string },
+      returning_customer: { value: true as unknown as string }
     };
 
     const newRule: Rule = {
       id: generateId(),
       type,
+      value: '',
       ...defaultValues[type]
     };
 

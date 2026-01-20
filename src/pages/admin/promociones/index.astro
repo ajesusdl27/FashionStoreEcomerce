@@ -186,7 +186,7 @@ const alreadyExpired =
             <div class="text-2xl font-bold text-green-500">
               {
                 promotions.filter(
-                  (p: any) => getPromoStatus(p).status === "active"
+                  (p: any) => getPromoStatus(p).status === "active",
                 ).length
               }
             </div>
@@ -196,7 +196,7 @@ const alreadyExpired =
             <div class="text-2xl font-bold text-yellow-500">
               {
                 promotions.filter(
-                  (p: any) => getPromoStatus(p).status === "scheduled"
+                  (p: any) => getPromoStatus(p).status === "scheduled",
                 ).length
               }
             </div>
@@ -206,7 +206,7 @@ const alreadyExpired =
             <div class="text-2xl font-bold text-red-500">
               {
                 promotions.filter(
-                  (p: any) => getPromoStatus(p).status === "expired"
+                  (p: any) => getPromoStatus(p).status === "expired",
                 ).length
               }
             </div>
@@ -628,7 +628,7 @@ const alreadyExpired =
 
       if (
         !confirm(
-          "¿Estás seguro de eliminar esta promoción? Desaparecerá de la web inmediatamente."
+          "¿Estás seguro de eliminar esta promoción? Desaparecerá de la web inmediatamente.",
         )
       ) {
         return;
@@ -709,19 +709,19 @@ const alreadyExpired =
 
   // Client-side filtering
   const filterStatus = document.getElementById(
-    "filter-status"
+    "filter-status",
   ) as HTMLSelectElement;
   const filterZone = document.getElementById(
-    "filter-zone"
+    "filter-zone",
   ) as HTMLSelectElement;
   const filterCoupon = document.getElementById(
-    "filter-coupon"
+    "filter-coupon",
   ) as HTMLSelectElement;
   const clearFiltersBtn = document.getElementById(
-    "clear-filters"
+    "clear-filters",
   ) as HTMLButtonElement;
   const tableRows = document.querySelectorAll(
-    "tbody tr"
+    "tbody tr",
   ) as NodeListOf<HTMLTableRowElement>;
 
   function applyFilters() {
@@ -737,7 +737,7 @@ const alreadyExpired =
       // Status filter - check the status text in the row
       if (status) {
         const statusCell = row.querySelector(
-          ".toggle-status-btn span:last-child"
+          ".toggle-status-btn span:last-child",
         );
         const statusText = statusCell?.textContent?.toLowerCase() || "";
         const statusMap: Record<string, string> = {
@@ -760,7 +760,7 @@ const alreadyExpired =
               .getAttribute("title")
               ?.toLowerCase()
               .includes(zone.replace("_", " ")) ||
-            badge.textContent?.includes(zone.split("_")[0])
+            badge.textContent?.includes(zone.split("_")[0] ?? ""),
         );
         if (!hasZone) {
           show = false;

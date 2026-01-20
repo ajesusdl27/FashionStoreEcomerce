@@ -32,6 +32,16 @@ export interface OrderEmailData {
   reason?: string; // Añadido para cancelaciones
 }
 
+// Tipo simplificado para emails de cancelación
+export interface CancellationEmailData {
+  orderId: string;
+  orderNumber: number;
+  customerName: string;
+  customerEmail: string;
+  reason?: string;
+  refundAmount?: number;
+}
+
 // Envía el email de confirmación de pedido con ticket PDF adjunto
 export async function sendOrderConfirmation(order: OrderEmailData): Promise<{ success: boolean; error?: string }> {
   if (!resend) {
@@ -664,7 +674,7 @@ export async function sendRefundProcessed(data: RefundProcessedData): Promise<{ 
 }
 
 // Envía email cuando se cancela un pedido
-export async function sendOrderCancelled(data: OrderEmailData): Promise<{ success: boolean; error?: string }> {
+export async function sendOrderCancelled(data: CancellationEmailData): Promise<{ success: boolean; error?: string }> {
   if (!resend) {
     console.warn('Resend not configured - skipping order cancelled email');
     return { success: false, error: 'Email service not configured' };
@@ -676,6 +686,9 @@ export async function sendOrderCancelled(data: OrderEmailData): Promise<{ succes
     const contactEmail = import.meta.env.CONTACT_EMAIL || 'info@fashionstore.es';
     
     const displayOrderId = formatOrderId(data.orderNumber);
+    const refundText = data.refundAmount 
+      ? `Si se realizó algún cargo, el reembolso de <strong>${data.refundAmount.toFixed(2)}€</strong> se procesará automáticamente en 3-5 días hábiles.`
+      : 'Si se realizó algún cargo, el reembolso se procesará automáticamente en 3-5 días hábiles.';
 
     const html = `
 <!DOCTYPE html>
@@ -697,7 +710,7 @@ export async function sendOrderCancelled(data: OrderEmailData): Promise<{ succes
             <td style="padding: 40px 30px; text-align: center;">
               <h2 style="margin: 0 0 10px; color: #0a0a0a;">Pedido Cancelado</h2>
               <p style="margin: 0; color: #666; font-size: 16px;">
-                Hola ${data.customerName}, tu pedido ${displayOrderId} ha sido cancelado según tu solicitud.
+                Hola ${data.customerName}, tu pedido ${displayOrderId} ha sido cancelado${data.reason ? ': ' + data.reason : ''}.
               </p>
             </td>
           </tr>
@@ -705,8 +718,7 @@ export async function sendOrderCancelled(data: OrderEmailData): Promise<{ succes
             <td style="padding: 0 30px 30px;">
               <div style="background-color: #fef2f2; border-radius: 8px; padding: 20px; border-left: 4px solid #ef4444;">
                 <p style="margin: 0; color: #991b1b; font-size: 14px;">
-                  Si se realizó algún cargo, el reembolso de <strong>${data.totalAmount.toFixed(2)}€</strong> 
-                  se procesará automáticamente en 3-5 días hábiles.
+                  ${refundText}
                 </p>
               </div>
             </td>

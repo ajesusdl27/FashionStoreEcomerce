@@ -6,7 +6,12 @@ interface Props {
   class?: string;
 }
 
-const { open = false, title, size = "md", class: className = "" } = Astro.props;
+const {
+  open: _open = false,
+  title,
+  size = "md",
+  class: className = "",
+} = Astro.props;
 
 const sizes = {
   sm: "max-w-sm",

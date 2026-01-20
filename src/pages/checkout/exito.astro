@@ -10,7 +10,6 @@ const sessionId = Astro.url.searchParams.get("session_id");
 
 let order = null;
 let orderItems: any[] = [];
-let _emailSent = false;
 
 if (sessionId) {
   try {
@@ -138,8 +137,8 @@ if (sessionId) {
               items: emailItems,
             });
 
-            _emailSent = result.success;
-            if (!result.success) {
+            const emailSent = result.success;
+            if (!emailSent) {
               console.error("Failed to send confirmation email:", result.error);
             } else {
               console.log(
