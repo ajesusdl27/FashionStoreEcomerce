@@ -17,6 +17,15 @@ interface ToastContextValue {
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
+// Event emitter for global toast access (outside React context)
+const TOAST_EVENT = 'fashionstore:toast';
+
+interface ToastEventDetail {
+  message: string;
+  type: ToastType;
+  duration?: number;
+}
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -33,6 +42,23 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const removeToast = (id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
+
+  // Listen for global toast events (from components outside React context)
+  useEffect(() => {
+    const handleToastEvent = (e: CustomEvent<ToastEventDetail>) => {
+      addToast(e.detail);
+    };
+
+    window.addEventListener(TOAST_EVENT, handleToastEvent as EventListener);
+    
+    // Register global function for easier access
+    setGlobalToast(addToast);
+
+    return () => {
+      window.removeEventListener(TOAST_EVENT, handleToastEvent as EventListener);
+      setGlobalToast(null);
+    };
+  }, []);
 
   return (
     <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
@@ -53,8 +79,16 @@ export function useToast() {
 function ToastContainer() {
   const { toasts, removeToast } = useToast();
 
+  // Determine aria-live based on toast types (assertive for errors/warnings)
+  const hasUrgentToast = toasts.some(t => t.type === 'error' || t.type === 'warning');
+
   return (
-    <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+    <div 
+      role="status"
+      aria-live={hasUrgentToast ? 'assertive' : 'polite'}
+      aria-atomic="true"
+      className="fixed top-4 right-4 z-[100] flex flex-col gap-2 max-w-sm w-full pointer-events-none"
+    >
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
       ))}
@@ -122,6 +156,34 @@ export function setGlobalToast(addToast: typeof globalAddToast) {
   globalAddToast = addToast;
 }
 
+/**
+ * Global toast function - can be called from anywhere (inside or outside React)
+ * @param message - The message to display
+ * @param type - Toast type: 'success' | 'error' | 'warning' | 'info'
+ * @param duration - Duration in ms (default: 3000)
+ */
 export function toast(message: string, type: ToastType = 'info', duration = 3000) {
-  globalAddToast?.({ message, type, duration });
+  // Try the direct function first (faster if available)
+  if (globalAddToast) {
+    globalAddToast({ message, type, duration });
+    return;
+  }
+  
+  // Fallback to custom event (works even before React mounts)
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent(TOAST_EVENT, {
+        detail: { message, type, duration }
+      })
+    );
+  }
 }
+
+// Convenience methods for common toast types
+toast.success = (message: string, duration?: number) => toast(message, 'success', duration);
+toast.error = (message: string, duration?: number) => toast(message, 'error', duration);
+toast.warning = (message: string, duration?: number) => toast(message, 'warning', duration);
+toast.info = (message: string, duration?: number) => toast(message, 'info', duration);
+
+// Export event name for external use
+export const TOAST_EVENT_NAME = TOAST_EVENT;

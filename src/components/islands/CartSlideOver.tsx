@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useStore } from '@nanostores/react';
+import { FocusTrap } from 'focus-trap-react';
 import { $cart, $cartSubtotal, removeFromCart, updateQuantity, $isCartOpen, closeCart } from '@/stores/cart';
 import QuantitySelector from '@/components/islands/QuantitySelector';
 import PromotionBanner from '@/components/ui/PromotionBanner';
@@ -17,22 +18,11 @@ export default function CartSlideOver({
   const isOpen = useStore($isCartOpen);
   const items = useStore($cart);
   const subtotal = useStore($cartSubtotal);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   
   const freeShippingProgress = Math.min((subtotal / freeShippingThreshold) * 100, 100);
   const isFreeShipping = subtotal >= freeShippingThreshold;
   const amountToFreeShipping = freeShippingThreshold - subtotal;
-
-  // Listen for ESC
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeCart();
-    };
-    document.addEventListener('keydown', handleEsc);
-
-    return () => {
-      document.removeEventListener('keydown', handleEsc);
-    };
-  }, []);
 
   // Lock body scroll when open
   useEffect(() => {
@@ -50,31 +40,46 @@ export default function CartSlideOver({
 
   return (
     <div className="fixed inset-0 z-50">
-      {/* Backdrop */}
+      {/* Backdrop - aria-hidden to prevent screen reader focus */}
       <div 
         className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
         onClick={closeCart}
+        aria-hidden="true"
       />
 
-      {/* Slide-over Panel */}
-      <div 
-        className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-card border-l border-border shadow-xl animate-slide-in-right flex flex-col"
+      {/* Slide-over Panel with Focus Trap */}
+      <FocusTrap
+        active={isOpen}
+        focusTrapOptions={{
+          initialFocus: () => closeButtonRef.current || undefined,
+          returnFocusOnDeactivate: true,
+          escapeDeactivates: true,
+          onDeactivate: closeCart,
+          clickOutsideDeactivates: true,
+        }}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h2 className="font-heading text-xl font-semibold">
-            Tu Carrito ({items.length})
-          </h2>
-          <button
-            onClick={closeCart}
-            className="touch-target flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Cerrar carrito"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+        <div 
+          className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-card border-l border-border shadow-xl animate-slide-in-right flex flex-col"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cart-title"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+            <h2 id="cart-title" className="font-heading text-xl font-semibold">
+              Tu Carrito ({items.length})
+            </h2>
+            <button
+              ref={closeButtonRef}
+              onClick={closeCart}
+              className="w-11 h-11 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted active:bg-muted/80 transition-colors"
+              aria-label="Cerrar carrito"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
 
         {/* Free Shipping Progress */}
         {!isFreeShipping && items.length > 0 && (
@@ -218,7 +223,8 @@ export default function CartSlideOver({
             </div>
           </div>
         )}
-      </div>
+        </div>
+      </FocusTrap>
     </div>
   );
 }

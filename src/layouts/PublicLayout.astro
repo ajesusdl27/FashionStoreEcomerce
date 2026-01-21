@@ -42,11 +42,14 @@ const settings = await getSettings();
   <header class="sticky top-0 z-50 glass border-b border-border">
     <div class="container mx-auto px-4">
       <div class="flex items-center justify-between h-16">
-        <!-- Mobile Menu Button -->
+        <!-- Mobile Menu Button - 44x44px touch target with ARIA attributes -->
         <button
           id="mobile-menu-btn"
-          class="lg:hidden touch-target flex items-center justify-center text-foreground hover:text-primary transition-colors"
-          aria-label="Abrir menú"
+          class="lg:hidden w-11 h-11 flex items-center justify-center text-foreground hover:text-primary hover:bg-muted active:bg-muted/80 rounded-lg transition-colors"
+          aria-label="Abrir menú de navegación"
+          aria-expanded="false"
+          aria-controls="mobile-menu-panel"
+          aria-haspopup="true"
         >
           <Menu className="w-6 h-6" />
         </button>
@@ -75,17 +78,17 @@ const settings = await getSettings();
         <HeaderNavigation client:load currentPath={currentPath} />
 
         <!-- Actions -->
-        <div class="flex items-center gap-4">
-          <!-- Search (React Island) -->
+        <div class="flex items-center gap-2">
+          <!-- Search (React Island) - idle loading for non-critical -->
           <HeaderSearch client:idle />
 
-          <!-- Details: Theme Toggle -->
+          <!-- Theme Toggle - load immediately as it affects FOUC -->
           <ThemeToggle client:load />
 
-          <!-- User Menu (React Island) -->
-          <UserMenuWithAuth client:load />
+          <!-- User Menu (React Island) - visible loading for interactive elements -->
+          <UserMenuWithAuth client:visible />
 
-          <!-- Cart (React Island) -->
+          <!-- Cart (React Island) - load immediately as it's critical for e-commerce -->
           <CartIcon client:load />
         </div>
       </div>
@@ -93,15 +96,21 @@ const settings = await getSettings();
   </header>
 
   <!-- Mobile Menu Overlay -->
-  <div id="mobile-menu" class="fixed inset-0 z-50 hidden">
+  <div id="mobile-menu" class="fixed inset-0 z-50 hidden" aria-hidden="true">
+    <!-- Backdrop with aria-hidden to prevent screen reader focus -->
     <div
       class="absolute inset-0 bg-black/60 backdrop-blur-sm"
       id="mobile-menu-backdrop"
+      aria-hidden="true"
     >
     </div>
+    <!-- Navigation panel with role="dialog" for modal-like behavior -->
     <nav
       class="absolute left-0 top-0 bottom-0 w-80 max-w-[80vw] bg-card border-r border-border p-6 transform -translate-x-full transition-transform duration-300"
       id="mobile-menu-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Menú de navegación principal"
     >
       <div class="flex items-center justify-between mb-8">
         {
@@ -117,10 +126,11 @@ const settings = await getSettings();
             </span>
           )
         }
+        <!-- Close button - 44x44px touch target -->
         <button
           id="mobile-menu-close"
-          class="touch-target text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Cerrar menú"
+          class="w-11 h-11 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted active:bg-muted/80 transition-colors"
+          aria-label="Cerrar menú de navegación"
         >
           <X className="w-6 h-6" />
         </button>
@@ -169,8 +179,8 @@ const settings = await getSettings();
     </nav>
   </div>
 
-  <!-- Main Content -->
-  <main class="flex-1">
+  <!-- Main Content - with id for skip link and tabindex for programmatic focus -->
+  <main id="main-content" class="flex-1" tabindex="-1">
     <slot />
   </main>
 
@@ -263,9 +273,9 @@ const settings = await getSettings();
           </ul>
         </div>
 
-        <!-- Newsletter -->
+        <!-- Newsletter - below fold, use visible loading -->
         <div>
-          <NewsletterForm client:idle />
+          <NewsletterForm client:visible />
         </div>
       </div>
 
@@ -280,29 +290,106 @@ const settings = await getSettings();
   </footer>
 
   <script>
-    // Mobile menu functionality
+    // Mobile menu functionality with full accessibility support
     const menuBtn = document.getElementById("mobile-menu-btn");
     const menuClose = document.getElementById("mobile-menu-close");
     const menu = document.getElementById("mobile-menu");
     const menuBackdrop = document.getElementById("mobile-menu-backdrop");
     const menuPanel = document.getElementById("mobile-menu-panel");
 
+    // Get all focusable elements in the menu
+    function getFocusableElements() {
+      if (!menuPanel) return [];
+      return Array.from(
+        menuPanel.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      );
+    }
+
     function openMenu() {
-      menu?.classList.remove("hidden");
+      if (!menu || !menuPanel || !menuBtn) return;
+      
+      // Show menu
+      menu.classList.remove("hidden");
+      menu.setAttribute("aria-hidden", "false");
+      
+      // Update button state
+      menuBtn.setAttribute("aria-expanded", "true");
+      
+      // Prevent body scroll
+      document.body.style.overflow = "hidden";
+      
+      // Animate panel in
       setTimeout(() => {
-        menuPanel?.classList.remove("-translate-x-full");
+        menuPanel.classList.remove("-translate-x-full");
+        
+        // Focus the first focusable element (close button)
+        setTimeout(() => {
+          const focusable = getFocusableElements();
+          if (focusable.length > 0) {
+            focusable[0].focus();
+          }
+        }, 100);
       }, 10);
     }
 
     function closeMenu() {
-      menuPanel?.classList.add("-translate-x-full");
+      if (!menu || !menuPanel || !menuBtn) return;
+      
+      // Animate panel out
+      menuPanel.classList.add("-translate-x-full");
+      
+      // Update button state
+      menuBtn.setAttribute("aria-expanded", "false");
+      
+      // Hide menu after animation
       setTimeout(() => {
-        menu?.classList.add("hidden");
+        menu.classList.add("hidden");
+        menu.setAttribute("aria-hidden", "true");
+        
+        // Restore body scroll
+        document.body.style.overflow = "";
+        
+        // Return focus to menu button
+        menuBtn.focus();
       }, 300);
     }
 
+    // Handle keyboard navigation
+    function handleKeyDown(e: KeyboardEvent) {
+      const isOpen = menuBtn?.getAttribute("aria-expanded") === "true";
+      if (!isOpen) return;
+
+      // Close on Escape
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeMenu();
+        return;
+      }
+
+      // Trap focus within menu
+      if (e.key === "Tab") {
+        const focusable = getFocusableElements();
+        if (focusable.length === 0) return;
+
+        const firstElement = focusable[0];
+        const lastElement = focusable[focusable.length - 1];
+
+        if (e.shiftKey && document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement.focus();
+        } else if (!e.shiftKey && document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement.focus();
+        }
+      }
+    }
+
+    // Event listeners
     menuBtn?.addEventListener("click", openMenu);
     menuClose?.addEventListener("click", closeMenu);
     menuBackdrop?.addEventListener("click", closeMenu);
+    document.addEventListener("keydown", handleKeyDown);
   </script>
 </BaseLayout>

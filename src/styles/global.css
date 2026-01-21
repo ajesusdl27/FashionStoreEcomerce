@@ -17,7 +17,7 @@
     --accent-foreground: 0 0% 98%;
 
     --muted: 240 4.8% 95.9%; /* #f4f4f5 */
-    --muted-foreground: 240 5% 35%; /* Más oscuro para mejor contraste */
+    --muted-foreground: 240 5% 30%; /* Increased contrast from 35% to 30% for WCAG AAA compliance (7:1 ratio) */
 
     --card: 0 0% 100%; /* #ffffff */
     --card-foreground: 240 10% 3.9%;
@@ -26,6 +26,10 @@
     --input: 240 5.9% 90%;
 
     --ring: 84 85% 35%;
+    
+    /* Electric blue - migrated from hardcoded hex to HSL variable */
+    --electric: 217 91% 60%; /* #3b82f6 equivalent */
+    --electric-foreground: 0 0% 98%; /* #fafafa */
   }
 
   .dark {
@@ -49,6 +53,10 @@
     --input: 240 3.7% 20%; /* Lighter input background */
 
     --ring: 84 100% 50%;
+    
+    /* Electric blue - same value for both modes */
+    --electric: 217 91% 60%; /* #3b82f6 */
+    --electric-foreground: 0 0% 98%;
   }
 
   * {
@@ -176,7 +184,8 @@
   }
 
   .badge-warning {
-    @apply bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border border-yellow-500/30;
+    /* Improved contrast for light mode - darker yellow text */
+    @apply bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border border-yellow-500/30;
   }
 
   .badge-danger {
@@ -273,6 +282,39 @@
   /* Tabular numbers for data */
   .tabular-nums {
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Screen reader only - visible on focus for skip links */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  .sr-only:focus {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 9999;
+    width: auto;
+    height: auto;
+    padding: 1rem 1.5rem;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    font-weight: 600;
+    text-decoration: none;
   }
 }
 

@@ -73,7 +73,8 @@ export default function ThemeToggle() {
   };
 
   if (!mounted) {
-    return <button className="p-2 w-9 h-9" aria-hidden="true" />;
+    // Placeholder with 44x44px size to prevent layout shift
+    return <button className="w-11 h-11" aria-hidden="true" />;
   }
 
   const Icon = theme === "system" ? Monitor : resolvedTheme === "dark" ? Sun : Moon;
@@ -85,7 +86,7 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={cycleTheme}
-      className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary relative group"
+      className="w-11 h-11 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted active:bg-muted/80 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background relative group"
       aria-label={label}
       title={label}
     >

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { X, Truck, Tag } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { toast } from "@/components/islands/Toast";
 
 const STORAGE_KEY = "announcement-dismissed-v2";
 
@@ -61,10 +62,16 @@ export default function AnnouncementBar({
     }, 300);
   };
 
-  const copyCoupon = () => {
+  const copyCoupon = async () => {
     if (promoCoupon) {
-      navigator.clipboard.writeText(promoCoupon);
-      alert(`¡Cupón ${promoCoupon} copiado!`);
+      try {
+        await navigator.clipboard.writeText(promoCoupon);
+        toast.success(`¡Cupón ${promoCoupon} copiado al portapapeles!`);
+      } catch (err) {
+        // Fallback for browsers that don't support clipboard API
+        toast.error('No se pudo copiar el código. Inténtalo manualmente.');
+        console.error('Clipboard error:', err);
+      }
     }
   };
 

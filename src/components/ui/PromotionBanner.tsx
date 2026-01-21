@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { toast } from '@/components/islands/Toast';
 
 interface Promotion {
   id: string;
@@ -105,11 +106,16 @@ export default function PromotionBanner({ zone, className = '', compact = false 
       ? 'text-right items-end' 
       : 'text-left items-start';
   
-  const copyCoupon = () => {
+  const copyCoupon = async () => {
     if (coupons?.code) {
-      navigator.clipboard.writeText(coupons.code);
-      // Simple feedback - could be enhanced with a proper toast component later
-      alert(`✓ Código ${coupons.code} copiado al portapapeles`);
+      try {
+        await navigator.clipboard.writeText(coupons.code);
+        toast.success(`¡Código ${coupons.code} copiado al portapapeles!`);
+      } catch (err) {
+        // Fallback for browsers that don't support clipboard API
+        toast.error('No se pudo copiar el código. Inténtalo manualmente.');
+        console.error('Clipboard error:', err);
+      }
     }
   };
 
@@ -120,25 +126,33 @@ export default function PromotionBanner({ zone, className = '', compact = false 
   // Auto-detect compact mode for certain zones
   const isCompact = compact || zone === 'cart_sidebar' || zone === 'product_page';
 
-  // Compact layout for cart_sidebar and product_page
+  // Compact layout for cart_sidebar and product_page (optimized for mobile)
   if (isCompact) {
     return (
       <a 
         href={ctaButtonLink}
         className={`relative block w-full overflow-hidden rounded-lg group ${className}`}
       >
-        {/* Background Image */}
+        {/* Background Image with picture element for responsive optimization */}
         <div className="absolute inset-0">
-          <img 
-            src={displayImage} 
-            alt={title} 
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
+          <picture>
+            <source 
+              srcSet={mobile_image_url || displayImage} 
+              media="(max-width: 640px)" 
+              type="image/webp"
+            />
+            <img 
+              src={displayImage} 
+              alt={title} 
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
+            />
+          </picture>
           <div className="absolute inset-0 bg-black/50" />
         </div>
 
-        {/* Compact Content */}
-        <div className="relative z-10 flex items-center justify-between p-3 md:p-4">
+        {/* Compact Content with improved mobile touch targets */}
+        <div className="relative z-10 flex items-center justify-between p-3 md:p-4 min-h-[44px]">
           <div className="flex-1 min-w-0">
             <h3 className="font-heading text-sm md:text-base font-bold text-white truncate">
               {title}
@@ -149,7 +163,7 @@ export default function PromotionBanner({ zone, className = '', compact = false 
               </span>
             )}
           </div>
-          <span className="flex-shrink-0 bg-primary text-primary-foreground px-3 py-1.5 rounded text-xs font-medium ml-2">
+          <span className="flex-shrink-0 bg-primary text-primary-foreground px-3 py-2 md:py-1.5 rounded text-xs font-medium ml-2 min-h-[44px] md:min-h-0 flex items-center">
             {ctaButtonText}
           </span>
         </div>
@@ -157,16 +171,28 @@ export default function PromotionBanner({ zone, className = '', compact = false 
     );
   }
 
-  // Full layout for home_hero and announcement_top
+  // Full layout for home_hero and announcement_top with optimized images
   return (
     <div className={`relative w-full overflow-hidden group ${className}`}>
-      {/* Background Image */}
+      {/* Background Image with responsive sources for better performance */}
       <div className="absolute inset-0">
-        <img 
-          src={displayImage} 
-          alt={title} 
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-        />
+        <picture>
+          {/* Mobile image if available */}
+          {mobile_image_url && (
+            <source 
+              srcSet={mobile_image_url} 
+              media="(max-width: 768px)" 
+            />
+          )}
+          {/* Desktop image */}
+          <img 
+            src={displayImage} 
+            alt={title} 
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            loading={zone === 'home_hero' ? 'eager' : 'lazy'}
+            fetchpriority={zone === 'home_hero' ? 'high' : 'auto'}
+          />
+        </picture>
         {/* Overlay gradient to improve readability based on text color */}
         <div className={`absolute inset-0 ${
           style_config?.text_color === 'black' 

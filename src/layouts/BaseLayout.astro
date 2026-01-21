@@ -55,9 +55,20 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
       })();
     </script>
 
-    <!-- Preload fonts -->
+    <!-- Preload fonts - Critical fonts for above-the-fold content -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Preload critical font variants for LCP optimization -->
+    <link 
+      rel="preload" 
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&display=swap" 
+      as="style"
+      onload="this.onload=null;this.rel='stylesheet'"
+    />
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    </noscript>
 
     <!-- View Transitions -->
     <meta name="view-transition" content="same-origin" />
@@ -65,6 +76,10 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
   <body
     class="min-h-screen bg-background text-foreground font-body antialiased"
   >
+    <!-- Skip to main content link for keyboard navigation accessibility -->
+    <a href="#main-content" class="sr-only">
+      Saltar al contenido principal
+    </a>
     <slot />
   </body>
 </html>

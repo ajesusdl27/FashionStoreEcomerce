@@ -27,8 +27,8 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
         electric: {
-          DEFAULT: '#3b82f6',
-          foreground: '#fafafa',
+          DEFAULT: "hsl(var(--electric))",
+          foreground: "hsl(var(--electric-foreground))",
         },
       },
       fontFamily: {

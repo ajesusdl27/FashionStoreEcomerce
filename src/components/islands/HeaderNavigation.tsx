@@ -85,14 +85,22 @@ export default function HeaderNavigation({ currentPath }: HeaderNavigationProps)
   `;
 
   return (
-    <nav className="hidden lg:flex items-center gap-8">
+    <nav className="hidden lg:flex items-center gap-8" aria-label="Navegación principal">
       {/* Home Link */}
-      <a href="/" className={linkClasses('/')}>
+      <a 
+        href="/" 
+        className={linkClasses('/')}
+        aria-current={isActive('/') ? 'page' : undefined}
+      >
         Inicio
       </a>
 
       {/* Products Link */}
-      <a href="/productos" className={linkClasses('/productos')}>
+      <a 
+        href="/productos" 
+        className={linkClasses('/productos')}
+        aria-current={isActive('/productos') ? 'page' : undefined}
+      >
         Productos
       </a>
 
@@ -133,6 +141,7 @@ export default function HeaderNavigation({ currentPath }: HeaderNavigationProps)
                       : 'hover:bg-muted'
                   }`}
                   onClick={() => setIsDropdownOpen(false)}
+                  aria-current={currentPath === `/categoria/${category.slug}` ? 'page' : undefined}
                 >
                   <Tag className="w-4 h-4 text-muted-foreground" />
                   {category.name}
@@ -166,6 +175,7 @@ export default function HeaderNavigation({ currentPath }: HeaderNavigationProps)
             ? 'text-accent' 
             : 'text-accent hover:text-accent/80'
         }`}
+        aria-current={currentPath.includes('ofertas=true') ? 'page' : undefined}
       >
         <Flame className="w-4 h-4" />
         Ofertas
