@@ -1,0 +1,55 @@
+---
+interface Props {
+  id: string;
+  name: string;
+  checked?: boolean;
+  label: string;
+  description?: string;
+  class?: string;
+  // Añadimos soporte para atributos adicionales como data-critical
+  [key: string]: any;
+}
+
+const {
+  id,
+  name,
+  checked = false,
+  label,
+  description,
+  class: className,
+  ...rest
+} = Astro.props;
+---
+
+<label
+  class={`flex items-center justify-between cursor-pointer p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group ${className || ""}`}
+>
+  <div class="flex items-start gap-2">
+    <div>
+      <span class="font-medium">{label}</span>
+      {
+        description && (
+          <p class="text-sm text-muted-foreground">{description}</p>
+        )
+      }
+    </div>
+  </div>
+  <div class="relative">
+    <input
+      type="checkbox"
+      id={id}
+      name={name}
+      checked={checked}
+      class="sr-only peer setting-input"
+      {...rest}
+    />
+    <div
+      class="w-11 h-6 bg-muted border border-border rounded-full peer peer-checked:bg-primary peer-checked:border-primary transition-colors"
+    >
+    </div>
+    <div
+      class="absolute left-1 top-1 w-4 h-4 bg-card rounded-full shadow-sm transition-transform peer-checked:translate-x-5"
+    >
+    </div>
+  </div>
+</label>

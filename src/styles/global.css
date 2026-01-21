@@ -17,7 +17,7 @@
     --accent-foreground: 0 0% 98%;
 
     --muted: 240 4.8% 95.9%; /* #f4f4f5 */
-    --muted-foreground: 240 3.8% 46.1%;
+    --muted-foreground: 240 5% 35%; /* Más oscuro para mejor contraste */
 
     --card: 0 0% 100%; /* #ffffff */
     --card-foreground: 240 10% 3.9%;
@@ -39,14 +39,14 @@
     --accent: 351 100% 63.5%; /* #FF4757 */
     --accent-foreground: 0 0% 98%;
 
-    --muted: 240 3.7% 15.9%; /* #27272a */
-    --muted-foreground: 240 5% 64.9%;
+    --muted: 240 3.7% 20%; /* #303036 - Lighter than card */
+    --muted-foreground: 240 5% 75%; /* Lighter text for better contrast */
 
-    --card: 240 3.7% 15.9%; /* #18181b - slightly darker than muted */
+    --card: 240 3.7% 15.9%; /* #27272a - Kept same */
     --card-foreground: 0 0% 98%;
 
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
+    --border: 240 3.7% 25%; /* Much lighter border to be visible */
+    --input: 240 3.7% 20%; /* Lighter input background */
 
     --ring: 84 100% 50%;
   }
@@ -60,7 +60,23 @@
   }
 
   body {
-    @apply bg-background text-foreground font-body antialiased transition-colors duration-300;
+    @apply bg-background text-foreground font-body antialiased;
+  }
+
+  /* Transición solo cuando hay cambio de tema activo */
+  html.theme-transitioning body {
+    transition: background-color 300ms ease, color 300ms ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   /* Focus visible for accessibility */

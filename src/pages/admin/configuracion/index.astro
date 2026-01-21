@@ -1,5 +1,6 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
+import ToggleSwitch from "@/components/ui/ToggleSwitch.astro";
 import { supabase } from "@/lib/supabase";
 
 // Fetch settings
@@ -160,35 +161,13 @@ const getSettingBool = (key: string) => {
           <h2 class="font-heading text-lg">Sección de Ofertas</h2>
         </div>
 
-        <label
-          class="flex items-center justify-between cursor-pointer p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group"
-        >
-          <div class="flex items-start gap-2">
-            <div>
-              <span class="font-medium">Mostrar Flash Offers</span>
-              <p class="text-sm text-muted-foreground">
-                Activa/desactiva la sección de ofertas en la página principal
-              </p>
-            </div>
-          </div>
-          <div class="relative">
-            <input
-              type="checkbox"
-              id="offers_enabled"
-              name="offers_enabled"
-              checked={getSettingBool("offers_enabled")}
-              class="sr-only peer setting-input"
-            />
-            <div
-              class="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary transition-colors"
-            >
-            </div>
-            <div
-              class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"
-            >
-            </div>
-          </div>
-        </label>
+        <ToggleSwitch
+          id="offers_enabled"
+          name="offers_enabled"
+          checked={getSettingBool("offers_enabled")}
+          label="Mostrar Flash Offers"
+          description="Activa/desactiva la sección de ofertas en la página principal"
+        />
 
         <div class="p-4 rounded-lg bg-muted/30">
           <div class="flex items-center gap-2 mb-2">
@@ -758,35 +737,14 @@ const getSettingBool = (key: string) => {
             </div>
           </div>
           <div class="flex items-center">
-            <label
-              class="flex items-center gap-3 cursor-pointer p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors w-full group"
-            >
-              <div class="relative">
-                <input
-                  type="checkbox"
-                  id="prices_include_tax"
-                  name="prices_include_tax"
-                  checked={getSettingBool("prices_include_tax")}
-                  class="sr-only peer setting-input"
-                />
-                <div
-                  class="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary transition-colors"
-                >
-                </div>
-                <div
-                  class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"
-                >
-                </div>
-              </div>
-              <div class="flex items-start gap-2">
-                <div>
-                  <span class="font-medium">Los precios incluyen IVA</span>
-                  <p class="text-xs text-muted-foreground">
-                    Marca esta casilla si los precios ya incluyen el impuesto
-                  </p>
-                </div>
-              </div>
-            </label>
+            <ToggleSwitch
+              id="prices_include_tax"
+              name="prices_include_tax"
+              checked={getSettingBool("prices_include_tax")}
+              label="Los precios incluyen IVA"
+              description="Marca esta casilla si los precios ya incluyen el impuesto"
+              class="w-full"
+            />
           </div>
         </div>
       </div>
@@ -867,7 +825,7 @@ const getSettingBool = (key: string) => {
         <div
           class="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30"
         >
-          <label class="flex items-center justify-between cursor-pointer">
+          <label class="flex items-center justify-between cursor-pointer group">
             <div class="flex items-start gap-2">
               <div>
                 <span class="font-medium text-yellow-400"
@@ -889,11 +847,11 @@ const getSettingBool = (key: string) => {
                 data-critical="true"
               />
               <div
-                class="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-yellow-500 transition-colors"
+                class="w-11 h-6 bg-muted border border-border rounded-full peer peer-checked:bg-yellow-500 peer-checked:border-yellow-500 transition-colors"
               >
               </div>
               <div
-                class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"
+                class="absolute left-1 top-1 w-4 h-4 bg-card rounded-full shadow-sm transition-transform peer-checked:translate-x-5"
               >
               </div>
             </div>
@@ -956,9 +914,7 @@ const getSettingBool = (key: string) => {
     // ============================================
     const form = document.getElementById("settings-form") as HTMLFormElement;
     const saveBtn = document.getElementById("save-btn") as HTMLButtonElement;
-    const messageDiv = document.getElementById(
-      "form-message",
-    ) as HTMLDivElement;
+
     const unsavedBanner = document.getElementById(
       "unsaved-banner",
     ) as HTMLDivElement;
