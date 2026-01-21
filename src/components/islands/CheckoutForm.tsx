@@ -366,10 +366,10 @@ export default function CheckoutForm({
   // Loading skeleton
   if (isInitializing) {
     return (
-      <div className="flex flex-col lg:flex-row gap-12 animate-pulse">
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 animate-pulse">
         <div className="flex-1">
           <div className="h-10 bg-muted rounded-lg w-1/2 mx-auto mb-8" />
-          <div className="glass border border-border rounded-2xl p-6 md:p-8 space-y-4">
+          <div className="admin-card space-y-4">
             <div className="h-6 bg-muted rounded w-1/3 mb-6" />
             <div className="h-12 bg-muted rounded-lg" />
             <div className="h-12 bg-muted rounded-lg" />
@@ -377,8 +377,8 @@ export default function CheckoutForm({
             <div className="h-12 bg-muted rounded-lg mt-8" />
           </div>
         </div>
-        <div className="w-full lg:w-96">
-          <div className="glass border border-border rounded-xl p-6 space-y-4">
+        <div className="w-full lg:w-[400px]">
+          <div className="admin-card space-y-4">
             <div className="h-6 bg-muted rounded w-1/2" />
             <div className="h-20 bg-muted rounded-lg" />
             <div className="h-20 bg-muted rounded-lg" />
@@ -394,39 +394,54 @@ export default function CheckoutForm({
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-12">
+    <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
       {/* Form Steps */}
       <div className="flex-1">
-        {/* Steps Indicator */}
-        <div className="flex items-center justify-between mb-8 max-w-md mx-auto">
+        {/* Steps Indicator - Improved design */}
+        <div className="flex items-center justify-between mb-8 max-w-lg mx-auto bg-card border border-border rounded-xl p-4">
           {[
-            { num: 1, label: 'Datos' },
-            { num: 2, label: 'Envío' },
-            { num: 3, label: 'Pago' }
+            { num: 1, label: 'Datos', icon: (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            )},
+            { num: 2, label: 'Envío', icon: (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            )},
+            { num: 3, label: 'Pago', icon: (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+            )}
           ].map((s, idx) => (
-            <div key={s.num} className="flex items-center">
-              <div className="flex flex-col items-center">
+            <div key={s.num} className="flex items-center flex-1">
+              <div className="flex flex-col items-center flex-1">
                 <div 
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-colors ${
-                    step >= s.num ? 'bg-primary text-background' : 'bg-secondary text-muted-foreground'
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold transition-all ${
+                    step >= s.num 
+                      ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
+                      : 'bg-muted text-muted-foreground'
                   }`}
                 >
                   {step > s.num ? (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                     </svg>
                   ) : (
-                    s.num
+                    s.icon
                   )}
                 </div>
-                <span className={`text-xs mt-1 ${step >= s.num ? 'text-primary' : 'text-muted-foreground'}`}>
+                <span className={`text-xs mt-2 font-medium ${step >= s.num ? 'text-primary' : 'text-muted-foreground'}`}>
                   {s.label}
                 </span>
               </div>
               {idx < 2 && (
                 <div 
-                  className={`w-12 sm:w-16 h-1 mx-2 transition-colors ${
-                    step > s.num ? 'bg-primary' : 'bg-secondary'
+                  className={`flex-1 h-1 mx-2 rounded-full transition-colors ${
+                    step > s.num ? 'bg-primary' : 'bg-border'
                   }`}
                 />
               )}
@@ -434,7 +449,7 @@ export default function CheckoutForm({
           ))}
         </div>
 
-        <div className="glass border border-border rounded-2xl p-6 md:p-8">
+        <div className="admin-card">
           {step === 1 && (
             <div className="animate-fadeIn space-y-4">
               <h2 className="font-heading text-xl mb-6">Datos personales</h2>
@@ -575,7 +590,7 @@ export default function CheckoutForm({
             {step > 1 && (
               <button
                 onClick={() => setStep(s => s - 1)}
-                className="flex-1 px-6 py-3 border border-border hover:bg-muted text-foreground rounded-lg font-bold transition-colors flex items-center justify-center gap-2"
+                className="admin-btn-secondary flex-1 py-3.5"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
@@ -586,7 +601,7 @@ export default function CheckoutForm({
             {step < 3 ? (
               <button
                 onClick={handleNextStep}
-                className="flex-1 px-6 py-3 bg-primary text-background rounded-lg font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+                className="admin-btn-primary flex-1 py-3.5"
               >
                 Continuar
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -597,7 +612,7 @@ export default function CheckoutForm({
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="flex-1 px-6 py-3 bg-primary text-background rounded-lg font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="admin-btn-primary flex-1 py-3.5 disabled:opacity-50"
               >
                 {loading ? (
                   <>
@@ -622,20 +637,28 @@ export default function CheckoutForm({
       </div>
 
       {/* Order Summary */}
-      <div className="w-full lg:w-96">
-        <div className="glass border border-border rounded-xl p-6 sticky top-24">
-          <h3 className="font-heading text-xl mb-4">Resumen del pedido</h3>
+      <div className="w-full lg:w-[400px]">
+        <div className="admin-card sticky top-24">
+          <h3 className="font-heading text-xl mb-6 flex items-center gap-2">
+            <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+            Resumen del pedido
+          </h3>
           
-          <div className="space-y-4 mb-6 max-h-60 overflow-y-auto custom-scrollbar">
+          <div className="space-y-3 mb-6 max-h-64 overflow-y-auto no-scrollbar">
             {cart.map((item) => (
-              <div key={`${item.id}-${item.size}`} className="flex gap-4">
-                <div className="w-16 h-16 bg-muted rounded-lg overflow-hidden shrink-0">
+              <div key={`${item.id}-${item.size}`} className="flex gap-3 p-3 bg-muted/30 rounded-lg border border-border/50">
+                <div className="w-14 h-14 bg-muted rounded-lg overflow-hidden shrink-0">
                   <img src={item.imageUrl} alt={item.productName} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-sm truncate">{item.productName}</h4>
-                  <p className="text-xs text-muted-foreground">Talla: {item.size} × {item.quantity}</p>
-                  <p className="text-sm font-medium">{formatPrice(item.price * item.quantity)}</p>
+                  <h4 className="font-medium text-sm truncate">{item.productName}</h4>
+                  <p className="text-xs text-muted-foreground">Talla: {item.size}</p>
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-xs text-muted-foreground">×{item.quantity}</span>
+                    <span className="text-sm font-bold">{formatPrice(item.price * item.quantity)}</span>
+                  </div>
                 </div>
               </div>
             ))}
@@ -673,20 +696,25 @@ export default function CheckoutForm({
           {/* Coupon Input */}
           <div className="py-4 border-t border-border">
             {!appliedCoupon ? (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">¿Tienes un código de descuento?</label>
+              <div className="space-y-3">
+                <label className="admin-label flex items-center gap-2">
+                  <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                  </svg>
+                  ¿Tienes un código de descuento?
+                </label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                     placeholder="CODIGO20"
-                    className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all uppercase"
+                    className="admin-input flex-1 text-sm uppercase font-mono"
                   />
                   <button
                     onClick={handleApplyCoupon}
                     disabled={couponLoading || !couponCode.trim()}
-                    className="px-4 py-2 bg-secondary text-foreground rounded-lg text-sm font-medium hover:bg-secondary/80 transition-colors disabled:opacity-50"
+                    className="admin-btn-secondary px-5 text-sm disabled:opacity-50"
                   >
                     {couponLoading ? (
                       <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
@@ -706,16 +734,21 @@ export default function CheckoutForm({
                 )}
               </div>
             ) : (
-              <div className="flex items-center justify-between bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2">
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="text-sm font-medium text-green-500">{appliedCoupon.code}</span>
+              <div className="flex items-center justify-between bg-green-500/10 border border-green-500/30 rounded-lg px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <div>
+                    <span className="text-sm font-bold font-mono text-green-600 dark:text-green-400">{appliedCoupon.code}</span>
+                    <p className="text-xs text-green-600/70 dark:text-green-400/70">Cupón aplicado</p>
+                  </div>
                 </div>
                 <button
                   onClick={handleRemoveCoupon}
-                  className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                  className="text-muted-foreground hover:text-accent transition-colors p-2 hover:bg-muted rounded-lg"
                   title="Eliminar cupón"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -734,18 +767,16 @@ export default function CheckoutForm({
             </div>
           </div>
           
-          <div className="mt-6 space-y-2">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {/* Trust Badges */}
+          <div className="mt-6 pt-4 border-t border-border space-y-3">
+            <div className="flex items-center gap-3 p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+              <svg className="w-5 h-5 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
-              Pago 100% seguro con encriptación SSL
-            </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-              </svg>
-              Visa, Mastercard, Apple Pay, Google Pay
+              <div>
+                <p className="text-sm font-medium text-green-600 dark:text-green-400">Pago 100% seguro</p>
+                <p className="text-xs text-muted-foreground">Encriptación SSL de 256 bits</p>
+              </div>
             </div>
           </div>
         </div>

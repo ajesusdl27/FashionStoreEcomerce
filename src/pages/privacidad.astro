@@ -1,6 +1,7 @@
 ---
 import PublicLayout from "@/layouts/PublicLayout.astro";
 import { getContactInfo, getSetting } from "@/lib/settings";
+import { Shield, Lock, Eye, Users, FileText } from "lucide-react";
 
 // Obtener información desde la base de datos
 const contactInfo = await getContactInfo();
@@ -17,17 +18,31 @@ const lastUpdate = new Date().toLocaleDateString("es-ES", {
   title={`Política de Privacidad - ${storeName}`}
   description="Nuestra política de privacidad y protección de datos."
 >
-  <div class="container mx-auto px-4 py-12 max-w-4xl">
-    <div class="mb-12">
-      <h1 class="font-display text-4xl text-primary mb-4">
-        POLÍTICA DE PRIVACIDAD
+  <!-- Breadcrumb -->
+  <div class="border-b border-border">
+    <div class="container mx-auto px-4 py-3">
+      <nav class="text-sm text-muted-foreground">
+        <ol class="flex items-center gap-2">
+          <li><a href="/" class="hover:text-primary transition-colors">Inicio</a></li>
+          <li>/</li>
+          <li class="text-foreground">Política de Privacidad</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <div class="container mx-auto px-4 py-8 md:py-12 max-w-4xl">
+    <div class="text-center mb-12">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
+        <Shield className="w-8 h-8 text-primary" />
+      </div>
+      <h1 class="font-display text-4xl md:text-5xl mb-4">
+        Política de Privacidad
       </h1>
       <p class="text-muted-foreground">Última actualización: {lastUpdate}</p>
     </div>
 
-    <div
-      class="glass border border-border rounded-2xl p-8 md:p-12 space-y-8 text-muted-foreground leading-relaxed"
-    >
+    <div class="admin-card space-y-8 text-muted-foreground leading-relaxed">
       <section>
         <h2 class="font-heading text-2xl text-foreground mb-4">
           1. Responsable del Tratamiento
@@ -115,10 +130,13 @@ const lastUpdate = new Date().toLocaleDateString("es-ES", {
         </p>
       </section>
 
-      <div class="border-t border-border pt-8 mt-8">
-        <p class="text-sm">
+      <div class="border-t border-border pt-8 mt-8 text-center">
+        <p class="text-sm mb-4">
           Si tienes alguna duda sobre esta política, no dudes en contactarnos.
         </p>
+        <a href="/contacto" class="admin-btn-secondary inline-flex">
+          Contactar
+        </a>
       </div>
     </div>
   </div>

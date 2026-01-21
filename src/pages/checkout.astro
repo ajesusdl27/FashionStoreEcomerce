@@ -2,10 +2,12 @@
 import PublicLayout from "@/layouts/PublicLayout.astro";
 import CheckoutForm from "@/components/islands/CheckoutForm";
 import { createAuthenticatedClient } from "@/lib/supabase";
-import { getShippingConfig } from "@/lib/settings";
+import { getShippingConfig, getSettings } from "@/lib/settings";
+import { ShieldCheck, Truck, RefreshCw } from "lucide-react";
 
 // Obtener configuración de envío desde la BD
 const shippingConfig = await getShippingConfig();
+const settings = await getSettings();
 
 // Get user data if logged in
 const user = Astro.locals.user;
@@ -34,10 +36,47 @@ if (user) {
 ---
 
 <PublicLayout title="Checkout - FashionStore">
-  <div class="container mx-auto px-4 py-8">
-    <h1 class="font-display text-4xl md:text-5xl text-center mb-8">
-      Finalizar Compra
-    </h1>
+  <!-- Breadcrumb -->
+  <div class="border-b border-border">
+    <div class="container mx-auto px-4 py-3">
+      <nav class="text-sm text-muted-foreground">
+        <ol class="flex items-center gap-2">
+          <li><a href="/" class="hover:text-primary transition-colors">Inicio</a></li>
+          <li>/</li>
+          <li><a href="/carrito" class="hover:text-primary transition-colors">Carrito</a></li>
+          <li>/</li>
+          <li class="text-foreground">Checkout</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <div class="container mx-auto px-4 py-8 md:py-12">
+    <!-- Header -->
+    <div class="text-center mb-10">
+      <h1 class="font-display text-4xl md:text-5xl text-foreground mb-3">
+        Finalizar Compra
+      </h1>
+      <p class="text-muted-foreground">
+        Completa tu pedido en unos simples pasos
+      </p>
+    </div>
+
+    <!-- Trust bar mini -->
+    <div class="flex flex-wrap justify-center gap-6 md:gap-10 text-sm text-muted-foreground mb-10">
+      <div class="flex items-center gap-2">
+        <ShieldCheck className="w-5 h-5 text-green-500" />
+        <span>Pago seguro SSL</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <Truck className="w-5 h-5 text-primary" />
+        <span>Envío gratis +{shippingConfig.freeShippingThreshold}€</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <RefreshCw className="w-5 h-5 text-primary" />
+        <span>{settings.returnWindowDays} días devolución</span>
+      </div>
+    </div>
 
     <CheckoutForm 
       client:load 

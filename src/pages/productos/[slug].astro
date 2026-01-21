@@ -7,6 +7,8 @@ import PromotionBanner from "@/components/ui/PromotionBanner";
 import { supabase } from "@/lib/supabase";
 import { getOptimizedUrl, isCloudinaryUrl } from "@/lib/cloudinary";
 import { formatPrice } from "@/lib/formatters";
+import { getShippingConfig, getSettings } from "@/lib/settings";
+import { RefreshCw, ShieldCheck, Truck } from "lucide-react";
 
 const { slug } = Astro.params;
 
@@ -57,6 +59,10 @@ const getThumbnailUrl = (url: string) => {
   }
   return url;
 };
+
+// Get shipping and store settings
+const shippingConfig = await getShippingConfig();
+const settings = await getSettings();
 ---
 
 <PublicLayout
@@ -191,13 +197,161 @@ const getThumbnailUrl = (url: string) => {
           variants={variantsForReact}
         />
 
+        <!-- Trust Badges -->
+        <div class="mt-8 p-4 bg-muted/30 rounded-xl border border-border space-y-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Truck className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p class="text-sm font-medium">Envío gratis +{shippingConfig.freeShippingThreshold}€</p>
+              <p class="text-xs text-muted-foreground">Entrega en 24-48h laborables</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <RefreshCw className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p class="text-sm font-medium">{settings.returnWindowDays} días para devoluciones</p>
+              <p class="text-xs text-muted-foreground">Devolución gratuita y sin complicaciones</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center flex-shrink-0">
+              <ShieldCheck className="w-5 h-5 text-green-500" />
+            </div>
+            <div>
+              <p class="text-sm font-medium">Pago 100% seguro</p>
+              <p class="text-xs text-muted-foreground">Encriptación SSL y métodos seguros</p>
+            </div>
+          </div>
+        </div>
+
         <!-- Product Page Promotion Banner -->
-        <div class="mt-8">
+        <div class="mt-6">
           <PromotionBanner
             client:load
             zone="product_page"
             className="rounded-lg aspect-[3/1] max-h-[200px]"
           />
+        </div>
+      </div>
+    </div>
+
+    <!-- Product Details Tabs -->
+    <div class="mt-12 border-t border-border pt-8">
+      <div class="flex gap-6 border-b border-border mb-6 overflow-x-auto no-scrollbar" role="tablist">
+        <button 
+          class="tab-btn pb-3 px-1 text-sm font-medium border-b-2 border-primary text-foreground whitespace-nowrap" 
+          data-tab="description"
+          role="tab"
+          aria-selected="true"
+        >
+          Descripción
+        </button>
+        <button 
+          class="tab-btn pb-3 px-1 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors" 
+          data-tab="details"
+          role="tab"
+          aria-selected="false"
+        >
+          Detalles
+        </button>
+        <button 
+          class="tab-btn pb-3 px-1 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors" 
+          data-tab="shipping"
+          role="tab"
+          aria-selected="false"
+        >
+          Envío y Devoluciones
+        </button>
+      </div>
+
+      <!-- Tab Content: Description -->
+      <div class="tab-content" data-tab-content="description">
+        <div class="prose prose-sm dark:prose-invert max-w-none">
+          {product.description ? (
+            <p class="text-muted-foreground leading-relaxed">{product.description}</p>
+          ) : (
+            <p class="text-muted-foreground italic">Sin descripción disponible.</p>
+          )}
+        </div>
+      </div>
+
+      <!-- Tab Content: Details -->
+      <div class="tab-content hidden" data-tab-content="details">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="p-4 bg-muted/30 rounded-lg">
+            <p class="text-xs text-muted-foreground uppercase tracking-wider mb-1">Categoría</p>
+            <p class="font-medium">{product.category?.name || 'Sin categoría'}</p>
+          </div>
+          <div class="p-4 bg-muted/30 rounded-lg">
+            <p class="text-xs text-muted-foreground uppercase tracking-wider mb-1">SKU</p>
+            <p class="font-medium font-mono text-sm">{product.id.slice(0, 8).toUpperCase()}</p>
+          </div>
+          <div class="p-4 bg-muted/30 rounded-lg">
+            <p class="text-xs text-muted-foreground uppercase tracking-wider mb-1">Tallas Disponibles</p>
+            <p class="font-medium">{variantsForReact.filter(v => v.stock > 0).map(v => v.size).join(', ') || 'Agotado'}</p>
+          </div>
+          <div class="p-4 bg-muted/30 rounded-lg">
+            <p class="text-xs text-muted-foreground uppercase tracking-wider mb-1">Estado</p>
+            <p class="font-medium">{product.active ? 'Disponible' : 'No disponible'}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content: Shipping -->
+      <div class="tab-content hidden" data-tab-content="shipping">
+        <div class="space-y-6">
+          <div class="admin-card">
+            <h4 class="font-heading text-lg mb-3 flex items-center gap-2">
+              <Truck className="w-5 h-5 text-primary" />
+              Información de Envío
+            </h4>
+            <ul class="space-y-2 text-sm text-muted-foreground">
+              <li class="flex items-start gap-2">
+                <span class="text-primary">✓</span>
+                Envío gratis en pedidos superiores a {shippingConfig.freeShippingThreshold}€
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-primary">✓</span>
+                Entrega en 24-48h laborables en España peninsular
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-primary">✓</span>
+                Envío a Baleares y Canarias disponible (consultar plazos)
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-primary">✓</span>
+                Seguimiento del envío en tiempo real
+              </li>
+            </ul>
+          </div>
+          <div class="admin-card">
+            <h4 class="font-heading text-lg mb-3 flex items-center gap-2">
+              <RefreshCw className="w-5 h-5 text-primary" />
+              Política de Devoluciones
+            </h4>
+            <ul class="space-y-2 text-sm text-muted-foreground">
+              <li class="flex items-start gap-2">
+                <span class="text-primary">✓</span>
+                {settings.returnWindowDays} días para devolver tu pedido
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-primary">✓</span>
+                Devolución gratuita en tienda o por envío
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-primary">✓</span>
+                Reembolso en el mismo método de pago
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-primary">✓</span>
+                Productos sin usar y con etiquetas
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
@@ -220,6 +374,32 @@ const getThumbnailUrl = (url: string) => {
           .querySelectorAll(".thumbnail-btn")
           .forEach((b) => b.classList.remove("border-primary"));
         btn.classList.add("border-primary");
+      });
+    });
+
+    // Tab functionality
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const tabName = (btn as HTMLElement).dataset.tab;
+        
+        // Update tab buttons
+        document.querySelectorAll(".tab-btn").forEach((b) => {
+          b.classList.remove("border-primary", "text-foreground");
+          b.classList.add("border-transparent", "text-muted-foreground");
+          b.setAttribute("aria-selected", "false");
+        });
+        btn.classList.add("border-primary", "text-foreground");
+        btn.classList.remove("border-transparent", "text-muted-foreground");
+        btn.setAttribute("aria-selected", "true");
+
+        // Update tab content
+        document.querySelectorAll(".tab-content").forEach((content) => {
+          content.classList.add("hidden");
+        });
+        const activeContent = document.querySelector(`[data-tab-content="${tabName}"]`);
+        if (activeContent) {
+          activeContent.classList.remove("hidden");
+        }
       });
     });
   </script>

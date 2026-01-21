@@ -578,51 +578,117 @@ const promoStyles = heroPromotion ? getPromoStyles(heroPromotion.style_config) :
   <section class="py-12 md:py-16">
     <div class="container mx-auto px-4">
       <div class="flex items-center justify-between mb-8">
-        <h2 class="font-heading text-2xl md:text-3xl font-bold">Novedades</h2>
-        <a href="/productos" class="text-sm text-primary hover:underline"
-          >Ver todo →</a
-        >
+        <div>
+          <h2 class="font-heading text-2xl md:text-3xl font-bold">Novedades</h2>
+          <p class="text-sm text-muted-foreground mt-1">Lo último en nuestra tienda</p>
+        </div>
+        <a href="/productos" class="admin-btn-secondary text-sm">
+          Ver todo
+          <ArrowRight className="w-4 h-4" />
+        </a>
       </div>
 
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
         {
-          featuredProducts?.map((product) => (
-            <a href={`/productos/${product.slug}`} class="group">
-              <div class="relative aspect-square rounded-lg overflow-hidden bg-muted mb-3">
-                {product.images?.[0]?.image_url && (
-                  <img
-                    src={product.images[0].image_url}
-                    alt={product.name}
-                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
-                  />
-                )}
-                {product.category && (
-                  <div class="absolute top-2 left-2 bg-card/80 backdrop-blur px-2 py-1 text-xs rounded">
-                    {product.category.name}
+          featuredProducts?.map((product) => {
+            const hasOffer = product.is_offer && product.offer_price;
+            const discount = hasOffer 
+              ? Math.round(((product.price - product.offer_price) / product.price) * 100)
+              : 0;
+            const variants = product.variants || [];
+            const availableSizes = variants.filter((v: any) => v.stock > 0).map((v: any) => v.size);
+            
+            return (
+              <a href={`/productos/${product.slug}`} class="group">
+                <div class="relative aspect-square rounded-xl overflow-hidden bg-muted mb-3 border border-border group-hover:border-primary/30 transition-all duration-300">
+                  {product.images?.[0]?.image_url && (
+                    <img
+                      src={product.images[0].image_url}
+                      alt={product.name}
+                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                  )}
+                  
+                  {/* Badges */}
+                  <div class="absolute top-2 left-2 flex flex-col gap-1">
+                    {hasOffer && (
+                      <span class="badge badge-danger font-bold shadow-lg">
+                        -{discount}%
+                      </span>
+                    )}
+                    {product.category && (
+                      <span class="bg-card/90 backdrop-blur-sm text-foreground text-xs px-2 py-1 rounded-md shadow-sm">
+                        {product.category.name}
+                      </span>
+                    )}
                   </div>
-                )}
-              </div>
-              <h3 class="font-medium text-sm mb-1 group-hover:text-primary transition-colors line-clamp-1">
-                {product.name}
-              </h3>
-              <p class="font-bold">
-                {product.is_offer && product.offer_price ? (
-                  <>
-                    <span class="text-accent">
-                      {formatPrice(product.offer_price)}
+                  
+                  {/* Quick View Overlay */}
+                  <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 hidden md:flex flex-col items-center justify-end pb-4">
+                    <span class="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 shadow-lg">
+                      Ver Producto
                     </span>
-                    <span class="text-sm text-muted-foreground line-through ml-2">
+                    {availableSizes.length > 0 && (
+                      <div class="flex gap-1 mt-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
+                        {availableSizes.slice(0, 4).map((size: string) => (
+                          <span class="px-2 py-1 bg-white/90 text-black text-xs rounded font-medium">
+                            {size}
+                          </span>
+                        ))}
+                        {availableSizes.length > 4 && (
+                          <span class="px-2 py-1 bg-white/90 text-black text-xs rounded font-medium">
+                            +{availableSizes.length - 4}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <h3 class="font-medium text-sm mb-1.5 group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+                  {product.name}
+                </h3>
+                <div class="flex items-center gap-2">
+                  <span class={`font-bold text-lg ${hasOffer ? 'text-accent' : ''}`}>
+                    {formatPrice(hasOffer ? product.offer_price : product.price)}
+                  </span>
+                  {hasOffer && (
+                    <span class="text-sm text-muted-foreground line-through">
                       {formatPrice(product.price)}
                     </span>
-                  </>
-                ) : (
-                  formatPrice(product.price)
-                )}
-              </p>
-            </a>
-          ))
+                  )}
+                </div>
+              </a>
+            );
+          })
         }
+      </div>
+    </div>
+  </section>
+
+  <!-- Social Proof / Newsletter CTA -->
+  <section class="py-12 md:py-16 bg-muted/30 border-y border-border">
+    <div class="container mx-auto px-4">
+      <div class="max-w-3xl mx-auto text-center">
+        <h2 class="font-display text-3xl md:text-4xl mb-4">
+          Únete a la Comunidad
+        </h2>
+        <p class="text-muted-foreground mb-8 max-w-xl mx-auto">
+          Suscríbete a nuestra newsletter y recibe ofertas exclusivas, novedades y un 10% de descuento en tu primera compra.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
+          <input 
+            type="email" 
+            placeholder="tu@email.com" 
+            class="admin-input flex-1 text-center sm:text-left"
+          />
+          <button class="admin-btn-primary px-8">
+            Suscribirme
+          </button>
+        </div>
+        <p class="text-xs text-muted-foreground mt-4">
+          Al suscribirte aceptas nuestra <a href="/privacidad" class="underline hover:text-primary">política de privacidad</a>
+        </p>
       </div>
     </div>
   </section>
