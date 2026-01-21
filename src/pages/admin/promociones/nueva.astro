@@ -3,7 +3,7 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
 import PromotionWizard from "@/components/islands/admin/PromotionWizard";
 import { createAuthenticatedClient } from "@/lib/supabase";
 
-import { Sparkles } from "lucide-react";
+import { Sparkles, ChevronLeft } from "lucide-react";
 
 // Get authenticated client
 const accessToken = Astro.cookies.get("sb-access-token")?.value;
@@ -44,18 +44,7 @@ const { data: existingDraft } = await authClient
         href="/admin/promociones"
         class="text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 mb-2"
       >
-        <svg
-          class="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-        </svg>
+        <ChevronLeft className="w-4 h-4" />
         Volver al listado
       </a>
       <h1 class="font-heading text-2xl text-foreground flex items-center gap-3">

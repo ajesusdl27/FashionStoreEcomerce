@@ -1,7 +1,7 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { createAuthenticatedClient } from "@/lib/supabase";
-import { Plus, Pencil, CheckCircle, PauseCircle, Trash2, FileText } from "lucide-react";
+import { Plus, Pencil, CheckCircle, PauseCircle, Trash2, FileText, ChevronLeft, ArrowRight, History } from "lucide-react";
 
 // Get authenticated client for RLS compliance
 const accessToken = Astro.cookies.get("sb-access-token")?.value;
@@ -71,9 +71,7 @@ const timeAgo = (date: string) => {
             href="/admin/promociones"
             class="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
           >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-            </svg>
+            <ChevronLeft className="w-4 h-4" />
             Volver
           </a>
         </div>
@@ -183,7 +181,7 @@ const timeAgo = (date: string) => {
                                 <span class="text-red-400 line-through">
                                   {typeof oldVal === 'object' ? JSON.stringify(oldVal) : String(oldVal || '-')}
                                 </span>
-                                <span class="text-muted-foreground">→</span>
+                                <ArrowRight className="w-3 h-3 text-muted-foreground" />
                                 <span class="text-green-400">
                                   {typeof newVal === 'object' ? JSON.stringify(newVal) : String(newVal || '-')}
                                 </span>
@@ -202,19 +200,7 @@ const timeAgo = (date: string) => {
         </div>
       ) : (
         <div class="text-center py-12 text-muted-foreground">
-          <svg
-            class="w-16 h-16 mx-auto mb-4 opacity-50"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="1.5"
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
+          <History className="w-16 h-16 mx-auto mb-4 opacity-50" />
           <p class="font-medium">No hay historial todavía</p>
           <p class="text-sm mt-1">
             {error 

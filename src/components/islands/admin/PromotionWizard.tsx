@@ -1,5 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef, useId } from 'react';
 import { PROMOTION_TEMPLATES, LOCATION_LABELS, type PromotionTemplate } from '@/lib/promotionTemplates';
+import { 
+  Clipboard, 
+  Image as ImageIcon, 
+  Type, 
+  Calendar as CalendarIcon, 
+  Trash2, 
+  Check, 
+  Sparkles
+} from "lucide-react";
 
 // Types
 interface PromotionData {
@@ -148,13 +157,11 @@ function ImageDropZone({ imageUrl, onImageChange, placeholder }: ImageDropZonePr
           className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
           aria-label="Eliminar imagen"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-    );
-  }
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      );
+    }
 
   return (
     <div
@@ -415,10 +422,10 @@ export default function PromotionWizard({ categories, coupons, existingDraft }: 
   };
 
   const steps = [
-    { number: 1, title: 'Plantilla', icon: '📋' },
-    { number: 2, title: 'Imágenes', icon: '🖼️' },
-    { number: 3, title: 'Contenido', icon: '✏️' },
-    { number: 4, title: 'Programar', icon: '📅' }
+    { number: 1, title: 'Plantilla', icon: <Clipboard className="w-5 h-5" /> },
+    { number: 2, title: 'Imágenes', icon: <ImageIcon className="w-5 h-5" /> },
+    { number: 3, title: 'Contenido', icon: <Type className="w-5 h-5" /> },
+    { number: 4, title: 'Programar', icon: <CalendarIcon className="w-5 h-5" /> }
   ];
 
   return (
@@ -526,14 +533,14 @@ export default function PromotionWizard({ categories, coupons, existingDraft }: 
                     : 'border-border hover:border-primary/50'
                 }`}
               >
-                <div className="text-3xl mb-3">✨</div>
+                <div className="mb-3 text-primary"><Sparkles className="w-10 h-10" /></div>
                 <h3 className="font-medium">Desde cero</h3>
                 <p className="text-xs text-muted-foreground mt-1">
                   Crea tu promoción personalizada
                 </p>
                 {!selectedTemplate && (
                   <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                    <span className="text-primary-foreground text-xs">✓</span>
+                    <Check className="w-3 h-3 text-primary-foreground" />
                   </div>
                 )}
               </button>
@@ -564,7 +571,7 @@ export default function PromotionWizard({ categories, coupons, existingDraft }: 
                   </span>
                   {selectedTemplate === template.id && (
                     <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                      <span className="text-primary-foreground text-xs">✓</span>
+                      <Check className="w-3 h-3 text-primary-foreground" />
                     </div>
                   )}
                 </button>
@@ -773,9 +780,9 @@ export default function PromotionWizard({ categories, coupons, existingDraft }: 
                     }}
                     className="admin-input w-full"
                   >
-                    <option value="products">📦 Todos los productos</option>
-                    <option value="offers">🏷️ Página de ofertas</option>
-                    <option value="category">📁 Una categoría</option>
+                    <option value="products">Todos los productos</option>
+                    <option value="offers">Página de ofertas</option>
+                    <option value="category">Una categoría</option>
                   </select>
                 </div>
               </div>

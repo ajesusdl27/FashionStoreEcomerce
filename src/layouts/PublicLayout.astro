@@ -8,6 +8,7 @@ import AnnouncementBar from "@/components/islands/AnnouncementBar";
 import UserMenuWithAuth from "@/components/islands/UserMenuWithAuth";
 import HeaderNavigation from "@/components/islands/HeaderNavigation";
 import ThemeToggle from "@/components/ThemeToggle";
+import { Menu, X, Home, Shirt, Flame, User, Package } from "lucide-react";
 import { getShippingConfig, getSettings } from "@/lib/settings";
 
 interface Props {
@@ -44,21 +45,10 @@ const settings = await getSettings();
         <!-- Mobile Menu Button -->
         <button
           id="mobile-menu-btn"
-          class="lg:hidden touch-target flex items-center justify-center"
+          class="lg:hidden touch-target flex items-center justify-center text-foreground hover:text-primary transition-colors"
           aria-label="Abrir menú"
         >
-          <svg
-            class="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M4 6h16M4 12h16M4 18h16"></path>
-          </svg>
+          <Menu className="w-6 h-6" />
         </button>
 
         <!-- Logo -->
@@ -129,53 +119,52 @@ const settings = await getSettings();
         }
         <button
           id="mobile-menu-close"
-          class="touch-target"
+          class="touch-target text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Cerrar menú"
         >
-          <svg
-            class="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
+          <X className="w-6 h-6" />
         </button>
       </div>
 
-      <div class="space-y-4">
+      <div class="space-y-2">
         <a
           href="/"
-          class="block py-3 text-lg font-medium hover:text-primary transition-colors"
-          >🏠 Inicio</a
+          class="flex items-center gap-3 py-3 px-2 text-lg font-medium hover:text-primary hover:bg-muted/50 rounded-lg transition-colors"
         >
+          <Home className="w-5 h-5" />
+          Inicio
+        </a>
         <a
           href="/productos"
-          class="block py-3 text-lg font-medium hover:text-primary transition-colors"
-          >👕 Productos</a
+          class="flex items-center gap-3 py-3 px-2 text-lg font-medium hover:text-primary hover:bg-muted/50 rounded-lg transition-colors"
         >
+          <Shirt className="w-5 h-5" />
+          Productos
+        </a>
         <a
           href="/productos?ofertas=true"
-          class="block py-3 text-lg font-medium text-accent hover:text-accent/80 transition-colors"
-          >🔥 Ofertas</a
+          class="flex items-center gap-3 py-3 px-2 text-lg font-medium text-accent hover:text-accent/80 hover:bg-accent/10 rounded-lg transition-colors"
         >
+          <Flame className="w-5 h-5" />
+          Ofertas
+        </a>
 
         <hr class="border-border my-4" />
 
         <a
           href="/cuenta"
-          class="block py-3 text-lg font-medium hover:text-primary transition-colors"
-          >👤 Mi Cuenta</a
+          class="flex items-center gap-3 py-3 px-2 text-lg font-medium hover:text-primary hover:bg-muted/50 rounded-lg transition-colors"
         >
+          <User className="w-5 h-5" />
+          Mi Cuenta
+        </a>
         <a
           href="/cuenta/pedidos"
-          class="block py-3 text-lg font-medium hover:text-primary transition-colors"
-          >📦 Mis Pedidos</a
+          class="flex items-center gap-3 py-3 px-2 text-lg font-medium hover:text-primary hover:bg-muted/50 rounded-lg transition-colors"
         >
+          <Package className="w-5 h-5" />
+          Mis Pedidos
+        </a>
       </div>
     </nav>
   </div>

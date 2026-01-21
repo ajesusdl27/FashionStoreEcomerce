@@ -1,6 +1,7 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import WysiwygEditor from "@/components/islands/WysiwygEditor";
+import { ArrowLeft, Save, Send } from "lucide-react";
 ---
 
 <AdminLayout title="Nueva Campaña - Newsletter">
@@ -11,18 +12,7 @@ import WysiwygEditor from "@/components/islands/WysiwygEditor";
         href="/admin/newsletter"
         class="p-2 hover:bg-muted rounded-lg transition-colors"
       >
-        <svg
-          class="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M15 19l-7-7 7-7"></path>
-        </svg>
+        <ArrowLeft className="w-5 h-5" />
       </a>
       <div>
         <h1 class="text-2xl font-bold text-foreground">Nueva Campaña</h1>
@@ -53,7 +43,7 @@ import WysiwygEditor from "@/components/islands/WysiwygEditor";
           <label class="block text-sm font-medium text-foreground mb-2"
             >Contenido *</label
           >
-          
+
           <!-- Tab switcher -->
           <div class="flex gap-2 mb-3">
             <button
@@ -74,30 +64,31 @@ import WysiwygEditor from "@/components/islands/WysiwygEditor";
 
           <!-- WYSIWYG Editor -->
           <div id="editor-wysiwyg">
-            <WysiwygEditor 
+            <WysiwygEditor
               client:load
               content=""
               onChange={(html: string) => {
-                const contentInput = document.getElementById('content') as HTMLTextAreaElement;
+                const contentInput = document.getElementById(
+                  "content",
+                ) as HTMLTextAreaElement;
                 if (contentInput) contentInput.value = html;
               }}
               placeholder="Escribe el contenido de tu email aquí..."
             />
           </div>
-          
+
           <!-- HTML Editor (hidden by default) -->
           <div id="editor-html" class="hidden">
             <textarea
               id="content-html"
               rows="15"
               class="admin-input w-full font-mono text-sm"
-              placeholder="Escribe HTML aquí..."
-            ></textarea>
+              placeholder="Escribe HTML aquí..."></textarea>
           </div>
-          
+
           <!-- Hidden field to store content -->
           <input type="hidden" id="content" name="content" />
-          
+
           <p class="text-xs text-muted-foreground mt-2">
             Usa el editor visual o escribe HTML directamente.
           </p>
@@ -108,16 +99,16 @@ import WysiwygEditor from "@/components/islands/WysiwygEditor";
         <button
           type="button"
           id="save-draft"
-          class="flex-1 py-3 px-4 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/80 transition-colors"
+          class="flex-1 py-3 px-4 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/80 transition-colors flex items-center justify-center gap-2"
         >
-          💾 Guardar Borrador
+          <Save className="w-4 h-4" /> Guardar Borrador
         </button>
         <button
           type="button"
           id="save-and-send"
-          class="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+          class="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
         >
-          📤 Guardar y Enviar
+          <Send className="w-4 h-4" /> Guardar y Enviar
         </button>
       </div>
 
@@ -128,43 +119,57 @@ import WysiwygEditor from "@/components/islands/WysiwygEditor";
   <script>
     const subjectInput = document.getElementById("subject") as HTMLInputElement;
     const contentInput = document.getElementById("content") as HTMLInputElement;
-    const contentHtmlTextarea = document.getElementById("content-html") as HTMLTextAreaElement;
+    const contentHtmlTextarea = document.getElementById(
+      "content-html",
+    ) as HTMLTextAreaElement;
     const saveDraftBtn = document.getElementById("save-draft");
     const saveAndSendBtn = document.getElementById("save-and-send");
     const messageDiv = document.getElementById("form-message");
-    
+
     // Tab switching
     const tabWysiwyg = document.getElementById("tab-wysiwyg");
     const tabHtml = document.getElementById("tab-html");
     const editorWysiwyg = document.getElementById("editor-wysiwyg");
     const editorHtml = document.getElementById("editor-html");
-    
-    let activeTab: 'wysiwyg' | 'html' = 'wysiwyg';
 
-    function switchTab(tab: 'wysiwyg' | 'html') {
+    let activeTab: "wysiwyg" | "html" = "wysiwyg";
+
+    function switchTab(tab: "wysiwyg" | "html") {
       activeTab = tab;
-      
-      if (tab === 'wysiwyg') {
-        tabWysiwyg?.classList.replace('bg-secondary', 'bg-primary');
-        tabWysiwyg?.classList.replace('text-secondary-foreground', 'text-primary-foreground');
-        tabHtml?.classList.replace('bg-primary', 'bg-secondary');
-        tabHtml?.classList.replace('text-primary-foreground', 'text-secondary-foreground');
-        editorWysiwyg?.classList.remove('hidden');
-        editorHtml?.classList.add('hidden');
-        
+
+      if (tab === "wysiwyg") {
+        tabWysiwyg?.classList.replace("bg-secondary", "bg-primary");
+        tabWysiwyg?.classList.replace(
+          "text-secondary-foreground",
+          "text-primary-foreground",
+        );
+        tabHtml?.classList.replace("bg-primary", "bg-secondary");
+        tabHtml?.classList.replace(
+          "text-primary-foreground",
+          "text-secondary-foreground",
+        );
+        editorWysiwyg?.classList.remove("hidden");
+        editorHtml?.classList.add("hidden");
+
         // Sync HTML to WYSIWYG would require re-initializing the editor
         // For now, we just show a warning if there's content
         if (contentHtmlTextarea?.value) {
           contentInput.value = contentHtmlTextarea.value;
         }
       } else {
-        tabHtml?.classList.replace('bg-secondary', 'bg-primary');
-        tabHtml?.classList.replace('text-secondary-foreground', 'text-primary-foreground');
-        tabWysiwyg?.classList.replace('bg-primary', 'bg-secondary');
-        tabWysiwyg?.classList.replace('text-primary-foreground', 'text-secondary-foreground');
-        editorWysiwyg?.classList.add('hidden');
-        editorHtml?.classList.remove('hidden');
-        
+        tabHtml?.classList.replace("bg-secondary", "bg-primary");
+        tabHtml?.classList.replace(
+          "text-secondary-foreground",
+          "text-primary-foreground",
+        );
+        tabWysiwyg?.classList.replace("bg-primary", "bg-secondary");
+        tabWysiwyg?.classList.replace(
+          "text-primary-foreground",
+          "text-secondary-foreground",
+        );
+        editorWysiwyg?.classList.add("hidden");
+        editorHtml?.classList.remove("hidden");
+
         // Sync WYSIWYG content to HTML textarea
         if (contentInput?.value) {
           contentHtmlTextarea.value = contentInput.value;
@@ -172,20 +177,20 @@ import WysiwygEditor from "@/components/islands/WysiwygEditor";
       }
     }
 
-    tabWysiwyg?.addEventListener('click', () => switchTab('wysiwyg'));
-    tabHtml?.addEventListener('click', () => switchTab('html'));
-    
+    tabWysiwyg?.addEventListener("click", () => switchTab("wysiwyg"));
+    tabHtml?.addEventListener("click", () => switchTab("html"));
+
     // Sync HTML textarea changes to hidden input
-    contentHtmlTextarea?.addEventListener('input', () => {
+    contentHtmlTextarea?.addEventListener("input", () => {
       contentInput.value = contentHtmlTextarea.value;
     });
 
     async function saveCampaign(andSend: boolean) {
       const subject = subjectInput.value.trim();
-      
+
       // Get content from active editor
       let content = contentInput.value.trim();
-      if (activeTab === 'html') {
+      if (activeTab === "html") {
         content = contentHtmlTextarea.value.trim();
       }
 

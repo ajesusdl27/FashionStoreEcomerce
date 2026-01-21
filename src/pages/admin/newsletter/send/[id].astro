@@ -2,7 +2,7 @@
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { createAuthenticatedClient } from "@/lib/supabase";
 import { CAMPAIGN_STATUS } from "@/lib/constants/newsletter";
-import { AlertTriangle, Mail, Eye, CheckCircle } from "lucide-react";
+import { AlertTriangle, Mail, Eye, CheckCircle, Send } from "lucide-react";
 
 const { id } = Astro.params;
 
@@ -195,7 +195,7 @@ const { count: subscriberCount } = await supabase
         data-campaign-id={campaign.id}
         data-total={subscriberCount || 0}
       >
-        🚀 Comenzar Envío
+        <Send className="w-4 h-4 mr-2" /> Comenzar Envío
       </button>
     </div>
 

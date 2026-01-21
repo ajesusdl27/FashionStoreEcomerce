@@ -1,6 +1,7 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { createAuthenticatedClient } from "@/lib/supabase";
+import { Plus, Tag, Edit2, Trash2, ExternalLink } from "lucide-react";
 
 // Get authenticated client for RLS compliance
 const accessToken = Astro.cookies.get("sb-access-token")?.value;
@@ -14,7 +15,7 @@ const { data: categories, error } = await authClient
     `
     *,
     products:products(count)
-  `
+  `,
   )
   .order("name");
 
@@ -31,19 +32,11 @@ const categoriesWithCount = categories?.map((cat: any) => ({
       <p class="text-muted-foreground">
         {categories?.length || 0} categorías
       </p>
-      <button id="new-category-btn" class="admin-btn-primary">
-        <svg
-          class="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M12 4v16m8-8H4"></path>
-        </svg>
+      <button
+        id="new-category-btn"
+        class="admin-btn-primary flex items-center gap-2"
+      >
+        <Plus className="w-5 h-5" />
         Nueva Categoría
       </button>
     </div>
@@ -68,19 +61,7 @@ const categoriesWithCount = categories?.map((cat: any) => ({
               <div class="flex items-start justify-between mb-4">
                 {/* Category Icon */}
                 <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <svg
-                    class="w-6 h-6 text-primary"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-                    />
-                  </svg>
+                  <Tag className="w-6 h-6 text-primary" />
                 </div>
 
                 {/* Actions */}
@@ -93,19 +74,7 @@ const categoriesWithCount = categories?.map((cat: any) => ({
                     data-slug={cat.slug}
                     data-size-type={cat.size_type || "clothing"}
                   >
-                    <svg
-                      class="w-4 h-4 text-muted-foreground"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                      />
-                    </svg>
+                    <Edit2 className="w-4 h-4 text-muted-foreground" />
                   </button>
                   <button
                     class="delete-category p-2 rounded-lg hover:bg-red-500/10 transition-colors"
@@ -114,19 +83,7 @@ const categoriesWithCount = categories?.map((cat: any) => ({
                     data-name={cat.name}
                     data-count={cat.productCount}
                   >
-                    <svg
-                      class="w-4 h-4 text-red-600 dark:text-red-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
+                    <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
                   </button>
                   <a
                     href={`/categoria/${cat.slug}`}
@@ -134,19 +91,7 @@ const categoriesWithCount = categories?.map((cat: any) => ({
                     class="p-2 rounded-lg hover:bg-muted transition-colors"
                     title="Ver en tienda"
                   >
-                    <svg
-                      class="w-4 h-4 text-muted-foreground"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                      />
-                    </svg>
+                    <ExternalLink className="w-4 h-4 text-muted-foreground" />
                   </a>
                 </div>
               </div>
@@ -183,19 +128,7 @@ const categoriesWithCount = categories?.map((cat: any) => ({
           ))
         ) : (
           <div class="col-span-full text-center py-12 text-muted-foreground bg-muted/30 rounded-lg border border-border">
-            <svg
-              class="w-16 h-16 mx-auto mb-4 opacity-30"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="1.5"
-                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-              />
-            </svg>
+            <Tag className="w-16 h-16 mx-auto mb-4 opacity-30" />
             <p>No hay categorías todavía</p>
           </div>
         )
@@ -403,23 +336,23 @@ const categoriesWithCount = categories?.map((cat: any) => ({
     const deleteModal = document.getElementById("delete-modal");
     const modalTitle = document.getElementById("modal-title");
     const categoryIdInput = document.getElementById(
-      "category-id"
+      "category-id",
     ) as HTMLInputElement;
     const categoryNameInput = document.getElementById(
-      "category-name"
+      "category-name",
     ) as HTMLInputElement;
     const categorySlugInput = document.getElementById(
-      "category-slug"
+      "category-slug",
     ) as HTMLInputElement;
     const categorySizeTypeSelect = document.getElementById(
-      "category-size-type"
+      "category-size-type",
     ) as HTMLSelectElement;
     const formError = document.getElementById("form-error");
     const autoSlugCheckbox = document.getElementById(
-      "auto-slug"
+      "auto-slug",
     ) as HTMLInputElement;
     const saveBtn = document.getElementById(
-      "save-category"
+      "save-category",
     ) as HTMLButtonElement;
     const deleteWarning = document.getElementById("delete-warning");
     const deleteError = document.getElementById("delete-error");
@@ -555,7 +488,7 @@ const categoriesWithCount = categories?.map((cat: any) => ({
 
           showToast(
             id ? "Categoría actualizada" : "Categoría creada",
-            "success"
+            "success",
           );
           setTimeout(() => window.location.reload(), 800);
         } catch (error: any) {
@@ -583,9 +516,10 @@ const categoriesWithCount = categories?.map((cat: any) => ({
 
         // Dynamic warning based on product count
         if (deleteWarning) {
-          deleteWarning.textContent =
+          const triangle = `<svg class="w-4 h-4 inline-block text-yellow-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`;
+          deleteWarning.innerHTML =
             productCount > 0
-              ? `⚠️ ${productCount} producto${productCount !== 1 ? "s" : ""} quedará${productCount !== 1 ? "n" : ""} sin categoría.`
+              ? `${triangle} ${productCount} producto${productCount !== 1 ? "s" : ""} quedará${productCount !== 1 ? "n" : ""} sin categoría.`
               : "Esta categoría no tiene productos asociados.";
         }
 
@@ -606,7 +540,7 @@ const categoriesWithCount = categories?.map((cat: any) => ({
         const id = (document.getElementById("delete-id") as HTMLInputElement)
           .value;
         const confirmBtn = document.getElementById(
-          "confirm-delete"
+          "confirm-delete",
         ) as HTMLButtonElement;
 
         // Show loading state

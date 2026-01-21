@@ -3,6 +3,17 @@ import PublicLayout from "../layouts/PublicLayout.astro";
 import { supabase } from "@/lib/supabase";
 import { getSettings, getShippingConfig } from "@/lib/settings";
 import { formatPrice } from "@/lib/formatters";
+import { 
+  ArrowRight, 
+  Copy, 
+  ChevronDown, 
+  Zap, 
+  Tag, 
+  Package, 
+  RefreshCw, 
+  ShieldCheck,
+  Flame
+} from "lucide-react";
 
 const now = new Date();
 
@@ -178,7 +189,7 @@ const promoStyles = heroPromotion ? getPromoStyles(heroPromotion.style_config) :
                     >
                         <span class="relative z-10 flex items-center gap-2">
                            {heroPromotion.cta_text || "Comprar Ahora"}
-                           <svg class="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                           <ArrowRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" />
                         </span>
                     </a>
 
@@ -194,7 +205,7 @@ const promoStyles = heroPromotion ? getPromoStyles(heroPromotion.style_config) :
                                 </div>
                                 <div class="flex items-center gap-3">
                                     <div class={`h-8 w-[1px] bg-current opacity-20 ${promoStyles?.textColor}`}></div>
-                                    <svg class={`w-5 h-5 ${promoStyles?.textColor} opacity-70 group-hover:opacity-100 transition-all`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                    <Copy className={`w-5 h-5 ${promoStyles?.textColor} opacity-70 group-hover:opacity-100 transition-all`} />
                                 </div>
                              </div>
                         </div>
@@ -205,7 +216,7 @@ const promoStyles = heroPromotion ? getPromoStyles(heroPromotion.style_config) :
         
         {/* Scroll Indicator - Hidden on very small screens to save space */}
         <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 animate-bounce hidden sm:block">
-            <svg class={`w-6 h-6 ${promoStyles?.textColor} opacity-50`} fill="none" stroke="currentColor" viewBox="0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+            <ChevronDown className={`w-8 h-8 ${promoStyles?.textColor} opacity-50`} />
         </div>
     </section>
 
@@ -271,24 +282,13 @@ const promoStyles = heroPromotion ? getPromoStyles(heroPromotion.style_config) :
             class="group inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-4 font-heading text-lg tracking-wider neon-glow hover:animate-pulse-glow transition-all rounded-lg"
             >
             VER PRODUCTOS
-            <svg
-                class="w-5 h-5 group-hover:translate-x-1 transition-transform"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-            >
-                <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
-            </svg>
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </a>
             <a
             href="/productos?ofertas=true"
             class="inline-flex items-center gap-2 px-8 py-4 font-heading text-lg tracking-wider text-foreground border border-border hover:border-primary/50 hover:bg-primary/5 transition-all rounded-lg"
             >
-            🔥 OFERTAS
+            <Flame className="w-5 h-5 text-red-500 fill-red-500" /> OFERTAS
             </a>
         </div>
         </div>
@@ -312,15 +312,15 @@ const promoStyles = heroPromotion ? getPromoStyles(heroPromotion.style_config) :
         class="flex flex-wrap justify-center gap-6 md:gap-12 text-sm text-muted-foreground"
       >
         <div class="flex items-center gap-2">
-          <span class="text-primary">📦</span>
+          <Package className="w-5 h-5 text-primary" />
           <span>Envío gratis +{shippingConfig.freeShippingThreshold}€</span>
         </div>
         <div class="flex items-center gap-2">
-          <span class="text-primary">🔄</span>
+          <RefreshCw className="w-5 h-5 text-primary" />
           <span>{settings.returnWindowDays} días devolución</span>
         </div>
         <div class="flex items-center gap-2">
-          <span class="text-primary">🔒</span>
+          <ShieldCheck className="w-5 h-5 text-primary" />
           <span>Pago 100% seguro</span>
         </div>
       </div>
@@ -425,10 +425,7 @@ const promoStyles = heroPromotion ? getPromoStyles(heroPromotion.style_config) :
           <div class="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
             <div class="flex items-center gap-4">
               <div class="w-14 h-14 rounded-2xl bg-accent/20 flex items-center justify-center animate-pulse">
-                <svg class="w-7 h-7 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
-                </svg>
+                <Zap className="w-7 h-7 text-accent fill-accent" />
               </div>
               <div>
                 <h2 class="font-display text-3xl md:text-4xl font-bold text-accent tracking-wide">
@@ -486,9 +483,7 @@ const promoStyles = heroPromotion ? getPromoStyles(heroPromotion.style_config) :
                     
                     {/* Discount Badge */}
                     <div class="absolute top-3 left-3 bg-accent text-white px-3 py-1.5 text-sm font-bold rounded-lg shadow-lg shadow-accent/30 flex items-center gap-1">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
-                      </svg>
+                      <Tag className="w-4 h-4" />
                       -{discount}%
                     </div>
                     
@@ -524,9 +519,7 @@ const promoStyles = heroPromotion ? getPromoStyles(heroPromotion.style_config) :
               class="inline-flex items-center gap-2 px-6 py-3 bg-accent text-white rounded-lg font-medium hover:bg-accent/90 transition-colors hover:shadow-lg hover:shadow-accent/30"
             >
               Ver todas las ofertas
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
+              <ArrowRight className="w-5 h-5" />
             </a>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { ChevronLeft, ChevronRight, Calendar, MapPin, Plus } from "lucide-react";
 
 interface Promotion {
   id: string;
@@ -172,18 +173,14 @@ export default function PromotionCalendar({ promotions }: PromotionCalendarProps
             className="p-2 rounded-lg border border-border hover:bg-muted transition-colors"
             aria-label="Mes anterior"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+            <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={() => navigateMonth(1)}
             className="p-2 rounded-lg border border-border hover:bg-muted transition-colors"
             aria-label="Mes siguiente"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ChevronRight className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -301,7 +298,7 @@ export default function PromotionCalendar({ promotions }: PromotionCalendarProps
 
               <div className="space-y-2 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
-                  <span>📅</span>
+                  <Calendar className="w-4 h-4" />
                   <span>
                     {new Date(selectedPromotion.start_date).toLocaleDateString('es-ES', {
                       day: 'numeric', month: 'long', year: 'numeric'
@@ -314,7 +311,7 @@ export default function PromotionCalendar({ promotions }: PromotionCalendarProps
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span>📍</span>
+                  <MapPin className="w-4 h-4" />
                   <span>{selectedPromotion.locations.join(', ')}</span>
                 </div>
               </div>
@@ -341,13 +338,13 @@ export default function PromotionCalendar({ promotions }: PromotionCalendarProps
       {/* Empty State */}
       {promotions.length === 0 && (
         <div className="text-center py-12">
-          <div className="text-4xl mb-4">📅</div>
+          <Calendar className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
           <p className="text-muted-foreground mb-4">No hay promociones programadas</p>
           <a
             href="/admin/promociones/nueva"
             className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
           >
-            + Nueva Promoción
+            <Plus className="w-4 h-4" /> Nueva Promoción
           </a>
         </div>
       )}

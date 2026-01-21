@@ -30,7 +30,7 @@ const { data: orders } = await supabase
       price_at_purchase,
       quantity
     )
-  `
+  `,
   )
   .eq("customer_email", user.email)
   .order("created_at", { ascending: false });
@@ -46,7 +46,7 @@ function calculateOrderTotal(order: any) {
   // Calculate subtotal
   const subtotal = items.reduce(
     (sum: number, item: any) => sum + item.price_at_purchase * item.quantity,
-    0
+    0,
   );
 
   // Calculate discount
@@ -63,7 +63,10 @@ function calculateOrderTotal(order: any) {
   discountAmount = Math.min(discountAmount, subtotal);
 
   // Calculate shipping using dynamic settings
-  const shippingCost = subtotal >= shippingConfigData.freeShippingThreshold ? 0 : shippingConfigData.shippingCostEuros;
+  const shippingCost =
+    subtotal >= shippingConfigData.freeShippingThreshold
+      ? 0
+      : shippingConfigData.shippingCostEuros;
 
   return subtotal + shippingCost - discountAmount;
 }
@@ -120,7 +123,10 @@ function getStatusBadge(status: string) {
                   <div>
                     <div class="flex items-center gap-2">
                       <p class="font-mono text-sm text-muted-foreground group-hover:text-primary transition-colors">
-                        Pedido {order.order_number ? formatOrderId(order.order_number) : `#${order.id?.slice(0, 8).toUpperCase()}`}
+                        Pedido{" "}
+                        {order.order_number
+                          ? formatOrderId(order.order_number)
+                          : `#${order.id?.slice(0, 8).toUpperCase()}`}
                       </p>
                       <svg
                         class="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100"

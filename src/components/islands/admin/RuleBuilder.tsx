@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { ShoppingCart, Calendar, UserPlus, User, RefreshCw, X, Plus, Info } from "lucide-react";
 
 type RuleType = 'cart_value' | 'day_of_week' | 'first_visit' | 'new_customer' | 'returning_customer';
 type Operator = 'greater_than' | 'less_than' | 'equals' | 'includes' | 'excludes';
@@ -15,35 +16,35 @@ interface RuleBuilderProps {
   onChange?: (rules: Rule[]) => void;
 }
 
-const RULE_TYPES: { value: RuleType; label: string; icon: string; description: string }[] = [
+const RULE_TYPES: { value: RuleType; label: string; icon: React.ReactNode; description: string }[] = [
   {
     value: 'cart_value',
     label: 'Valor del carrito',
-    icon: '🛒',
+    icon: <ShoppingCart className="w-5 h-5" />,
     description: 'El total del carrito supera/no supera un valor'
   },
   {
     value: 'day_of_week',
     label: 'Día de la semana',
-    icon: '📅',
+    icon: <Calendar className="w-5 h-5" />,
     description: 'Solo ciertos días de la semana'
   },
   {
     value: 'first_visit',
     label: 'Primera visita',
-    icon: '👋',
+    icon: <UserPlus className="w-5 h-5" />,
     description: 'Solo visitantes nuevos'
   },
   {
     value: 'new_customer',
     label: 'Cliente nuevo',
-    icon: '🆕',
+    icon: <User className="w-5 h-5" />,
     description: 'Usuario que no ha comprado antes'
   },
   {
     value: 'returning_customer',
     label: 'Cliente recurrente',
-    icon: '🔄',
+    icon: <RefreshCw className="w-5 h-5" />,
     description: 'Usuario con compras previas'
   }
 ];
@@ -171,9 +172,7 @@ export default function RuleBuilder({ initialRules = [], onChange }: RuleBuilder
                     className="p-1 text-red-400 hover:bg-red-500/10 rounded transition-colors"
                     title="Eliminar regla"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
@@ -255,9 +254,7 @@ export default function RuleBuilder({ initialRules = [], onChange }: RuleBuilder
               onClick={() => setIsAdding(false)}
               className="text-muted-foreground hover:text-foreground"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X className="w-5 h-5" />
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -274,7 +271,7 @@ export default function RuleBuilder({ initialRules = [], onChange }: RuleBuilder
                       : 'border-border hover:border-primary hover:bg-primary/5'
                   }`}
                 >
-                  <span className="text-xl">{type.icon}</span>
+                  <span className="text-xl text-primary">{type.icon}</span>
                   <div>
                     <div className="font-medium text-sm">{type.label}</div>
                     {alreadyAdded && (
@@ -291,9 +288,7 @@ export default function RuleBuilder({ initialRules = [], onChange }: RuleBuilder
           onClick={() => setIsAdding(true)}
           className="w-full p-3 border-2 border-dashed border-border rounded-lg text-muted-foreground hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
+          <Plus className="w-5 h-5" />
           {rules.length === 0 ? 'Añadir condición (opcional)' : 'Añadir otra condición'}
         </button>
       )}
@@ -301,7 +296,7 @@ export default function RuleBuilder({ initialRules = [], onChange }: RuleBuilder
       {/* Natural Language Preview */}
       <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
         <div className="flex items-start gap-2">
-          <span className="text-blue-400">💡</span>
+          <Info className="w-5 h-5 text-blue-400 mt-0.5" />
           <div>
             <div className="text-sm font-medium text-blue-400 mb-1">Vista previa de la regla</div>
             <div className="text-sm text-muted-foreground">

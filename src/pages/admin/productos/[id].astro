@@ -2,6 +2,7 @@
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { supabase } from "@/lib/supabase";
 import ImageUploader from "@/components/islands/ImageUploader";
+import { ArrowLeft, Trash2 } from "lucide-react";
 
 const { id } = Astro.params;
 
@@ -14,7 +15,7 @@ const { data: product, error } = await supabase
     category:categories(id, name, size_type),
     images:product_images(id, image_url, order),
     variants:product_variants(id, size, stock)
-  `
+  `,
   )
   .eq("id", id)
   .single();
@@ -62,18 +63,7 @@ const sortedImages =
           href="/admin/productos"
           class="p-2 hover:bg-muted rounded-lg transition-colors"
         >
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M15 19l-7-7 7-7"></path>
-          </svg>
+          <ArrowLeft className="w-5 h-5" />
         </a>
         <div>
           <h1 class="font-display text-3xl text-primary">Editar Producto</h1>
@@ -82,9 +72,9 @@ const sortedImages =
       </div>
       <button
         id="delete-btn"
-        class="px-4 py-2 bg-accent/20 text-accent rounded-lg hover:bg-accent/30 transition-colors"
+        class="px-4 py-2 bg-accent/20 text-accent rounded-lg hover:bg-accent/30 transition-colors flex items-center gap-2"
       >
-        Eliminar
+        <Trash2 className="w-4 h-4" /> Eliminar
       </button>
     </div>
 
@@ -371,10 +361,10 @@ const sortedImages =
 
     // Dynamic size rendering based on category
     const categorySelect = document.getElementById(
-      "category_id"
+      "category_id",
     ) as HTMLSelectElement;
     const sizesContainer = document.getElementById(
-      "sizes-container"
+      "sizes-container",
     ) as HTMLDivElement;
     let currentSizes: string[] = [];
 
@@ -431,10 +421,10 @@ const sortedImages =
     // Form submission
     const form = document.getElementById("product-form") as HTMLFormElement;
     const submitBtn = document.getElementById(
-      "submit-btn"
+      "submit-btn",
     ) as HTMLButtonElement;
     const messageDiv = document.getElementById(
-      "form-message"
+      "form-message",
     ) as HTMLDivElement;
 
     // Track form modifications for unsaved changes warning
@@ -484,7 +474,7 @@ const sortedImages =
 
         if (isOffer && offerPrice != null && offerPrice >= price) {
           throw new Error(
-            "El precio de oferta debe ser menor que el precio base"
+            "El precio de oferta debe ser menor que el precio base",
           );
         }
 
@@ -525,8 +515,10 @@ const sortedImages =
           throw new Error(result.error || "Error al guardar");
         }
 
-        messageDiv.className = "p-4 rounded-lg bg-primary/20 text-primary";
-        messageDiv.textContent = "✅ Cambios guardados correctamente";
+        messageDiv.className =
+          "p-4 rounded-lg bg-primary/20 text-primary flex items-center gap-2";
+        const checkIcon = `<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+        messageDiv.innerHTML = `${checkIcon} Cambios guardados correctamente`;
 
         // Clear form modified flag after successful save
         formModified = false;

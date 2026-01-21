@@ -120,7 +120,9 @@ const formatDate = (date: string) => {
                     <div class="flex items-center justify-between py-4 first:pt-0 last:pb-0">
                       <div>
                         <p class="font-mono text-sm text-muted-foreground">
-                          {order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`}
+                          {order.order_number
+                            ? formatOrderId(order.order_number)
+                            : `#${order.id.slice(0, 8)}`}
                         </p>
                         <p class="text-sm font-medium mt-1">
                           {formatPrice(order.total_amount)}
