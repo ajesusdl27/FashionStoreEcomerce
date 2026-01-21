@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { stripe } from '@/lib/stripe';
 import { supabase } from '@/lib/supabase';
-import { sendOrderConfirmation } from '@/lib/email';
+import { sendOrderConfirmation, sendOrderCancelled } from '@/lib/email';
 import { formatOrderId } from '@/lib/order-utils';
 import type Stripe from 'stripe';
 
@@ -234,6 +234,29 @@ export const POST: APIRoute = async ({ request }) => {
         console.error('Error updating order status to cancelled:', updateError);
       } else {
         console.log(`Order ${orderId} cancelled and stock restored`);
+        
+        // Send expiration notification email to customer
+        try {
+          const { data: order } = await supabase
+            .from('orders')
+            .select('customer_email, customer_name, order_number')
+            .eq('id', orderId)
+            .single();
+          
+          if (order?.customer_email) {
+            await sendOrderCancelled({
+              orderId,
+              orderNumber: order.order_number,
+              customerName: order.customer_name,
+              customerEmail: order.customer_email,
+              reason: 'El tiempo para completar el pago ha expirado (30 minutos)'
+            });
+            console.log(`Expiration email sent to ${order.customer_email}`);
+          }
+        } catch (emailError) {
+          console.error('Error sending expiration email:', emailError);
+          // Non-critical, don't break
+        }
       }
 
       break;

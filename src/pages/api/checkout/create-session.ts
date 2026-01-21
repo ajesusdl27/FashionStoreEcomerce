@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { stripe, getShippingConfig, STOCK_RESERVATION_MINUTES } from '@/lib/stripe';
 import { supabase, createAuthenticatedClient } from '@/lib/supabase';
 import { formatOrderId } from '@/lib/order-utils';
+import { validateEmail, validatePostalCode, validateName, validateAddress, validateCity } from '@/lib/validators';
 
 interface CartItem {
   id: string;
@@ -44,9 +45,30 @@ export const POST: APIRoute = async ({ request, url, locals, cookies }) => {
       console.log(`Checkout for authenticated user: ${customerId}`);
     }
 
-    // Validate required fields
-    if (!items?.length || !customerName || !customerEmail || !shippingAddress || !shippingCity || !shippingPostalCode) {
-      return new Response(JSON.stringify({ error: 'Faltan campos requeridos' }), {
+    // Validate required fields with detailed errors
+    const validationErrors: string[] = [];
+    
+    if (!items?.length) {
+      validationErrors.push('El carrito está vacío');
+    }
+    if (!validateName(customerName)) {
+      validationErrors.push('El nombre debe tener al menos 2 caracteres');
+    }
+    if (!validateEmail(customerEmail)) {
+      validationErrors.push('El email no es válido');
+    }
+    if (!validateAddress(shippingAddress)) {
+      validationErrors.push('La dirección debe tener al menos 5 caracteres');
+    }
+    if (!validateCity(shippingCity)) {
+      validationErrors.push('La ciudad no es válida');
+    }
+    if (!validatePostalCode(shippingPostalCode)) {
+      validationErrors.push('El código postal no es válido (debe tener 5 dígitos)');
+    }
+    
+    if (validationErrors.length > 0) {
+      return new Response(JSON.stringify({ error: validationErrors[0] }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });

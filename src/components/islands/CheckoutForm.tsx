@@ -1,7 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useStore } from '@nanostores/react';
 import { $cart, $cartSubtotal } from '@/stores/cart';
 import { formatPrice } from '@/lib/formatters';
+import { 
+  validateStep1, 
+  validateStep2, 
+  getFieldError, 
+  cleanPostalCode, 
+  cleanPhone,
+  validateEmail,
+  type FieldName 
+} from '@/lib/validators';
 
 interface FormData {
   customerName: string;
@@ -45,6 +54,11 @@ export default function CheckoutForm({
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
+  
+  // Field-level errors for real-time validation
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldName, string>>>({});
+  const [touchedFields, setTouchedFields] = useState<Set<FieldName>>(new Set());
   
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
@@ -61,7 +75,13 @@ export default function CheckoutForm({
   const discount = appliedCoupon?.calculatedDiscount || 0;
   const total = subtotal + shipping - discount;
 
-  // Pre-fill form with user data if logged in (including saved address)
+  // Initialize form
+  useEffect(() => {
+    const timer = setTimeout(() => setIsInitializing(false), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Pre-fill form with user data if logged in
   useEffect(() => {
     if (userData) {
       setFormData(prev => ({
@@ -78,35 +98,91 @@ export default function CheckoutForm({
 
   // Redirect if cart is empty
   useEffect(() => {
-    if (cart.length === 0 && typeof window !== 'undefined') {
+    if (cart.length === 0 && typeof window !== 'undefined' && !isInitializing) {
       window.location.href = '/carrito';
     }
-  }, [cart]);
+  }, [cart, isInitializing]);
+
+  // Validate field on change (debounced effect)
+  const validateField = useCallback((field: FieldName, value: string) => {
+    const error = getFieldError(field, value);
+    setFieldErrors(prev => {
+      if (error) {
+        return { ...prev, [field]: error };
+      } else {
+        const { [field]: _, ...rest } = prev;
+        return rest;
+      }
+    });
+  }, []);
 
   const updateField = (field: keyof FormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clean specific fields
+    let cleanedValue = value;
+    if (field === 'shippingPostalCode') {
+      cleanedValue = cleanPostalCode(value);
+    } else if (field === 'customerPhone') {
+      cleanedValue = cleanPhone(value);
+    }
+    
+    setFormData(prev => ({ ...prev, [field]: cleanedValue }));
     setError(null);
+    
+    // Validate if field has been touched
+    if (touchedFields.has(field as FieldName)) {
+      validateField(field as FieldName, cleanedValue);
+    }
+  };
+
+  const handleBlur = (field: FieldName) => {
+    setTouchedFields(prev => new Set(prev).add(field));
+    validateField(field, formData[field]);
   };
 
   const handleNextStep = () => {
     if (step === 1) {
-      if (!formData.customerName || !formData.customerEmail) {
-        setError('Por favor completa todos los campos obligatorios');
-        // Shake animation triggering would go here
+      const validation = validateStep1({
+        customerName: formData.customerName,
+        customerEmail: formData.customerEmail,
+        customerPhone: formData.customerPhone
+      });
+      
+      if (!validation.isValid) {
+        setFieldErrors(validation.errors);
+        setError(validation.firstError);
+        // Mark all step 1 fields as touched
+        setTouchedFields(prev => new Set([...prev, 'customerName', 'customerEmail', 'customerPhone']));
         return;
       }
       setStep(2);
+      setError(null);
     } else if (step === 2) {
-      if (!formData.shippingAddress || !formData.shippingCity || !formData.shippingPostalCode) {
-        setError('Por favor completa la dirección de envío');
+      const validation = validateStep2({
+        shippingAddress: formData.shippingAddress,
+        shippingCity: formData.shippingCity,
+        shippingPostalCode: formData.shippingPostalCode
+      });
+      
+      if (!validation.isValid) {
+        setFieldErrors(validation.errors);
+        setError(validation.firstError);
+        // Mark all step 2 fields as touched
+        setTouchedFields(prev => new Set([...prev, 'shippingAddress', 'shippingCity', 'shippingPostalCode']));
         return;
       }
       setStep(3);
+      setError(null);
     }
   };
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
+    
+    // Validate email first if using coupon
+    if (!formData.customerEmail || !validateEmail(formData.customerEmail)) {
+      setCouponError('Introduce primero tu email para aplicar el cupón');
+      return;
+    }
     
     setCouponLoading(true);
     setCouponError(null);
@@ -118,7 +194,7 @@ export default function CheckoutForm({
         body: JSON.stringify({
           code: couponCode.trim().toUpperCase(),
           cartTotal: subtotal,
-          customerEmail: formData.customerEmail || null
+          customerEmail: formData.customerEmail
         })
       });
       
@@ -137,7 +213,7 @@ export default function CheckoutForm({
         setCouponError(null);
       }
     } catch (err) {
-      setCouponError('Error al validar el cupón');
+      setCouponError('Error al validar el cupón. Inténtalo de nuevo.');
     } finally {
       setCouponLoading(false);
     }
@@ -154,7 +230,6 @@ export default function CheckoutForm({
     setError(null);
 
     try {
-      // Cart items already match the expected API format
       const mappedItems = cart.map(item => ({
         id: item.id,
         productId: item.productId,
@@ -174,12 +249,12 @@ export default function CheckoutForm({
         },
         body: JSON.stringify({
           items: mappedItems,
-          customerName: formData.customerName,
-          customerEmail: formData.customerEmail,
-          customerPhone: formData.customerPhone,
-          shippingAddress: formData.shippingAddress,
-          shippingCity: formData.shippingCity,
-          shippingPostalCode: formData.shippingPostalCode,
+          customerName: formData.customerName.trim(),
+          customerEmail: formData.customerEmail.trim(),
+          customerPhone: formData.customerPhone.trim(),
+          shippingAddress: formData.shippingAddress.trim(),
+          shippingCity: formData.shippingCity.trim(),
+          shippingPostalCode: formData.shippingPostalCode.trim(),
           couponCode: appliedCoupon?.code || undefined,
         }),
       });
@@ -193,17 +268,129 @@ export default function CheckoutForm({
       if (data.url) {
         window.location.href = data.url;
       } else {
-        throw new Error('Error al iniciar el pago');
+        throw new Error('No se pudo conectar con el sistema de pagos');
       }
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : 'Hubo un error al procesar tu pedido. Por favor inténtalo de nuevo.');
+      const errorMessage = err instanceof Error ? err.message : 'Hubo un error al procesar tu pedido';
+      // Make error messages more user-friendly
+      if (errorMessage.includes('Stock insuficiente')) {
+        setError(errorMessage);
+      } else if (errorMessage.includes('cupón') || errorMessage.includes('coupon')) {
+        setError('El cupón ya no es válido. Elimínalo y continúa sin descuento.');
+      } else {
+        setError('No pudimos procesar tu pedido. Verifica tu conexión e inténtalo de nuevo.');
+      }
       setLoading(false);
     }
   };
 
+  // Input component with error state
+  const FormInput = ({ 
+    id, 
+    label, 
+    field, 
+    type = 'text', 
+    placeholder, 
+    autoComplete,
+    maxLength,
+    required = true,
+    helpText
+  }: {
+    id: string;
+    label: string;
+    field: FieldName;
+    type?: string;
+    placeholder: string;
+    autoComplete?: string;
+    maxLength?: number;
+    required?: boolean;
+    helpText?: string;
+  }) => {
+    const hasError = touchedFields.has(field) && fieldErrors[field];
+    const isValid = touchedFields.has(field) && !fieldErrors[field] && formData[field];
+    
+    return (
+      <div>
+        <label htmlFor={id} className="block text-sm font-medium mb-2">
+          {label} {required && <span className="text-accent">*</span>}
+        </label>
+        <div className="relative">
+          <input
+            type={type}
+            id={id}
+            value={formData[field]}
+            onChange={(e) => updateField(field, e.target.value)}
+            onBlur={() => handleBlur(field)}
+            className={`w-full px-4 py-3 bg-background border rounded-lg outline-none transition-all pr-10 ${
+              hasError 
+                ? 'border-accent focus:border-accent focus:ring-1 focus:ring-accent' 
+                : isValid
+                  ? 'border-green-500 focus:border-green-500 focus:ring-1 focus:ring-green-500'
+                  : 'border-border focus:border-primary focus:ring-1 focus:ring-primary'
+            }`}
+            placeholder={placeholder}
+            autoComplete={autoComplete}
+            maxLength={maxLength}
+          />
+          {/* Status icon */}
+          {touchedFields.has(field) && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              {hasError ? (
+                <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              ) : isValid ? (
+                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+              ) : null}
+            </div>
+          )}
+        </div>
+        {hasError && (
+          <p className="mt-1 text-xs text-accent flex items-center gap-1">
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            {fieldErrors[field]}
+          </p>
+        )}
+        {helpText && !hasError && (
+          <p className="mt-1 text-xs text-muted-foreground">{helpText}</p>
+        )}
+      </div>
+    );
+  };
+
+  // Loading skeleton
+  if (isInitializing) {
+    return (
+      <div className="flex flex-col lg:flex-row gap-12 animate-pulse">
+        <div className="flex-1">
+          <div className="h-10 bg-muted rounded-lg w-1/2 mx-auto mb-8" />
+          <div className="glass border border-border rounded-2xl p-6 md:p-8 space-y-4">
+            <div className="h-6 bg-muted rounded w-1/3 mb-6" />
+            <div className="h-12 bg-muted rounded-lg" />
+            <div className="h-12 bg-muted rounded-lg" />
+            <div className="h-12 bg-muted rounded-lg" />
+            <div className="h-12 bg-muted rounded-lg mt-8" />
+          </div>
+        </div>
+        <div className="w-full lg:w-96">
+          <div className="glass border border-border rounded-xl p-6 space-y-4">
+            <div className="h-6 bg-muted rounded w-1/2" />
+            <div className="h-20 bg-muted rounded-lg" />
+            <div className="h-20 bg-muted rounded-lg" />
+            <div className="h-8 bg-muted rounded-lg" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (cart.length === 0) {
-    return null; // Will redirect via useEffect
+    return null;
   }
 
   return (
@@ -212,19 +399,34 @@ export default function CheckoutForm({
       <div className="flex-1">
         {/* Steps Indicator */}
         <div className="flex items-center justify-between mb-8 max-w-md mx-auto">
-          {[1, 2, 3].map((s) => (
-            <div key={s} className="flex items-center">
-              <div 
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-colors ${
-                  step >= s ? 'bg-primary text-background' : 'bg-secondary text-muted-foreground'
-                }`}
-              >
-                {s}
-              </div>
-              {s < 3 && (
+          {[
+            { num: 1, label: 'Datos' },
+            { num: 2, label: 'Envío' },
+            { num: 3, label: 'Pago' }
+          ].map((s, idx) => (
+            <div key={s.num} className="flex items-center">
+              <div className="flex flex-col items-center">
                 <div 
-                  className={`w-16 h-1 mx-2 transition-colors ${
-                    step > s ? 'bg-primary' : 'bg-secondary'
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-colors ${
+                    step >= s.num ? 'bg-primary text-background' : 'bg-secondary text-muted-foreground'
+                  }`}
+                >
+                  {step > s.num ? (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    s.num
+                  )}
+                </div>
+                <span className={`text-xs mt-1 ${step >= s.num ? 'text-primary' : 'text-muted-foreground'}`}>
+                  {s.label}
+                </span>
+              </div>
+              {idx < 2 && (
+                <div 
+                  className={`w-12 sm:w-16 h-1 mx-2 transition-colors ${
+                    step > s.num ? 'bg-primary' : 'bg-secondary'
                   }`}
                 />
               )}
@@ -235,136 +437,125 @@ export default function CheckoutForm({
         <div className="glass border border-border rounded-2xl p-6 md:p-8">
           {step === 1 && (
             <div className="animate-fadeIn space-y-4">
-              <h2 className="font-heading text-xl mb-6">Paso 1 de 3: Datos personales</h2>
+              <h2 className="font-heading text-xl mb-6">Datos personales</h2>
               
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium mb-2">
-                  Nombre completo *
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  value={formData.customerName}
-                  onChange={(e) => updateField('customerName', e.target.value)}
-                  className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                  placeholder="Tu nombre completo"
-                  autoComplete="name"
-                />
-              </div>
+              <FormInput
+                id="name"
+                label="Nombre completo"
+                field="customerName"
+                placeholder="Juan García López"
+                autoComplete="name"
+              />
 
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium mb-2">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  value={formData.customerEmail}
-                  onChange={(e) => updateField('customerEmail', e.target.value)}
-                  className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                  placeholder="tu@email.com"
-                  autoComplete="email"
-                />
-              </div>
+              <FormInput
+                id="email"
+                label="Email"
+                field="customerEmail"
+                type="email"
+                placeholder="juan.garcia@gmail.com"
+                autoComplete="email"
+                helpText="Recibirás la confirmación del pedido en este email"
+              />
 
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium mb-2">
-                  Teléfono (opcional)
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  value={formData.customerPhone}
-                  onChange={(e) => updateField('customerPhone', e.target.value)}
-                  className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                  placeholder="612 345 678"
-                  autoComplete="tel"
-                />
-              </div>
+              <FormInput
+                id="phone"
+                label="Teléfono"
+                field="customerPhone"
+                type="tel"
+                placeholder="612345678"
+                autoComplete="tel"
+                maxLength={9}
+                required={false}
+                helpText="Para contactarte si hay algún problema con el envío"
+              />
             </div>
           )}
 
           {step === 2 && (
             <div className="animate-fadeIn space-y-4">
-              <h2 className="font-heading text-xl mb-6">Paso 2 de 3: Dirección de envío</h2>
+              <h2 className="font-heading text-xl mb-6">Dirección de envío</h2>
 
-              <div>
-                <label htmlFor="address" className="block text-sm font-medium mb-2">
-                  Dirección *
-                </label>
-                <input
-                  type="text"
-                  id="address"
-                  value={formData.shippingAddress}
-                  onChange={(e) => updateField('shippingAddress', e.target.value)}
-                  className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                  placeholder="Calle, número, piso..."
-                  autoComplete="street-address"
-                />
-              </div>
+              <FormInput
+                id="address"
+                label="Dirección"
+                field="shippingAddress"
+                placeholder="Calle Gran Vía 45, 2º B"
+                autoComplete="street-address"
+              />
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="city" className="block text-sm font-medium mb-2">
-                    Ciudad *
-                  </label>
-                  <input
-                    type="text"
-                    id="city"
-                    value={formData.shippingCity}
-                    onChange={(e) => updateField('shippingCity', e.target.value)}
-                    className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                    placeholder="Madrid"
-                    autoComplete="address-level2"
-                  />
-                </div>
+                <FormInput
+                  id="city"
+                  label="Ciudad"
+                  field="shippingCity"
+                  placeholder="Madrid"
+                  autoComplete="address-level2"
+                />
 
-                <div>
-                  <label htmlFor="postal" className="block text-sm font-medium mb-2">
-                    Código postal *
-                  </label>
-                  <input
-                    type="text"
-                    id="postal"
-                    value={formData.shippingPostalCode}
-                    onChange={(e) => updateField('shippingPostalCode', e.target.value)}
-                    className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                    placeholder="28001"
-                    maxLength={5}
-                    autoComplete="postal-code"
-                  />
-                </div>
+                <FormInput
+                  id="postal"
+                  label="Código postal"
+                  field="shippingPostalCode"
+                  placeholder="28013"
+                  autoComplete="postal-code"
+                  maxLength={5}
+                  helpText="5 dígitos"
+                />
               </div>
+              
+              <p className="text-xs text-muted-foreground mt-2">
+                Solo realizamos envíos a España peninsular e islas.
+              </p>
             </div>
           )}
 
           {step === 3 && (
             <div className="animate-fadeIn space-y-6">
-              <h2 className="font-heading text-xl mb-6">Paso 3 de 3: Confirmación</h2>
+              <h2 className="font-heading text-xl mb-6">Confirmar pedido</h2>
               
+              {/* Time warning */}
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+                  <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="font-medium text-sm">
+                    Tienes 30 minutos para completar el pago
+                  </span>
+                </div>
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-1 ml-7">
+                  Los productos están reservados temporalmente para ti.
+                </p>
+              </div>
+              
+              {/* Order summary */}
               <div className="bg-muted/50 p-4 rounded-lg space-y-3">
                 <div>
                   <h4 className="font-bold text-sm text-muted-foreground uppercase tracking-wider mb-1">Contacto</h4>
-                  <p>{formData.customerName}</p>
-                  <p>{formData.customerEmail}</p>
-                  <p>{formData.customerPhone}</p>
+                  <p className="font-medium">{formData.customerName}</p>
+                  <p className="text-sm text-muted-foreground">{formData.customerEmail}</p>
+                  {formData.customerPhone && (
+                    <p className="text-sm text-muted-foreground">{formData.customerPhone}</p>
+                  )}
                 </div>
                 <div className="h-px bg-border" />
                 <div>
                   <h4 className="font-bold text-sm text-muted-foreground uppercase tracking-wider mb-1">Envío a</h4>
                   <p>{formData.shippingAddress}</p>
                   <p>{formData.shippingPostalCode} {formData.shippingCity}</p>
+                  <p className="text-sm text-muted-foreground">España</p>
                 </div>
               </div>
 
               <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg flex items-start gap-3">
                 <svg className="w-5 h-5 text-primary mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
                 <div className="text-sm">
-                  <p className="font-bold text-primary mb-1">Redirección segura</p>
+                  <p className="font-bold text-primary mb-1">Pago seguro con Stripe</p>
                   <p className="text-muted-foreground">
-                    Serás redirigido a la pasarela de pago segura de Stripe para completar tu compra.
+                    Serás redirigido a la pasarela de pago segura. Aceptamos tarjetas Visa, Mastercard y más.
                   </p>
                 </div>
               </div>
@@ -372,8 +563,11 @@ export default function CheckoutForm({
           )}
 
           {error && (
-            <div className={`mt-6 p-4 rounded-lg bg-accent/10 border border-accent text-accent animate-shake`}>
-              {error}
+            <div className="mt-6 p-4 rounded-lg bg-accent/10 border border-accent text-accent animate-shake flex items-start gap-2">
+              <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{error}</span>
             </div>
           )}
 
@@ -381,17 +575,23 @@ export default function CheckoutForm({
             {step > 1 && (
               <button
                 onClick={() => setStep(s => s - 1)}
-                className="flex-1 px-6 py-3 border border-border hover:bg-muted text-foreground rounded-lg font-bold transition-colors"
+                className="flex-1 px-6 py-3 border border-border hover:bg-muted text-foreground rounded-lg font-bold transition-colors flex items-center justify-center gap-2"
               >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                </svg>
                 Atrás
               </button>
             )}
             {step < 3 ? (
               <button
                 onClick={handleNextStep}
-                className="flex-1 px-6 py-3 bg-primary text-background rounded-lg font-bold hover:bg-primary/90 transition-colors"
+                className="flex-1 px-6 py-3 bg-primary text-background rounded-lg font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
               >
                 Continuar
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                </svg>
               </button>
             ) : (
               <button
@@ -405,10 +605,15 @@ export default function CheckoutForm({
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
-                    Procesando...
+                    Redirigiendo a pago...
                   </>
                 ) : (
-                  'Pagar ahora'
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    Pagar {formatPrice(total)}
+                  </>
                 )}
               </button>
             )}
@@ -429,8 +634,8 @@ export default function CheckoutForm({
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="font-bold text-sm truncate">{item.productName}</h4>
-                  <p className="text-xs text-muted-foreground">Talla: {item.size}</p>
-                  <p className="text-sm font-medium">{formatPrice(item.price)}</p>
+                  <p className="text-xs text-muted-foreground">Talla: {item.size} × {item.quantity}</p>
+                  <p className="text-sm font-medium">{formatPrice(item.price * item.quantity)}</p>
                 </div>
               </div>
             ))}
@@ -443,8 +648,15 @@ export default function CheckoutForm({
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Envío</span>
-              <span>{shipping === 0 ? 'Gratis' : formatPrice(shipping)}</span>
+              <span className={shipping === 0 ? 'text-green-500 font-medium' : ''}>
+                {shipping === 0 ? '¡Gratis!' : formatPrice(shipping)}
+              </span>
             </div>
+            {shipping > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Envío gratis a partir de {formatPrice(freeShippingThreshold)}
+              </p>
+            )}
             {appliedCoupon && (
               <div className="flex justify-between text-sm text-green-500">
                 <span className="flex items-center gap-1">
@@ -462,25 +674,35 @@ export default function CheckoutForm({
           <div className="py-4 border-t border-border">
             {!appliedCoupon ? (
               <div className="space-y-2">
-                <label className="text-sm font-medium">Código promocional</label>
+                <label className="text-sm font-medium">¿Tienes un código de descuento?</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                    placeholder="Ej: VERANO20"
-                    className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                    placeholder="CODIGO20"
+                    className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all uppercase"
                   />
                   <button
                     onClick={handleApplyCoupon}
                     disabled={couponLoading || !couponCode.trim()}
                     className="px-4 py-2 bg-secondary text-foreground rounded-lg text-sm font-medium hover:bg-secondary/80 transition-colors disabled:opacity-50"
                   >
-                    {couponLoading ? '...' : 'Aplicar'}
+                    {couponLoading ? (
+                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    ) : 'Aplicar'}
                   </button>
                 </div>
                 {couponError && (
-                  <p className="text-xs text-accent">{couponError}</p>
+                  <p className="text-xs text-accent flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {couponError}
+                  </p>
                 )}
               </div>
             ) : (
@@ -493,7 +715,8 @@ export default function CheckoutForm({
                 </div>
                 <button
                   onClick={handleRemoveCoupon}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                  title="Eliminar cupón"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -511,19 +734,19 @@ export default function CheckoutForm({
             </div>
           </div>
           
-          <div className="mt-6 space-y-3">
-             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-               </svg>
-               Pago seguro con Stripe
-             </div>
-             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-               </svg>
-               Reserva de stock por 30 minutos
-             </div>
+          <div className="mt-6 space-y-2">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              Pago 100% seguro con encriptación SSL
+            </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              Visa, Mastercard, Apple Pay, Google Pay
+            </div>
           </div>
         </div>
       </div>

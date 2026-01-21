@@ -2,10 +2,27 @@ import type { OrderEmailData } from './email';
 import { formatOrderId } from './order-utils';
 import { formatPrice } from './formatters';
 
+// Opciones de configuración para templates de email
+export interface EmailTemplateOptions {
+  siteUrl: string;
+  contactEmail: string;
+  storeName?: string;
+}
+
+// Valores por defecto (fallback si no se pasan opciones)
+const getDefaultOptions = (): EmailTemplateOptions => ({
+  siteUrl: import.meta.env.SITE_URL || 'http://localhost:4321',
+  contactEmail: import.meta.env.CONTACT_EMAIL || 'info@fashionstore.es',
+  storeName: 'FashionStore'
+});
+
 // Genera el HTML del email de confirmación de pedido
-export function generateOrderConfirmationHTML(order: OrderEmailData, formattedOrderId: string): string {
-  const siteUrl = import.meta.env.SITE_URL || 'http://localhost:4321';
-  const contactEmail = import.meta.env.CONTACT_EMAIL || 'info@bookoro.es';
+export function generateOrderConfirmationHTML(
+  order: OrderEmailData, 
+  formattedOrderId: string,
+  options?: Partial<EmailTemplateOptions>
+): string {
+  const { siteUrl, contactEmail } = { ...getDefaultOptions(), ...options };
 
   const itemsHTML = order.items.map(item => `
     <tr>
@@ -154,9 +171,11 @@ export interface OrderShippedData {
 }
 
 // Genera el HTML del email de pedido enviado
-export function generateOrderShippedHTML(data: OrderShippedData): string {
-  const siteUrl = import.meta.env.SITE_URL || 'http://localhost:4321';
-  const contactEmail = import.meta.env.CONTACT_EMAIL || 'info@bookoro.es';
+export function generateOrderShippedHTML(
+  data: OrderShippedData,
+  options?: Partial<EmailTemplateOptions>
+): string {
+  const { siteUrl, contactEmail } = { ...getDefaultOptions(), ...options };
 
   const trackingSection = data.trackingUrl ? `
     <!-- Tracking Button -->

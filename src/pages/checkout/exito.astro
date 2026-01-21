@@ -268,10 +268,27 @@ function formatDate(date: string): string {
   </div>
 
   <script>
-    import { clearCart } from "@/stores/cart";
+    import { clearCart, $cart } from "@/stores/cart";
 
-    // Clear cart on success page
-    clearCart();
+    // Clear cart on success page with verification
+    try {
+      clearCart();
+      
+      // Verify cart was cleared
+      setTimeout(() => {
+        if ($cart.get().length > 0) {
+          console.warn('Cart not properly cleared, retrying...');
+          localStorage.removeItem('fashionstore_cart');
+          clearCart();
+        }
+      }, 100);
+    } catch (e) {
+      console.error('Error clearing cart:', e);
+      // Fallback: clear localStorage directly
+      try {
+        localStorage.removeItem('fashionstore_cart');
+      } catch {}
+    }
 
     // Confetti animation
     const canvas = document.getElementById(

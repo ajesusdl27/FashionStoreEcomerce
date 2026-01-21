@@ -1,7 +1,27 @@
 import { Resend } from 'resend';
-import { generateOrderConfirmationHTML, generateOrderShippedHTML } from './email-templates';
+import { generateOrderConfirmationHTML, generateOrderShippedHTML, type EmailTemplateOptions } from './email-templates';
 import { generateTicketPDF } from './pdf-generator';
 import { formatOrderId } from './order-utils';
+import { getContactInfo } from './settings';
+
+// Obtiene las opciones de configuración para las plantillas de email
+async function getEmailTemplateOptions(): Promise<EmailTemplateOptions> {
+  try {
+    const contactInfo = await getContactInfo();
+    return {
+      siteUrl: import.meta.env.SITE_URL || 'http://localhost:4321',
+      contactEmail: contactInfo.email || import.meta.env.CONTACT_EMAIL || 'info@fashionstore.es',
+      storeName: contactInfo.name || 'FashionStore'
+    };
+  } catch (error) {
+    console.warn('Could not fetch contact info from settings, using defaults');
+    return {
+      siteUrl: import.meta.env.SITE_URL || 'http://localhost:4321',
+      contactEmail: import.meta.env.CONTACT_EMAIL || 'info@fashionstore.es',
+      storeName: 'FashionStore'
+    };
+  }
+}
 
 const resendApiKey = import.meta.env.RESEND_API_KEY;
 
@@ -52,6 +72,9 @@ export async function sendOrderConfirmation(order: OrderEmailData): Promise<{ su
   try {
     const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
     
+    // Obtener configuración dinámica de la tienda
+    const templateOptions = await getEmailTemplateOptions();
+    
     // Formatear número de pedido
     const formattedOrderId = formatOrderId(order.orderNumber);
     
@@ -80,8 +103,8 @@ export async function sendOrderConfirmation(order: OrderEmailData): Promise<{ su
     const emailOptions: Parameters<typeof resend.emails.send>[0] = {
       from: fromEmail,
       to: order.customerEmail,
-      subject: `✓ Pedido confirmado ${formattedOrderId} - FashionStore`,
-      html: generateOrderConfirmationHTML(order, formattedOrderId),
+      subject: `✓ Pedido confirmado ${formattedOrderId} - ${templateOptions.storeName}`,
+      html: generateOrderConfirmationHTML(order, formattedOrderId, templateOptions),
     };
     
     // Añadir adjunto solo si se generó correctamente
@@ -124,6 +147,9 @@ export async function sendOrderShipped(data: import('./email-templates').OrderSh
   try {
     const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
     
+    // Obtener configuración dinámica de la tienda
+    const templateOptions = await getEmailTemplateOptions();
+    
     // Formatear ID para display (con fallback para compatibilidad)
     const displayId = data.orderNumber 
       ? formatOrderId(data.orderNumber) 
@@ -132,8 +158,8 @@ export async function sendOrderShipped(data: import('./email-templates').OrderSh
     const { data: responseData, error } = await resend.emails.send({
       from: fromEmail,
       to: data.customerEmail,
-      subject: `🚚 ¡Tu pedido ${displayId} ha sido enviado! - FashionStore`,
-      html: generateOrderShippedHTML(data),
+      subject: `🚚 ¡Tu pedido ${displayId} ha sido enviado! - ${templateOptions.storeName}`,
+      html: generateOrderShippedHTML(data, templateOptions),
     });
 
     if (error) {
@@ -174,8 +200,8 @@ export async function sendReturnConfirmation(data: ReturnEmailData): Promise<{ s
 
   try {
     const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
-    const siteUrl = import.meta.env.SITE_URL || 'http://localhost:4321';
-    const contactEmail = import.meta.env.CONTACT_EMAIL || 'info@fashionstore.es';
+    const templateOptions = await getEmailTemplateOptions();
+    const { siteUrl, contactEmail, storeName } = templateOptions;
     
     // Formatear ID para display (con fallback)
     const displayOrderId = data.orderNumber 
@@ -363,7 +389,8 @@ export async function sendReturnApproved(data: ReturnApprovedData): Promise<{ su
 
   try {
     const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
-    const siteUrl = import.meta.env.SITE_URL || 'http://localhost:4321';
+    const templateOptions = await getEmailTemplateOptions();
+    const { siteUrl } = templateOptions;
     
     const displayOrderId = data.orderNumber 
       ? formatOrderId(data.orderNumber) 
@@ -470,8 +497,8 @@ export async function sendReturnRejected(data: ReturnRejectedData): Promise<{ su
 
   try {
     const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
-    const siteUrl = import.meta.env.SITE_URL || 'http://localhost:4321';
-    const contactEmail = import.meta.env.CONTACT_EMAIL || 'info@fashionstore.es';
+    const templateOptions = await getEmailTemplateOptions();
+    const { siteUrl, contactEmail } = templateOptions;
     
     const displayOrderId = data.orderNumber 
       ? formatOrderId(data.orderNumber) 
@@ -581,7 +608,8 @@ export async function sendRefundProcessed(data: RefundProcessedData): Promise<{ 
 
   try {
     const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
-    const siteUrl = import.meta.env.SITE_URL || 'http://localhost:4321';
+    const templateOptions = await getEmailTemplateOptions();
+    const { siteUrl } = templateOptions;
     
     const displayOrderId = data.orderNumber 
       ? formatOrderId(data.orderNumber) 
@@ -682,8 +710,8 @@ export async function sendOrderCancelled(data: CancellationEmailData): Promise<{
 
   try {
     const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
-    const siteUrl = import.meta.env.SITE_URL || 'http://localhost:4321';
-    const contactEmail = import.meta.env.CONTACT_EMAIL || 'info@fashionstore.es';
+    const templateOptions = await getEmailTemplateOptions();
+    const { siteUrl, contactEmail } = templateOptions;
     
     const displayOrderId = formatOrderId(data.orderNumber);
     const refundText = data.refundAmount 
