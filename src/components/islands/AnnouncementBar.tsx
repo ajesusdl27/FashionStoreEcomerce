@@ -79,7 +79,7 @@ export default function AnnouncementBar({
 
   return (
     <div
-      className={`bg-gradient-to-r from-primary via-primary/90 to-primary text-primary-foreground text-center py-2 px-4 relative transition-all duration-300 z-50 ${
+      className={`bg-gradient-to-r from-primary via-primary/90 to-primary text-primary-foreground text-center py-2 px-4 transition-all duration-300 ${
         isAnimating
           ? "opacity-100 translate-y-0"
           : "opacity-0 -translate-y-full"

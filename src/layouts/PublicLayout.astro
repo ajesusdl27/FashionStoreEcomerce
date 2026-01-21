@@ -32,14 +32,16 @@ const settings = await getSettings();
     shippingCost={shippingConfig.shippingCostEuros}
   />
 
-  <!-- Announcement Bar (React Island) -->
-  <AnnouncementBar
-    client:load
-    message={`🚚 Envío GRATIS en pedidos superiores a ${shippingConfig.freeShippingThreshold}€`}
-  />
-
-  <!-- Header -->
-  <header class="sticky top-0 z-50 glass border-b border-border">
+  <!-- Header with Announcement Bar -->
+  <div class="sticky top-0 z-50">
+    <!-- Announcement Bar (React Island) -->
+    <AnnouncementBar
+      client:load
+      message={`🚚 Envío GRATIS en pedidos superiores a ${shippingConfig.freeShippingThreshold}€`}
+    />
+    
+    <!-- Header -->
+    <header class="glass border-b border-border bg-background/95 backdrop-blur-md">
     <div class="container mx-auto px-4">
       <div class="flex items-center justify-between h-16">
         <!-- Mobile Menu Button - 44x44px touch target with ARIA attributes -->
@@ -93,10 +95,11 @@ const settings = await getSettings();
         </div>
       </div>
     </div>
-  </header>
+    </header>
+  </div>
 
   <!-- Mobile Menu Overlay -->
-  <div id="mobile-menu" class="fixed inset-0 z-50 hidden" aria-hidden="true">
+  <div id="mobile-menu" class="fixed inset-0 z-60 hidden" aria-hidden="true">
     <!-- Backdrop with aria-hidden to prevent screen reader focus -->
     <div
       class="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -320,18 +323,18 @@ const settings = await getSettings();
       // Prevent body scroll
       document.body.style.overflow = "hidden";
       
-      // Animate panel in
-      setTimeout(() => {
-        menuPanel.classList.remove("-translate-x-full");
-        
-        // Focus the first focusable element (close button)
+        // Animate panel in
         setTimeout(() => {
-          const focusable = getFocusableElements();
-          if (focusable.length > 0) {
-            focusable[0].focus();
-          }
-        }, 100);
-      }, 10);
+          menuPanel.classList.remove("-translate-x-full");
+          
+          // Focus the first focusable element (close button)
+          setTimeout(() => {
+            const focusable = getFocusableElements();
+            if (focusable.length > 0) {
+              focusable[0]?.focus();
+            }
+          }, 100);
+        }, 10);
     }
 
     function closeMenu() {
@@ -378,10 +381,10 @@ const settings = await getSettings();
 
         if (e.shiftKey && document.activeElement === firstElement) {
           e.preventDefault();
-          lastElement.focus();
+          lastElement?.focus();
         } else if (!e.shiftKey && document.activeElement === lastElement) {
           e.preventDefault();
-          firstElement.focus();
+          firstElement?.focus();
         }
       }
     }
