@@ -53,7 +53,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const { name, slug, size_type } = await request.json();
+    const { name, slug, size_type, description, icon_name, color_theme, featured, display_order } = await request.json();
 
     // Validate required fields
     if (!name?.trim()) {
@@ -80,7 +80,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const { data, error } = await authClient
       .from('categories')
-      .insert({ name: name.trim(), slug: normalizedSlug, size_type: size_type || 'clothing' })
+      .insert({ 
+        name: name.trim(), 
+        slug: normalizedSlug, 
+        size_type: size_type || 'clothing',
+        description: description?.trim() || null,
+        icon_name: icon_name || 'tag',
+        color_theme: color_theme || 'default',
+        featured: featured || false,
+        display_order: display_order || 0
+      })
       .select()
       .single();
 
@@ -122,7 +131,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const { id, name, slug, size_type } = await request.json();
+    const { id, name, slug, size_type, description, icon_name, color_theme, featured, display_order } = await request.json();
 
     // Validate required fields
     if (!id) {
@@ -155,7 +164,16 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
 
     const { error } = await authClient
       .from('categories')
-      .update({ name: name.trim(), slug: normalizedSlug, size_type })
+      .update({ 
+        name: name.trim(), 
+        slug: normalizedSlug, 
+        size_type,
+        description: description?.trim() || null,
+        icon_name: icon_name || 'tag',
+        color_theme: color_theme || 'default',
+        featured: featured || false,
+        display_order: display_order || 0
+      })
       .eq('id', id);
 
     if (error) {

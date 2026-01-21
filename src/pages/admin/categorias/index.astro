@@ -17,7 +17,8 @@ const { data: categories, error } = await authClient
     products:products(count)
   `,
   )
-  .order("name");
+  .order("display_order", { ascending: true })
+  .order("name", { ascending: true });
 
 const categoriesWithCount = categories?.map((cat: any) => ({
   ...cat,
@@ -73,6 +74,10 @@ const categoriesWithCount = categories?.map((cat: any) => ({
                     data-name={cat.name}
                     data-slug={cat.slug}
                     data-size-type={cat.size_type || "clothing"}
+                    data-description={cat.description || ""}
+                    data-color-theme={cat.color_theme || "default"}
+                    data-featured={cat.featured || false}
+                    data-display-order={cat.display_order || 0}
                   >
                     <Edit2 className="w-4 h-4 text-muted-foreground" />
                   </button>
@@ -273,6 +278,91 @@ const categoriesWithCount = categories?.map((cat: any) => ({
             </p>
           </div>
 
+          <!-- Description Field -->
+          <div>
+            <label
+              for="category-description"
+              class="block text-sm font-medium text-foreground mb-2"
+            >
+              Descripción
+            </label>
+            <textarea
+              id="category-description"
+              rows="2"
+              class="admin-input w-full resize-none"
+              placeholder="Ej: Encuentra tu estilo perfecto"
+            ></textarea>
+            <p class="text-xs text-muted-foreground mt-1.5">
+              Descripción breve que aparecerá en la tarjeta de la categoría
+            </p>
+          </div>
+
+
+          <!-- Color Theme Field -->
+          <div>
+            <label
+              for="category-color-theme"
+              class="block text-sm font-medium text-foreground mb-2"
+            >
+              Tema de Color
+            </label>
+            <select id="category-color-theme" class="admin-select w-full">
+              <option value="default">🔘 Por defecto (Gris)</option>
+              <option value="blue">🔵 Azul</option>
+              <option value="green">🟢 Verde</option>
+              <option value="purple">🟣 Morado</option>
+              <option value="orange">🟠 Naranja</option>
+              <option value="red">🔴 Rojo</option>
+              <option value="pink">🩷 Rosa</option>
+              <option value="yellow">🟡 Amarillo</option>
+            </select>
+            <p class="text-xs text-muted-foreground mt-1.5">
+              Tema de color para el fondo y gradientes de la categoría
+            </p>
+          </div>
+
+          <!-- Featured and Display Order -->
+          <div class="grid grid-cols-2 gap-4">
+            <!-- Featured Field -->
+            <div>
+              <label class="flex items-center gap-2 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  id="category-featured"
+                  class="w-4 h-4 rounded border-input bg-background text-primary focus:ring-primary focus:ring-offset-0"
+                />
+                <span class="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                  Categoría destacada
+                </span>
+              </label>
+              <p class="text-xs text-muted-foreground mt-1.5">
+                Se mostrará en la sección de categorías destacadas
+              </p>
+            </div>
+
+            <!-- Display Order Field -->
+            <div>
+              <label
+                for="category-display-order"
+                class="block text-sm font-medium text-foreground mb-2"
+              >
+                Orden
+              </label>
+              <input
+                type="number"
+                id="category-display-order"
+                min="0"
+                step="1"
+                value="0"
+                class="admin-input w-full"
+                placeholder="0"
+              />
+              <p class="text-xs text-muted-foreground mt-1.5">
+                Orden de visualización (menor = primero)
+              </p>
+            </div>
+          </div>
+
           <!-- Error Message -->
           <div
             id="form-error"
@@ -347,6 +437,18 @@ const categoriesWithCount = categories?.map((cat: any) => ({
     const categorySizeTypeSelect = document.getElementById(
       "category-size-type",
     ) as HTMLSelectElement;
+    const categoryDescriptionInput = document.getElementById(
+      "category-description",
+    ) as HTMLTextAreaElement;
+    const categoryColorThemeSelect = document.getElementById(
+      "category-color-theme",
+    ) as HTMLSelectElement;
+    const categoryFeaturedCheckbox = document.getElementById(
+      "category-featured",
+    ) as HTMLInputElement;
+    const categoryDisplayOrderInput = document.getElementById(
+      "category-display-order",
+    ) as HTMLInputElement;
     const formError = document.getElementById("form-error");
     const autoSlugCheckbox = document.getElementById(
       "auto-slug",
@@ -415,6 +517,10 @@ const categoriesWithCount = categories?.map((cat: any) => ({
         categoryNameInput.value = "";
         categorySlugInput.value = "";
         categorySizeTypeSelect.value = "clothing";
+        categoryDescriptionInput.value = "";
+        categoryColorThemeSelect.value = "default";
+        categoryFeaturedCheckbox.checked = false;
+        categoryDisplayOrderInput.value = "0";
         autoSlugCheckbox.checked = true;
         formError?.classList.add("hidden");
         if (slugPreview) slugPreview.textContent = "...";
@@ -424,12 +530,18 @@ const categoriesWithCount = categories?.map((cat: any) => ({
     // Open edit modal
     document.querySelectorAll(".edit-category").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const { id, name, slug, sizeType } = (btn as HTMLElement).dataset;
+        const { 
+          id, name, slug, sizeType, description, colorTheme, featured, displayOrder 
+        } = (btn as HTMLElement).dataset;
         if (modalTitle) modalTitle.textContent = "Editar Categoría";
         categoryIdInput.value = id || "";
         categoryNameInput.value = name || "";
         categorySlugInput.value = slug || "";
         categorySizeTypeSelect.value = sizeType || "clothing";
+        categoryDescriptionInput.value = description || "";
+        categoryColorThemeSelect.value = colorTheme || "default";
+        categoryFeaturedCheckbox.checked = featured === "true";
+        categoryDisplayOrderInput.value = displayOrder || "0";
         autoSlugCheckbox.checked = false; // Uncheck for editing to preserve existing slug
         formError?.classList.add("hidden");
         if (slugPreview) slugPreview.textContent = slug || "...";
@@ -460,6 +572,11 @@ const categoriesWithCount = categories?.map((cat: any) => ({
           name: categoryNameInput.value,
           slug: categorySlugInput.value,
           size_type: categorySizeTypeSelect.value,
+          description: categoryDescriptionInput.value,
+          icon_name: 'tag', // Valor por defecto
+          color_theme: categoryColorThemeSelect.value,
+          featured: categoryFeaturedCheckbox.checked,
+          display_order: parseInt(categoryDisplayOrderInput.value) || 0,
         };
 
         // Show loading state

@@ -1,50 +1,64 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 
 /**
- * Custom hook to detect if user prefers reduced motion
- * Respects the prefers-reduced-motion media query for accessibility
- * 
- * @returns {boolean} True if user prefers reduced motion, false otherwise
- * 
- * @example
- * ```tsx
- * const prefersReducedMotion = useReducedMotion();
- * 
- * <div className={prefersReducedMotion ? '' : 'animate-bounce'}>
- *   Content
- * </div>
- * ```
+ * Hook para detectar la preferencia del usuario por movimiento reducido
+ * Respeta la configuración de accesibilidad del sistema operativo
  */
 export function useReducedMotion(): boolean {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   useEffect(() => {
-    // Check if window is available (SSR safety)
-    if (typeof window === 'undefined') return;
+    // Verificar si el navegador soporta matchMedia
+    if (typeof window === 'undefined' || !window.matchMedia) {
+      return;
+    }
 
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     
-    // Set initial value
+    // Establecer valor inicial
     setPrefersReducedMotion(mediaQuery.matches);
 
-    // Listen for changes
+    // Listener para cambios
     const handleChange = (event: MediaQueryListEvent) => {
       setPrefersReducedMotion(event.matches);
     };
 
-    // Modern browsers
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
-    } 
-    // Legacy browsers (Safari < 14)
-    else {
-      // @ts-ignore
-      mediaQuery.addListener(handleChange);
-      // @ts-ignore
-      return () => mediaQuery.removeListener(handleChange);
-    }
+    // Añadir listener
+    mediaQuery.addEventListener('change', handleChange);
+
+    // Cleanup
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange);
+    };
   }, []);
 
   return prefersReducedMotion;
+}
+
+/**
+ * Utilidad para obtener clases CSS condicionales basadas en preferencia de movimiento
+ */
+export function getMotionClasses(
+  normalClasses: string, 
+  reducedClasses: string = ''
+): string {
+  return `
+    ${normalClasses}
+    motion-reduce:${reducedClasses || 'transform-none motion-reduce:transition-none'}
+  `.trim();
+}
+
+/**
+ * Hook que devuelve configuración de animación basada en preferencias
+ */
+export function useAnimationConfig() {
+  const prefersReducedMotion = useReducedMotion();
+
+  return {
+    prefersReducedMotion,
+    duration: prefersReducedMotion ? 0 : 300,
+    transition: prefersReducedMotion ? 'none' : 'all 0.3s ease-out',
+    scale: prefersReducedMotion ? 1 : 1.05,
+    translateY: prefersReducedMotion ? 0 : -4,
+  };
 }
