@@ -109,6 +109,50 @@ const getCouponStatus = (coupon: any) => {
       </select>
     </div>
 
+    <!-- Status Tabs -->
+    <div class="flex flex-wrap gap-2 mb-6">
+      <a
+        href="/admin/cupones"
+        class={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          !Astro.url.searchParams.get('status')
+            ? 'bg-primary text-primary-foreground'
+            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+        }`}
+      >
+        Todos ({coupons?.length || 0})
+      </a>
+      <a
+        href="/admin/cupones?status=active"
+        class={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          Astro.url.searchParams.get('status') === 'active'
+            ? 'bg-green-500 text-white'
+            : 'bg-green-500/10 text-green-500 hover:bg-green-500/20'
+        }`}
+      >
+        Activos ({coupons?.filter((c: any) => getCouponStatus(c).label === 'Activo').length || 0})
+      </a>
+      <a
+        href="/admin/cupones?status=expired"
+        class={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          Astro.url.searchParams.get('status') === 'expired'
+            ? 'bg-yellow-500 text-white'
+            : 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/20'
+        }`}
+      >
+        Expirados ({coupons?.filter((c: any) => getCouponStatus(c).label === 'Expirado').length || 0})
+      </a>
+      <a
+        href="/admin/cupones?status=depleted"
+        class={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          Astro.url.searchParams.get('status') === 'depleted'
+            ? 'bg-red-500 text-white'
+            : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+        }`}
+      >
+        Agotados ({coupons?.filter((c: any) => getCouponStatus(c).label === 'Agotado').length || 0})
+      </a>
+    </div>
+
     <!-- Coupons Table -->
     <div class="admin-card">
       {
@@ -120,8 +164,8 @@ const getCouponStatus = (coupon: any) => {
                   <th>Código</th>
                   <th>Descuento</th>
                   <th>Mín. Compra</th>
-                  <th>Usos</th>
-                  <th>Válido</th>
+                  <th>Uso</th>
+                  <th>Expiración</th>
                   <th>Estado</th>
                   <th class="text-right">Acciones</th>
                 </tr>
@@ -129,6 +173,11 @@ const getCouponStatus = (coupon: any) => {
               <tbody>
                 {coupons.map((coupon: any) => {
                   const status = getCouponStatus(coupon);
+                  const usagePercent = coupon.max_uses ? Math.min(100, (coupon.current_uses / coupon.max_uses) * 100) : 0;
+                  const now = new Date();
+                  const endDate = coupon.end_date ? new Date(coupon.end_date) : null;
+                  const daysLeft = endDate ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
+                  
                   return (
                     <tr
                       data-code={coupon.code.toLowerCase()}
@@ -145,39 +194,71 @@ const getCouponStatus = (coupon: any) => {
                       }
                     >
                       <td>
-                        <span class="font-mono font-bold text-primary">
-                          {coupon.code}
-                        </span>
+                        <div>
+                          <span class="font-mono font-bold text-primary text-base">
+                            {coupon.code}
+                          </span>
+                          {coupon.discount_type === 'percentage' && coupon.max_discount_amount && (
+                            <p class="text-xs text-muted-foreground mt-0.5">
+                              Máx. {coupon.max_discount_amount}€
+                            </p>
+                          )}
+                        </div>
                       </td>
-                      <td class="font-medium">
-                        {formatDiscount(
-                          coupon.discount_type,
-                          coupon.discount_value,
-                        )}
+                      <td>
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-bold">
+                          {formatDiscount(coupon.discount_type, coupon.discount_value)}
+                        </span>
                       </td>
                       <td>
                         {coupon.min_purchase_amount > 0 ? (
-                          `${coupon.min_purchase_amount}€`
+                          <span class="font-medium">{coupon.min_purchase_amount}€</span>
                         ) : (
                           <span class="text-muted-foreground">-</span>
                         )}
                       </td>
                       <td>
-                        <span
-                          class={
-                            coupon.max_uses &&
-                            coupon.current_uses >= coupon.max_uses
-                              ? "text-red-400"
-                              : ""
-                          }
-                        >
-                          {coupon.current_uses}
-                          {coupon.max_uses ? `/${coupon.max_uses}` : ""}
-                        </span>
+                        {coupon.max_uses ? (
+                          <div class="space-y-1 min-w-[100px]">
+                            <div class="flex items-center justify-between text-xs">
+                              <span>{coupon.current_uses}/{coupon.max_uses}</span>
+                              <span class={usagePercent >= 80 ? 'text-red-500' : usagePercent >= 50 ? 'text-yellow-500' : 'text-green-500'}>
+                                {Math.round(usagePercent)}%
+                              </span>
+                            </div>
+                            <div class="progress-bar">
+                              <div 
+                                class={`progress-bar-fill ${usagePercent >= 80 ? 'progress-bar-danger' : usagePercent >= 50 ? 'progress-bar-warning' : 'progress-bar-success'}`}
+                                style={`width: ${usagePercent}%`}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <span class="text-muted-foreground text-sm">{coupon.current_uses} usos</span>
+                        )}
                       </td>
-                      <td class="text-sm text-muted-foreground">
-                        <div>{formatDate(coupon.start_date)}</div>
-                        <div>→ {formatDate(coupon.end_date)}</div>
+                      <td>
+                        <>
+                          {!endDate && (
+                            <span class="text-muted-foreground text-sm">Sin límite</span>
+                          )}
+                          {endDate && daysLeft !== null && daysLeft <= 0 && (
+                            <span class="badge badge-danger">Expirado</span>
+                          )}
+                          {endDate && daysLeft !== null && daysLeft > 0 && daysLeft <= 7 && (
+                            <span class={`countdown-badge ${daysLeft <= 2 ? 'countdown-urgent' : 'countdown-warning'}`}>
+                              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              {daysLeft}d restantes
+                            </span>
+                          )}
+                          {endDate && (daysLeft === null || daysLeft > 7) && !(daysLeft !== null && daysLeft <= 0) && (
+                            <span class="text-sm text-muted-foreground">
+                              {formatDate(coupon.end_date)}
+                            </span>
+                          )}
+                        </>
                       </td>
                       <td>
                         <button

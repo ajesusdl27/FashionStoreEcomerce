@@ -3,7 +3,22 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
 import { supabase } from "@/lib/supabase";
 import { formatOrderId } from "@/lib/order-utils";
 import { formatPrice } from "@/lib/formatters";
-import { Package } from "lucide-react";
+import { 
+  Package, 
+  ArrowLeft, 
+  Truck, 
+  CreditCard, 
+  CheckCircle, 
+  XCircle, 
+  Clock, 
+  Mail, 
+  Printer, 
+  FileText, 
+  RotateCcw,
+  User,
+  MapPin,
+  Phone,
+} from "lucide-react";
 
 const { id } = Astro.params;
 
@@ -51,83 +66,231 @@ const formatDateLocal = (date: string) => {
   });
 };
 
+const formatDateShort = (date: string) => {
+  return new Date(date).toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 const statusConfig: Record<
   string,
-  { label: string; bgClass: string; textClass: string }
+  { label: string; bgClass: string; textClass: string; icon: typeof Clock }
 > = {
   pending: {
     label: "Pendiente",
     bgClass: "bg-yellow-500/20",
-    textClass: "text-yellow-400",
+    textClass: "text-yellow-500",
+    icon: Clock,
   },
   paid: {
     label: "Pagado",
     bgClass: "bg-green-500/20",
-    textClass: "text-green-400",
+    textClass: "text-green-500",
+    icon: CreditCard,
   },
   shipped: {
     label: "Enviado",
     bgClass: "bg-blue-500/20",
-    textClass: "text-blue-400",
+    textClass: "text-blue-500",
+    icon: Truck,
   },
   delivered: {
     label: "Entregado",
-    bgClass: "bg-green-500/20",
-    textClass: "text-green-400",
+    bgClass: "bg-emerald-500/20",
+    textClass: "text-emerald-500",
+    icon: CheckCircle,
   },
   cancelled: {
     label: "Cancelado",
     bgClass: "bg-red-500/20",
-    textClass: "text-red-400",
+    textClass: "text-red-500",
+    icon: XCircle,
+  },
+  return_requested: {
+    label: "Dev. Solicitada",
+    bgClass: "bg-orange-500/20",
+    textClass: "text-orange-500",
+    icon: RotateCcw,
+  },
+  return_completed: {
+    label: "Reembolsado",
+    bgClass: "bg-purple-500/20",
+    textClass: "text-purple-500",
+    icon: CheckCircle,
   },
 };
 
 const statuses = ["pending", "paid", "shipped", "delivered", "cancelled"];
 const currentStatus = statusConfig[order.status] || statusConfig.pending;
-const isAlreadyShipped =
-  order.status === "shipped" || order.status === "delivered";
+const StatusIcon = currentStatus.icon;
+const isAlreadyShipped = order.status === "shipped" || order.status === "delivered";
+
+// Build timeline from order data
+const timeline = [
+  { 
+    status: 'created', 
+    label: 'Pedido creado', 
+    date: order.created_at, 
+    completed: true 
+  },
+];
+
+// Add paid if status is paid or later
+if (['paid', 'shipped', 'delivered'].includes(order.status)) {
+  timeline.push({ 
+    status: 'paid', 
+    label: 'Pago confirmado', 
+    date: order.paid_at || order.created_at, 
+    completed: true 
+  });
+}
+
+// Add shipped
+if (['shipped', 'delivered'].includes(order.status)) {
+  timeline.push({ 
+    status: 'shipped', 
+    label: 'Pedido enviado', 
+    date: shipmentData?.shipped_at || order.updated_at, 
+    completed: true 
+  });
+}
+
+// Add delivered
+if (order.status === 'delivered') {
+  timeline.push({ 
+    status: 'delivered', 
+    label: 'Pedido entregado', 
+    date: order.delivered_at || order.updated_at, 
+    completed: true 
+  });
+}
+
+// Add cancelled if applicable
+if (order.status === 'cancelled') {
+  timeline.push({ 
+    status: 'cancelled', 
+    label: 'Pedido cancelado', 
+    date: order.cancelled_at || order.updated_at, 
+    completed: true 
+  });
+}
 ---
 
 <AdminLayout
   title={`Pedido ${order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`}`}
 >
-  <div class="max-w-4xl mx-auto space-y-6">
+  <div class="max-w-5xl mx-auto space-y-6">
     <!-- Header -->
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div class="flex items-center gap-4">
         <a
           href="/admin/pedidos"
-          class="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+          class="p-2 hover:bg-muted rounded-lg transition-colors"
+          title="Volver a pedidos"
         >
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M15 19l-7-7 7-7"></path>
-          </svg>
+          <ArrowLeft className="w-5 h-5" />
         </a>
         <div>
-          <h1 class="text-2xl font-bold text-foreground">
-            Pedido {
-              order.order_number
-                ? formatOrderId(order.order_number)
-                : `#${order.id.slice(0, 8)}`
-            }
-          </h1>
-          <p class="text-zinc-500">{formatDateLocal(order.created_at)}</p>
+          <div class="flex items-center gap-3">
+            <h1 class="text-2xl font-bold text-foreground">
+              Pedido {
+                order.order_number
+                  ? formatOrderId(order.order_number)
+                  : `#${order.id.slice(0, 8)}`
+              }
+            </h1>
+            <span
+              class={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold ${currentStatus.bgClass} ${currentStatus.textClass}`}
+            >
+              <StatusIcon className="w-4 h-4" />
+              {currentStatus.label}
+            </span>
+          </div>
+          <p class="text-muted-foreground mt-1">{formatDateLocal(order.created_at)}</p>
         </div>
       </div>
-      <span
-        class={`px-4 py-2 rounded-lg text-sm font-semibold ${currentStatus.bgClass} ${currentStatus.textClass}`}
-      >
-        {currentStatus.label}
-      </span>
+      
+      <!-- Quick Actions -->
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          onclick="window.print()"
+          class="admin-btn-icon"
+          title="Imprimir pedido"
+        >
+          <Printer className="w-4 h-4" />
+        </button>
+        <a
+          href={`mailto:${order.customer_email}?subject=Pedido ${order.order_number ? formatOrderId(order.order_number) : order.id.slice(0, 8)}`}
+          class="admin-btn-icon"
+          title="Contactar cliente"
+        >
+          <Mail className="w-4 h-4" />
+        </a>
+        {order.status === 'paid' && (
+          <button
+            type="button"
+            id="quick-ship-btn"
+            class="admin-btn-primary"
+          >
+            <Truck className="w-4 h-4 mr-2" />
+            Marcar Enviado
+          </button>
+        )}
+      </div>
+    </div>
+
+    <!-- Order Timeline (visual) -->
+    <div class="admin-card p-0">
+      <div class="p-5 border-b border-border">
+        <h2 class="font-semibold text-lg flex items-center gap-2">
+          <Clock className="w-5 h-5 text-muted-foreground" />
+          Estado del Pedido
+        </h2>
+      </div>
+      <div class="p-5">
+        <div class="relative">
+          <div class="flex justify-between items-center">
+            {timeline.map((step) => (
+              <div class="flex flex-col items-center flex-1">
+                <div class={`
+                  w-10 h-10 rounded-full flex items-center justify-center z-10
+                  ${step.completed 
+                    ? step.status === 'cancelled' 
+                      ? 'bg-red-500 text-white' 
+                      : 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground'
+                  }
+                `}>
+                  {step.status === 'created' && <FileText className="w-5 h-5" />}
+                  {step.status === 'paid' && <CreditCard className="w-5 h-5" />}
+                  {step.status === 'shipped' && <Truck className="w-5 h-5" />}
+                  {step.status === 'delivered' && <CheckCircle className="w-5 h-5" />}
+                  {step.status === 'cancelled' && <XCircle className="w-5 h-5" />}
+                </div>
+                <div class="mt-2 text-center">
+                  <p class="text-sm font-medium">{step.label}</p>
+                  {step.date && (
+                    <p class="text-xs text-muted-foreground">
+                      {formatDateShort(step.date)}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* Connection line */}
+          <div class="absolute top-5 left-0 right-0 h-0.5 bg-muted -z-10" style="margin-left: 5%; margin-right: 5%;">
+            <div 
+              class="h-full bg-primary transition-all"
+              style={`width: ${Math.min(100, (timeline.filter(t => t.completed).length - 1) * (100 / (timeline.length - 1 || 1)))}%`}
+            ></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -135,37 +298,28 @@ const isAlreadyShipped =
       <div class="lg:col-span-2 space-y-6">
         <!-- Items -->
         <div class="admin-card p-0">
-          <div class="p-5 border-b border-zinc-800">
-            <h2 class="font-semibold text-lg">
+          <div class="p-5 border-b border-border">
+            <h2 class="font-semibold text-lg flex items-center gap-2">
+              <Package className="w-5 h-5 text-muted-foreground" />
               Productos ({order.items?.length || 0})
             </h2>
           </div>
-          <div class="divide-y divide-zinc-800">
+          <div class="divide-y divide-border">
             {
               order.items?.map((item: any) => (
-                <div class="flex items-center gap-4 p-5">
-                  <div class="w-12 h-12 rounded-lg bg-zinc-800 flex items-center justify-center flex-shrink-0">
-                    <svg
-                      class="w-6 h-6 text-zinc-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                      />
-                    </svg>
+                <div class="flex items-center gap-4 p-5 hover:bg-muted/30 transition-colors">
+                  <div class="w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                    <Package className="w-6 h-6 text-muted-foreground" />
                   </div>
                   <div class="flex-1 min-w-0">
-                    <p class="font-medium text-foreground">
+                    <a 
+                      href={item.product?.slug ? `/admin/productos/${item.product.id}` : '#'}
+                      class="font-medium text-foreground hover:text-primary transition-colors"
+                    >
                       {item.product?.name || "Producto eliminado"}
-                    </p>
-                    <p class="text-sm text-zinc-500">
-                      Talla: {item.variant?.size || "N/A"} · Cantidad:{" "}
-                      {item.quantity}
+                    </a>
+                    <p class="text-sm text-muted-foreground">
+                      Talla: {item.variant?.size || "N/A"} · Cantidad: {item.quantity} · {formatPrice(item.price_at_purchase)}/ud
                     </p>
                   </div>
                   <p class="font-bold tabular-nums text-foreground">
@@ -175,9 +329,7 @@ const isAlreadyShipped =
               ))
             }
           </div>
-          <div
-            class="p-5 border-t border-zinc-800 flex justify-between items-center bg-zinc-800/30"
-          >
+          <div class="p-5 border-t border-border flex justify-between items-center bg-muted/30">
             <span class="font-semibold">Total</span>
             <span class="text-2xl font-bold text-primary">
               {formatPrice(order.total_amount)}
@@ -185,44 +337,112 @@ const isAlreadyShipped =
           </div>
         </div>
 
-        <!-- Customer Info -->
-        <div class="admin-card">
-          <h2 class="font-semibold text-lg mb-4">Datos del Cliente</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm text-zinc-500 mb-1">Nombre</label>
+        <!-- Customer and Shipping in 2 columns -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Customer Info -->
+          <div class="admin-card">
+            <h2 class="font-semibold text-lg mb-4 flex items-center gap-2">
+              <User className="w-5 h-5 text-muted-foreground" />
+              Cliente
+            </h2>
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs text-muted-foreground uppercase tracking-wide mb-1">Nombre</label>
+                <p class="font-medium text-foreground">{order.customer_name}</p>
+              </div>
+              <div>
+                <label class="block text-xs text-muted-foreground uppercase tracking-wide mb-1">Email</label>
+                <a 
+                  href={`mailto:${order.customer_email}`}
+                  class="font-medium text-primary hover:underline"
+                >
+                  {order.customer_email}
+                </a>
+              </div>
+              {
+                order.customer_phone && (
+                  <div>
+                    <label class="block text-xs text-muted-foreground uppercase tracking-wide mb-1">Teléfono</label>
+                    <a 
+                      href={`tel:${order.customer_phone}`}
+                      class="font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2"
+                    >
+                      <Phone className="w-4 h-4" />
+                      {order.customer_phone}
+                    </a>
+                  </div>
+                )
+              }
+            </div>
+          </div>
+
+          <!-- Shipping Address -->
+          <div class="admin-card">
+            <h2 class="font-semibold text-lg mb-4 flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-muted-foreground" />
+              Envío
+            </h2>
+            <div class="space-y-1 text-sm">
               <p class="font-medium text-foreground">{order.customer_name}</p>
+              <p class="text-muted-foreground">{order.shipping_address}</p>
+              <p class="text-muted-foreground">
+                {order.shipping_postal_code} {order.shipping_city}
+              </p>
+              <p class="text-muted-foreground">{order.shipping_country}</p>
             </div>
-            <div>
-              <label class="block text-sm text-zinc-500 mb-1">Email</label>
-              <p class="font-medium text-foreground">{order.customer_email}</p>
-            </div>
-            {
-              order.customer_phone && (
-                <div>
-                  <label class="block text-sm text-zinc-500 mb-1">
-                    Teléfono
-                  </label>
-                  <p class="font-medium text-foreground">
-                    {order.customer_phone}
-                  </p>
+            
+            {/* Shipment info if available */}
+            {shipmentData && (
+              <div class="mt-4 pt-4 border-t border-border">
+                <div class="flex items-center gap-2 mb-2">
+                  <Truck className="w-4 h-4 text-blue-500" />
+                  <span class="text-sm font-medium text-blue-500">Envío Registrado</span>
                 </div>
-              )
-            }
+                <div class="space-y-1 text-sm">
+                  <p class="text-muted-foreground">
+                    <span class="text-foreground font-medium">{shipmentData.carrier}</span>
+                  </p>
+                  {shipmentData.tracking_number && (
+                    <p class="font-mono text-xs text-muted-foreground">
+                      {shipmentData.tracking_number}
+                    </p>
+                  )}
+                  {shipmentData.tracking_url && (
+                    <a
+                      href={shipmentData.tracking_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-flex items-center gap-1 text-primary text-sm hover:underline mt-2"
+                    >
+                      Ver seguimiento
+                      <Package className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        <!-- Shipping Address -->
+        {/* Admin Notes Section */}
         <div class="admin-card">
-          <h2 class="font-semibold text-lg mb-4">Dirección de Envío</h2>
-          <div class="space-y-1">
-            <p class="font-medium text-foreground">{order.customer_name}</p>
-            <p class="text-zinc-400">{order.shipping_address}</p>
-            <p class="text-zinc-400">
-              {order.shipping_postal_code}
-              {order.shipping_city}
-            </p>
-            <p class="text-zinc-400">{order.shipping_country}</p>
+          <h2 class="font-semibold text-lg mb-4 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-muted-foreground" />
+            Notas Internas
+          </h2>
+          <textarea
+            id="admin-notes"
+            class="admin-input w-full h-24 resize-none"
+            placeholder="Añade notas internas sobre este pedido (solo visible para administradores)..."
+          >{order.admin_notes || ''}</textarea>
+          <div class="flex justify-end mt-3">
+            <button
+              type="button"
+              id="save-notes-btn"
+              class="admin-btn-secondary"
+            >
+              Guardar notas
+            </button>
           </div>
         </div>
       </div>
@@ -413,42 +633,57 @@ const isAlreadyShipped =
     </div>
   </div>
 
-  <script>
-    const statusSelect = document.getElementById(
-      "status-select",
-    ) as HTMLSelectElement;
+  <script define:vars={{ orderId: order.id, isAlreadyShipped }}>
+    const statusSelect = document.getElementById("status-select");
     const updateBtn = document.getElementById("update-status");
     const messageDiv = document.getElementById("status-message");
     const btnText = document.getElementById("btn-text");
-    const orderId = statusSelect?.dataset.orderId;
-    const isAlreadyShipped = statusSelect?.dataset.alreadyShipped === "true";
+    const quickShipBtn = document.getElementById("quick-ship-btn");
+    const saveNotesBtn = document.getElementById("save-notes-btn");
+    const adminNotes = document.getElementById("admin-notes");
 
     // Tracking fields
     const trackingFields = document.getElementById("tracking-fields");
-    const carrierSelect = document.getElementById(
-      "carrier-select",
-    ) as HTMLSelectElement;
-    const trackingNumber = document.getElementById(
-      "tracking-number",
-    ) as HTMLInputElement;
-    const trackingUrl = document.getElementById(
-      "tracking-url",
-    ) as HTMLInputElement;
+    const carrierSelect = document.getElementById("carrier-select");
+    const trackingNumber = document.getElementById("tracking-number");
+    const trackingUrl = document.getElementById("tracking-url");
+
+    // Toast helper
+    function showToast(message, type) {
+      type = type || "success";
+      const toast = document.createElement("div");
+      toast.className = `fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-fade-in ${
+        type === "success" ? "bg-green-500 text-white" : "bg-red-500 text-white"
+      }`;
+      toast.innerHTML = `
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          ${
+            type === "success"
+              ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>'
+              : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>'
+          }
+        </svg>
+        <span>${message}</span>
+      `;
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transition = "opacity 0.3s";
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
 
     // Show/hide tracking fields based on status
-    // Only show when selecting 'shipped' AND order is NOT already shipped
     function updateTrackingVisibility() {
       if (!trackingFields || !btnText) return;
 
-      // If order is already shipped, never show the form (info is shown in read-only section)
       if (isAlreadyShipped) {
         trackingFields.classList.add("hidden");
         btnText.textContent = "Actualizar Estado";
         return;
       }
 
-      // For orders not yet shipped, show form when selecting 'shipped'
-      if (statusSelect.value === "shipped") {
+      if (statusSelect?.value === "shipped") {
         trackingFields.classList.remove("hidden");
         btnText.innerHTML = `<svg class="w-4 h-4 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg> Marcar como Enviado`;
       } else {
@@ -461,24 +696,50 @@ const isAlreadyShipped =
     updateTrackingVisibility();
     statusSelect?.addEventListener("change", updateTrackingVisibility);
 
-    updateBtn?.addEventListener("click", async () => {
-      const newStatus = statusSelect.value;
+    // Quick ship button
+    quickShipBtn?.addEventListener("click", () => {
+      if (statusSelect) {
+        statusSelect.value = "shipped";
+        updateTrackingVisibility();
+        // Scroll to status section
+        document.getElementById("status-select")?.scrollIntoView({ behavior: "smooth" });
+      }
+    });
 
-      // Validate carrier if shipping
+    // Save admin notes
+    saveNotesBtn?.addEventListener("click", async () => {
+      const notes = adminNotes?.value || "";
+      try {
+        const response = await fetch("/api/admin/pedidos", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: orderId, admin_notes: notes }),
+        });
+        if (response.ok) {
+          showToast("Notas guardadas", "success");
+        } else {
+          showToast("Error al guardar notas", "error");
+        }
+      } catch (error) {
+        showToast("Error al guardar notas", "error");
+      }
+    });
+
+    // Update status
+    updateBtn?.addEventListener("click", async () => {
+      const newStatus = statusSelect?.value;
+
       if (newStatus === "shipped" && !carrierSelect?.value) {
         if (messageDiv) {
-          messageDiv.className =
-            "mt-3 p-3 rounded-lg text-sm bg-yellow-500/20 text-yellow-400 flex items-center gap-2";
+          messageDiv.className = "mt-3 p-3 rounded-lg text-sm bg-yellow-500/20 text-yellow-400 flex items-center gap-2";
           messageDiv.innerHTML = `<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg> Debes seleccionar un transportista`;
           messageDiv.classList.remove("hidden");
         }
         return;
       }
 
-      // Build request body
-      const requestBody: any = { id: orderId, status: newStatus };
+      const requestBody = { id: orderId, status: newStatus };
 
-      // Include tracking data if shipping
       if (newStatus === "shipped") {
         requestBody.tracking = {
           carrier: carrierSelect?.value || "",
@@ -501,23 +762,18 @@ const isAlreadyShipped =
         }
 
         if (messageDiv) {
-          messageDiv.className =
-            "mt-3 p-3 rounded-lg text-sm bg-green-500/20 text-green-400 flex items-center gap-2";
+          messageDiv.className = "mt-3 p-3 rounded-lg text-sm bg-green-500/20 text-green-400 flex items-center gap-2";
           const checkIcon = `<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
-          messageDiv.innerHTML =
-            newStatus === "shipped"
-              ? `${checkIcon} Pedido marcado como enviado y email enviado al cliente`
-              : `${checkIcon} Estado actualizado`;
+          messageDiv.innerHTML = newStatus === "shipped"
+            ? `${checkIcon} Pedido marcado como enviado y email enviado al cliente`
+            : `${checkIcon} Estado actualizado`;
           messageDiv.classList.remove("hidden");
         }
 
-        setTimeout(() => {
-          window.location.reload();
-        }, 1500);
-      } catch (error: any) {
+        setTimeout(() => window.location.reload(), 1500);
+      } catch (error) {
         if (messageDiv) {
-          messageDiv.className =
-            "mt-3 p-3 rounded-lg text-sm bg-red-500/20 text-red-400";
+          messageDiv.className = "mt-3 p-3 rounded-lg text-sm bg-red-500/20 text-red-400";
           messageDiv.textContent = error.message;
           messageDiv.classList.remove("hidden");
         }

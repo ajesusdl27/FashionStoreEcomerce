@@ -12,6 +12,7 @@ import { formatPrice } from "@/lib/formatters";
 // React Island Components
 import KPICard from "@/components/islands/KPICard";
 import SalesChart from "@/components/islands/SalesChart";
+import InlineStockEditor from "@/components/islands/admin/InlineStockEditor";
 import {
   Star,
   TrendingUp,
@@ -23,7 +24,6 @@ import {
   Users,
   ChevronRight,
   AlertTriangle,
-  Edit,
   CheckCircle,
   Plus,
   FileText,
@@ -211,6 +211,18 @@ const statusConfig: Record<string, { label: string; class: string }> = {
 
 // Calculate trend
 const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
+
+// Check if order is urgent (pending/paid for more than 2 days)
+const isOrderUrgent = (order: any) => {
+  if (!['pending', 'paid'].includes(order.status)) return false;
+  const orderDate = new Date(order.created_at);
+  const twoDaysAgo = new Date();
+  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+  return orderDate < twoDaysAgo;
+};
+
+// Get sales sparkline data from analytics
+const salesSparkline = analytics?.sales7Days?.map((d: any) => d.total || 0) || [];
 ---
 
 <AdminLayout title="Dashboard">
@@ -227,9 +239,12 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
               title="Ventas del Mes"
               value={formatPrice(analytics.monthlyRevenue.total)}
               trend={analytics.monthlyRevenue.trend}
+              trendLabel="vs mes anterior"
               subtitle={`De ${analytics.monthlyRevenue.orderCount} pedido${analytics.monthlyRevenue.orderCount !== 1 ? "s" : ""}`}
               colorClass="text-green-600 dark:text-green-400"
               iconName="money"
+              sparklineData={salesSparkline}
+              href="/admin/pedidos"
             />
 
             {/* Pedidos Pendientes */}
@@ -244,6 +259,8 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
               }
               colorClass="text-amber-600 dark:text-amber-400"
               iconName="clock"
+              href="/admin/pedidos?status=paid"
+              urgent={analytics.pendingOrders.total > 5}
             />
 
             {/* Producto Más Vendido */}
@@ -255,6 +272,7 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
                 subtitle={`${analytics.bestSelling.totalQuantity} uds vendidas`}
                 colorClass="text-primary"
                 iconName="star"
+                href={`/admin/productos/${analytics.bestSelling.product.id}`}
               />
             ) : (
               <div class="stat-card group">
@@ -430,31 +448,39 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
                   </tr>
                 </thead>
                 <tbody>
-                  {recentOrders.map((order) => (
-                    <tr>
-                      <td>
-                        <a
-                          href={`/admin/pedidos/${order.id}`}
-                          class="font-medium hover:text-primary transition-colors"
-                        >
-                          {order.customer_name}
-                        </a>
-                      </td>
-                      <td class="tabular-nums font-medium">
-                        {formatPrice(order.total_amount)}
-                      </td>
-                      <td>
-                        <span
-                          class={`badge ${statusConfig[order.status]?.class || "badge-muted"}`}
-                        >
-                          {statusConfig[order.status]?.label || order.status}
-                        </span>
-                      </td>
-                      <td class="text-right text-muted-foreground text-sm">
-                        {formatDate(order.created_at)}
-                      </td>
-                    </tr>
-                  ))}
+                  {recentOrders.map((order) => {
+                    const urgent = isOrderUrgent(order);
+                    return (
+                      <tr class={urgent ? "bg-amber-500/5 border-l-2 border-l-amber-500" : ""}>
+                        <td>
+                          <div class="flex items-center gap-2">
+                            {urgent && (
+                              <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse" title="Pedido urgente - más de 2 días sin procesar" />
+                            )}
+                            <a
+                              href={`/admin/pedidos/${order.id}`}
+                              class="font-medium hover:text-primary transition-colors"
+                            >
+                              {order.customer_name}
+                            </a>
+                          </div>
+                        </td>
+                        <td class="tabular-nums font-medium">
+                          {formatPrice(order.total_amount)}
+                        </td>
+                        <td>
+                          <span
+                            class={`badge ${statusConfig[order.status]?.class || "badge-muted"}`}
+                          >
+                            {statusConfig[order.status]?.label || order.status}
+                          </span>
+                        </td>
+                        <td class="text-right text-muted-foreground text-sm">
+                          {formatDate(order.created_at)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -493,30 +519,27 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
           lowStockVariants && lowStockVariants.length > 0 ? (
             <div class="space-y-3">
               {lowStockVariants.map((variant: any) => (
-                <div class="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors border border-transparent hover:border-border">
-                  <div>
-                    <p class="font-medium text-foreground">
+                <div class="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors border border-transparent hover:border-border group">
+                  <div class="flex-1 min-w-0">
+                    <a 
+                      href={`/admin/productos/${variant.product?.id}`}
+                      class="font-medium text-foreground hover:text-primary transition-colors"
+                    >
                       {variant.product?.name}
-                    </p>
+                    </a>
                     <p class="text-sm text-muted-foreground">
                       Talla: {variant.size}
                     </p>
                   </div>
                   <div class="flex items-center gap-3">
-                    <span
-                      class={`badge ${variant.stock === 0 ? "badge-danger" : "badge-warning"}`}
-                    >
-                      {variant.stock === 0
-                        ? "Sin stock"
-                        : `${variant.stock} uds`}
-                    </span>
-                    <a
-                      href={`/admin/productos/${variant.product?.id}`}
-                      class="admin-btn-icon"
-                      title="Editar"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </a>
+                    <InlineStockEditor
+                      client:load
+                      variantId={variant.id}
+                      productId={variant.product?.id}
+                      productName={variant.product?.name}
+                      size={variant.size}
+                      currentStock={variant.stock}
+                    />
                   </div>
                 </div>
               ))}

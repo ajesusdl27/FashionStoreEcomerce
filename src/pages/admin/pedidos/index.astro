@@ -1,8 +1,7 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { supabase } from "@/lib/supabase";
-import { formatOrderId } from "@/lib/order-utils";
-import { formatPrice, formatDate } from "@/lib/formatters";
+import OrdersList from "@/components/islands/admin/OrdersList";
 
 // Fetch orders with pagination
 const page = parseInt(Astro.url.searchParams.get("page") || "1");
@@ -12,213 +11,29 @@ const offset = (page - 1) * limit;
 
 let query = supabase
   .from("orders")
-  .select("*, order_number", { count: "exact" })
+  .select("id, order_number, customer_name, customer_email, total_amount, status, created_at", { count: "exact" })
   .order("created_at", { ascending: false });
 
 if (statusFilter) {
   query = query.eq("status", statusFilter);
 }
 
-const { data: orders, count } = await query.range(offset, offset + limit - 1);
-
-const totalPages = count ? Math.ceil(count / limit) : 0;
-
-const statusConfig: Record<
-  string,
-  { label: string; bgClass: string; textClass: string; borderColor: string }
-> = {
-  pending: {
-    label: "Pendiente",
-    bgClass: "bg-yellow-500/20",
-    textClass: "text-yellow-400",
-    borderColor: "border-l-yellow-500",
-  },
-  paid: {
-    label: "Pagado",
-    bgClass: "bg-green-500/20",
-    textClass: "text-green-400",
-    borderColor: "border-l-green-500",
-  },
-  shipped: {
-    label: "Enviado",
-    bgClass: "bg-blue-500/20",
-    textClass: "text-blue-400",
-    borderColor: "border-l-blue-500",
-  },
-  delivered: {
-    label: "Entregado",
-    bgClass: "bg-green-500/20",
-    textClass: "text-green-400",
-    borderColor: "border-l-green-500",
-  },
-  cancelled: {
-    label: "Cancelado",
-    bgClass: "bg-red-500/20",
-    textClass: "text-red-400",
-    borderColor: "border-l-red-500",
-  },
-};
-
-const statusOptions = [
-  { value: "", label: "Todos los estados" },
-  { value: "pending", label: "Pendiente" },
-  { value: "paid", label: "Pagado" },
-  { value: "shipped", label: "Enviado" },
-  { value: "delivered", label: "Entregado" },
-  { value: "cancelled", label: "Cancelado" },
-];
+const { data: orders, count, error } = await query.range(offset, offset + limit - 1);
 ---
 
 <AdminLayout title="Pedidos">
-  <div class="space-y-6">
-    <!-- Header -->
-    <div
-      class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-    >
-      <p class="text-muted-foreground">{count || 0} pedidos en total</p>
-
-      <!-- Status Filter -->
-      <select
-        id="status-filter"
-        class="admin-select w-48"
-        onchange="window.location.href = this.value ? `/admin/pedidos?status=${this.value}` : '/admin/pedidos'"
-      >
-        {
-          statusOptions.map((opt) => (
-            <option value={opt.value} selected={statusFilter === opt.value}>
-              {opt.label}
-            </option>
-          ))
-        }
-      </select>
+  {error ? (
+    <div class="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-600 dark:text-red-400">
+      Error cargando pedidos: {error.message}
     </div>
-
-    <!-- Orders List -->
-    <div class="space-y-2">
-      {
-        orders && orders.length > 0 ? (
-          orders.map((order) => {
-            const status = statusConfig[order.status] || statusConfig.pending;
-            return (
-              <div
-                class={`bg-card hover:bg-muted/50 border border-border rounded-lg p-4 transition-all border-l-4 ${status.borderColor}`}
-              >
-                <div class="flex items-center gap-4">
-                  {/* Order ID */}
-                  <div class="flex-shrink-0 w-24">
-                    <span class="font-mono text-sm text-muted-foreground">
-                      {order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`}
-                    </span>
-                  </div>
-
-                  {/* Main Info */}
-                  <div class="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                    {/* Customer */}
-                    <div class="md:col-span-1">
-                      <p class="font-semibold text-foreground truncate">
-                        {order.customer_name}
-                      </p>
-                      <p class="text-xs text-muted-foreground truncate">
-                        {order.customer_email}
-                      </p>
-                    </div>
-
-                    {/* Date */}
-                    <div class="text-sm text-muted-foreground">
-                      {formatDate(order.created_at)}
-                    </div>
-
-                    {/* Total */}
-                    <div class="text-right">
-                      <p class="font-bold tabular-nums text-foreground">
-                        {formatPrice(order.total_amount)}
-                      </p>
-                    </div>
-
-                    {/* Status */}
-                    <div class="flex justify-end">
-                      <span
-                        class={`inline-flex items-center px-3 py-1.5 rounded-md text-xs font-semibold ${status.bgClass} ${status.textClass}`}
-                      >
-                        {status.label}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div class="flex-shrink-0">
-                    <a
-                      href={`/admin/pedidos/${order.id}`}
-                      class="inline-flex items-center gap-2 px-4 py-2 bg-muted hover:bg-muted/80 border border-border rounded-lg text-sm font-medium transition-colors"
-                    >
-                      Ver detalles
-                      <svg
-                        class="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
-                    </a>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        ) : (
-          <div class="text-center py-12 text-muted-foreground bg-muted/30 rounded-lg border border-border">
-            <svg
-              class="w-16 h-16 mx-auto mb-4 opacity-30"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="1.5"
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-              />
-            </svg>
-            <p>No hay pedidos {statusFilter ? "con este estado" : "todavía"}</p>
-          </div>
-        )
-      }
-    </div>
-
-    {/* Pagination */}
-    {
-      totalPages > 1 && (
-        <div class="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border">
-          <p class="text-sm text-muted-foreground">
-            Página {page} de {totalPages}
-          </p>
-          <div class="flex gap-2">
-            {page > 1 && (
-              <a
-                href={`/admin/pedidos?page=${page - 1}${statusFilter ? `&status=${statusFilter}` : ""}`}
-                class="px-4 py-2 bg-muted hover:bg-muted/80 border border-border rounded-lg text-sm transition-colors"
-              >
-                Anterior
-              </a>
-            )}
-            {page < totalPages && (
-              <a
-                href={`/admin/pedidos?page=${page + 1}${statusFilter ? `&status=${statusFilter}` : ""}`}
-                class="px-4 py-2 bg-muted hover:bg-muted/80 border border-border rounded-lg text-sm transition-colors"
-              >
-                Siguiente
-              </a>
-            )}
-          </div>
-        </div>
-      )
-    }
-  </div>
+  ) : (
+    <OrdersList
+      client:load
+      initialOrders={orders || []}
+      totalCount={count || 0}
+      currentPage={page}
+      pageSize={limit}
+      initialStatus={statusFilter}
+    />
+  )}
 </AdminLayout>

@@ -5,10 +5,38 @@ import {
   Search, 
   FileText, 
   Heart,
-  AlertCircle
+  AlertCircle,
+  Inbox,
+  Tag,
+  Users,
+  Mail,
+  Settings,
+  RotateCcw,
+  Megaphone,
+  AlertTriangle,
+  XCircle,
+  RefreshCw,
 } from 'lucide-react';
 
-type IconName = 'shopping-bag' | 'package' | 'search' | 'file' | 'heart' | 'alert';
+type IconName = 
+  | 'shopping-bag' 
+  | 'package' 
+  | 'search' 
+  | 'file' 
+  | 'heart' 
+  | 'alert'
+  | 'inbox'
+  | 'tag'
+  | 'users'
+  | 'mail'
+  | 'settings'
+  | 'returns'
+  | 'megaphone'
+  | 'warning'
+  | 'error'
+  | 'refresh';
+
+type EmptyStateVariant = 'default' | 'no-data' | 'no-results' | 'error';
 
 interface EmptyStateProps {
   icon?: IconName | ReactNode;
@@ -17,6 +45,7 @@ interface EmptyStateProps {
   action?: ReactNode;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  variant?: EmptyStateVariant;
 }
 
 const iconMap: Record<IconName, typeof ShoppingBag> = {
@@ -26,6 +55,16 @@ const iconMap: Record<IconName, typeof ShoppingBag> = {
   'file': FileText,
   'heart': Heart,
   'alert': AlertCircle,
+  'inbox': Inbox,
+  'tag': Tag,
+  'users': Users,
+  'mail': Mail,
+  'settings': Settings,
+  'returns': RotateCcw,
+  'megaphone': Megaphone,
+  'warning': AlertTriangle,
+  'error': XCircle,
+  'refresh': RefreshCw,
 };
 
 const sizeClasses = {
@@ -52,29 +91,62 @@ const sizeClasses = {
   },
 };
 
+const variantStyles = {
+  default: {
+    iconWrapper: 'bg-muted/50',
+    iconColor: 'text-muted-foreground/50',
+  },
+  'no-data': {
+    iconWrapper: 'bg-primary/10',
+    iconColor: 'text-primary/50',
+  },
+  'no-results': {
+    iconWrapper: 'bg-amber-500/10',
+    iconColor: 'text-amber-500/50',
+  },
+  error: {
+    iconWrapper: 'bg-red-500/10',
+    iconColor: 'text-red-500/50',
+  },
+};
+
 export default function EmptyState({ 
   icon = 'shopping-bag', 
   title, 
   description, 
   action,
   className = '',
-  size = 'md'
+  size = 'md',
+  variant = 'default',
 }: EmptyStateProps) {
   const sizes = sizeClasses[size];
+  const styles = variantStyles[variant];
+  
+  // Get default icon based on variant if not specified
+  const getDefaultIcon = () => {
+    if (icon !== 'shopping-bag') return icon;
+    switch (variant) {
+      case 'no-results': return 'search';
+      case 'error': return 'error';
+      default: return icon;
+    }
+  };
+  
+  const finalIcon = getDefaultIcon();
   
   // Render icon - either from map or custom ReactNode
   const renderIcon = () => {
-    if (typeof icon === 'string' && icon in iconMap) {
-      const IconComponent = iconMap[icon as IconName];
-      return <IconComponent className={`${sizes.icon} text-muted-foreground/50`} strokeWidth={1.5} />;
+    if (typeof finalIcon === 'string' && finalIcon in iconMap) {
+      const IconComponent = iconMap[finalIcon as IconName];
+      return <IconComponent className={`${sizes.icon} ${styles.iconColor}`} strokeWidth={1.5} />;
     }
-    return icon;
+    return finalIcon;
   };
 
   return (
     <div className={`flex flex-col items-center justify-center text-center ${sizes.container} ${className}`}>
       {/* Icon Container */}
-      <div className={`${sizes.iconWrapper} rounded-full bg-muted/50 flex items-center justify-center mb-6`}>
+      <div className={`${sizes.iconWrapper} rounded-full ${styles.iconWrapper} flex items-center justify-center mb-6`}>
         {renderIcon()}
       </div>
       
@@ -97,5 +169,61 @@ export default function EmptyState({
         </div>
       )}
     </div>
+  );
+}
+
+// Pre-built empty state variants for common use cases
+export function NoDataState({ 
+  title = 'No hay datos',
+  description = 'Aún no hay elementos para mostrar.',
+  action,
+  icon,
+  size = 'md',
+}: Partial<EmptyStateProps>) {
+  return (
+    <EmptyState
+      icon={icon || 'inbox'}
+      title={title}
+      description={description}
+      action={action}
+      size={size}
+      variant="no-data"
+    />
+  );
+}
+
+export function NoResultsState({
+  title = 'Sin resultados',
+  description = 'No se encontraron elementos con los filtros aplicados.',
+  action,
+  size = 'md',
+}: Partial<EmptyStateProps>) {
+  return (
+    <EmptyState
+      icon="search"
+      title={title}
+      description={description}
+      action={action}
+      size={size}
+      variant="no-results"
+    />
+  );
+}
+
+export function ErrorState({
+  title = 'Error al cargar',
+  description = 'Ha ocurrido un error. Por favor, inténtalo de nuevo.',
+  action,
+  size = 'md',
+}: Partial<EmptyStateProps>) {
+  return (
+    <EmptyState
+      icon="error"
+      title={title}
+      description={description}
+      action={action}
+      size={size}
+      variant="error"
+    />
   );
 }
