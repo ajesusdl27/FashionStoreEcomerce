@@ -1,7 +1,11 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { supabase } from "@/lib/supabase";
-import { CAMPAIGN_STATUS, CAMPAIGN_STATUS_LABELS } from "@/lib/constants/newsletter";
+import {
+  CAMPAIGN_STATUS,
+  CAMPAIGN_STATUS_LABELS,
+} from "@/lib/constants/newsletter";
+import { AlertTriangle, Save, Send } from "lucide-react";
 
 const { id } = Astro.params;
 
@@ -17,12 +21,19 @@ if (error || !campaign) {
 }
 
 // Only allow editing drafts and failed campaigns
-const canEdit = campaign.status === CAMPAIGN_STATUS.DRAFT || campaign.status === CAMPAIGN_STATUS.FAILED;
+const canEdit =
+  campaign.status === CAMPAIGN_STATUS.DRAFT ||
+  campaign.status === CAMPAIGN_STATUS.FAILED;
 if (!canEdit) {
-  return Astro.redirect(`/admin/newsletter?error=cannot-edit-${campaign.status}`);
+  return Astro.redirect(
+    `/admin/newsletter?error=cannot-edit-${campaign.status}`,
+  );
 }
 
-const statusLabel = CAMPAIGN_STATUS_LABELS[campaign.status as keyof typeof CAMPAIGN_STATUS_LABELS] || campaign.status;
+const statusLabel =
+  CAMPAIGN_STATUS_LABELS[
+    campaign.status as keyof typeof CAMPAIGN_STATUS_LABELS
+  ] || campaign.status;
 ---
 
 <AdminLayout title={`Editar: ${campaign.subject}`}>
@@ -55,16 +66,19 @@ const statusLabel = CAMPAIGN_STATUS_LABELS[campaign.status as keyof typeof CAMPA
     </div>
 
     <!-- Failed campaign warning -->
-    {campaign.status === CAMPAIGN_STATUS.FAILED && campaign.last_error && (
-      <div class="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-        <p class="text-sm text-red-400">
-          <strong>⚠️ Esta campaña falló:</strong> {campaign.last_error}
-        </p>
-        <p class="text-xs text-red-400/70 mt-1">
-          Puedes editarla y volver a intentar el envío.
-        </p>
-      </div>
-    )}
+    {
+      campaign.status === CAMPAIGN_STATUS.FAILED && campaign.last_error && (
+        <div class="p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-start gap-2">
+          <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+          <p class="text-sm text-red-400">
+            <strong>Esta campaña falló:</strong> {campaign.last_error}
+          </p>
+          <p class="text-xs text-red-400/70 mt-1">
+            Puedes editarla y volver a intentar el envío.
+          </p>
+        </div>
+      )
+    }
 
     <!-- Form -->
     <form id="campaign-form" class="space-y-6">
@@ -94,7 +108,8 @@ const statusLabel = CAMPAIGN_STATUS_LABELS[campaign.status as keyof typeof CAMPA
             rows="15"
             class="admin-input w-full font-mono text-sm"
             placeholder="Escribe el contenido de tu email aquí..."
-            required>{campaign.content}</textarea>
+            required>{campaign.content}</textarea
+          >
           <p class="text-xs text-muted-foreground mt-2">
             Puedes usar HTML para formatear el contenido.
           </p>
@@ -105,16 +120,16 @@ const statusLabel = CAMPAIGN_STATUS_LABELS[campaign.status as keyof typeof CAMPA
         <button
           type="button"
           id="save-draft"
-          class="flex-1 py-3 px-4 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/80 transition-colors"
+          class="flex-1 py-3 px-4 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/80 transition-colors flex items-center justify-center gap-2"
         >
-          💾 Guardar Cambios
+          <Save className="w-4 h-4" /> Guardar Cambios
         </button>
         <button
           type="button"
           id="save-and-send"
-          class="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+          class="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
         >
-          📤 Guardar y Enviar
+          <Send className="w-4 h-4" /> Guardar y Enviar
         </button>
       </div>
 
@@ -127,7 +142,9 @@ const statusLabel = CAMPAIGN_STATUS_LABELS[campaign.status as keyof typeof CAMPA
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm text-foreground">Eliminar campaña</p>
-          <p class="text-xs text-muted-foreground">Esta acción no se puede deshacer.</p>
+          <p class="text-xs text-muted-foreground">
+            Esta acción no se puede deshacer.
+          </p>
         </div>
         <button
           id="delete-campaign"
@@ -145,7 +162,9 @@ const statusLabel = CAMPAIGN_STATUS_LABELS[campaign.status as keyof typeof CAMPA
 
   <script>
     const subjectInput = document.getElementById("subject") as HTMLInputElement;
-    const contentInput = document.getElementById("content") as HTMLTextAreaElement;
+    const contentInput = document.getElementById(
+      "content",
+    ) as HTMLTextAreaElement;
     const saveDraftBtn = document.getElementById("save-draft");
     const saveAndSendBtn = document.getElementById("save-and-send");
     const deleteCampaignBtn = document.getElementById("delete-campaign");
@@ -189,12 +208,17 @@ const statusLabel = CAMPAIGN_STATUS_LABELS[campaign.status as keyof typeof CAMPA
       } catch (error: any) {
         showMessage(error.message, "error");
         if (saveDraftBtn) (saveDraftBtn as HTMLButtonElement).disabled = false;
-        if (saveAndSendBtn) (saveAndSendBtn as HTMLButtonElement).disabled = false;
+        if (saveAndSendBtn)
+          (saveAndSendBtn as HTMLButtonElement).disabled = false;
       }
     }
 
     async function deleteCampaign() {
-      if (!confirm("¿Estás seguro de que quieres eliminar esta campaña? Esta acción no se puede deshacer.")) {
+      if (
+        !confirm(
+          "¿Estás seguro de que quieres eliminar esta campaña? Esta acción no se puede deshacer.",
+        )
+      ) {
         return;
       }
 

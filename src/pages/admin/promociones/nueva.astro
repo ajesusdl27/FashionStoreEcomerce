@@ -3,8 +3,11 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
 import PromotionWizard from "@/components/islands/admin/PromotionWizard";
 import { createAuthenticatedClient } from "@/lib/supabase";
 
+import { Sparkles } from "lucide-react";
+
 // Get authenticated client
 const accessToken = Astro.cookies.get("sb-access-token")?.value;
+// ... (rest of imports are fine, just injecting Sparkles)
 const refreshToken = Astro.cookies.get("sb-refresh-token")?.value;
 
 if (!accessToken) {
@@ -56,7 +59,7 @@ const { data: existingDraft } = await authClient
         Volver al listado
       </a>
       <h1 class="font-heading text-2xl text-foreground flex items-center gap-3">
-        <span class="text-3xl">✨</span>
+        <Sparkles className="w-8 h-8 text-yellow-400" />
         Nueva Promoción
       </h1>
       <p class="text-sm text-muted-foreground mt-1">

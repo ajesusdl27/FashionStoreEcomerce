@@ -3,6 +3,7 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
 import { supabase } from "@/lib/supabase";
 import { formatOrderId } from "@/lib/order-utils";
 import { formatPrice } from "@/lib/formatters";
+import { Package } from "lucide-react";
 
 const { id } = Astro.params;
 
@@ -20,7 +21,7 @@ const { data: order, error } = await supabase
       product:products(id, name, slug),
       variant:product_variants(id, size)
     )
-  `
+  `,
   )
   .eq("id", id)
   .single();
@@ -87,7 +88,9 @@ const isAlreadyShipped =
   order.status === "shipped" || order.status === "delivered";
 ---
 
-<AdminLayout title={`Pedido ${order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`}`}>
+<AdminLayout
+  title={`Pedido ${order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`}`}
+>
   <div class="max-w-4xl mx-auto space-y-6">
     <!-- Header -->
     <div class="flex items-center justify-between">
@@ -111,7 +114,11 @@ const isAlreadyShipped =
         </a>
         <div>
           <h1 class="text-2xl font-bold text-foreground">
-            Pedido {order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`}
+            Pedido {
+              order.order_number
+                ? formatOrderId(order.order_number)
+                : `#${order.id.slice(0, 8)}`
+            }
           </h1>
           <p class="text-zinc-500">{formatDateLocal(order.created_at)}</p>
         </div>
@@ -280,9 +287,9 @@ const isAlreadyShipped =
                       href={shipmentData.tracking_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="block mt-3 text-center py-2 px-4 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors"
+                      class="block mt-3 text-center py-2 px-4 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors flex items-center justify-center gap-2"
                     >
-                      📦 Ver seguimiento
+                      <Package className="w-4 h-4" /> Ver seguimiento
                     </a>
                   )}
                   <p class="text-xs text-zinc-500 mt-2">
@@ -374,7 +381,11 @@ const isAlreadyShipped =
             <div class="flex justify-between text-sm">
               <span class="text-zinc-500">Nº Pedido</span>
               <span class="font-mono text-foreground"
-                >{order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`}</span
+                >{
+                  order.order_number
+                    ? formatOrderId(order.order_number)
+                    : `#${order.id.slice(0, 8)}`
+                }</span
               >
             </div>
             {
@@ -392,7 +403,8 @@ const isAlreadyShipped =
             }
             <div class="flex justify-between text-sm">
               <span class="text-zinc-500">Fecha</span>
-              <span class="text-foreground">{formatDateLocal(order.created_at)}</span
+              <span class="text-foreground"
+                >{formatDateLocal(order.created_at)}</span
               >
             </div>
           </div>
@@ -403,7 +415,7 @@ const isAlreadyShipped =
 
   <script>
     const statusSelect = document.getElementById(
-      "status-select"
+      "status-select",
     ) as HTMLSelectElement;
     const updateBtn = document.getElementById("update-status");
     const messageDiv = document.getElementById("status-message");
@@ -414,13 +426,13 @@ const isAlreadyShipped =
     // Tracking fields
     const trackingFields = document.getElementById("tracking-fields");
     const carrierSelect = document.getElementById(
-      "carrier-select"
+      "carrier-select",
     ) as HTMLSelectElement;
     const trackingNumber = document.getElementById(
-      "tracking-number"
+      "tracking-number",
     ) as HTMLInputElement;
     const trackingUrl = document.getElementById(
-      "tracking-url"
+      "tracking-url",
     ) as HTMLInputElement;
 
     // Show/hide tracking fields based on status
@@ -438,7 +450,7 @@ const isAlreadyShipped =
       // For orders not yet shipped, show form when selecting 'shipped'
       if (statusSelect.value === "shipped") {
         trackingFields.classList.remove("hidden");
-        btnText.textContent = "📦 Marcar como Enviado";
+        btnText.innerHTML = `<svg class="w-4 h-4 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg> Marcar como Enviado`;
       } else {
         trackingFields.classList.add("hidden");
         btnText.textContent = "Actualizar Estado";
@@ -456,8 +468,8 @@ const isAlreadyShipped =
       if (newStatus === "shipped" && !carrierSelect?.value) {
         if (messageDiv) {
           messageDiv.className =
-            "mt-3 p-3 rounded-lg text-sm bg-yellow-500/20 text-yellow-400";
-          messageDiv.textContent = "⚠️ Debes seleccionar un transportista";
+            "mt-3 p-3 rounded-lg text-sm bg-yellow-500/20 text-yellow-400 flex items-center gap-2";
+          messageDiv.innerHTML = `<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg> Debes seleccionar un transportista`;
           messageDiv.classList.remove("hidden");
         }
         return;
@@ -490,11 +502,12 @@ const isAlreadyShipped =
 
         if (messageDiv) {
           messageDiv.className =
-            "mt-3 p-3 rounded-lg text-sm bg-green-500/20 text-green-400";
-          messageDiv.textContent =
+            "mt-3 p-3 rounded-lg text-sm bg-green-500/20 text-green-400 flex items-center gap-2";
+          const checkIcon = `<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
+          messageDiv.innerHTML =
             newStatus === "shipped"
-              ? "✅ Pedido marcado como enviado y email enviado al cliente"
-              : "✅ Estado actualizado";
+              ? `${checkIcon} Pedido marcado como enviado y email enviado al cliente`
+              : `${checkIcon} Estado actualizado`;
           messageDiv.classList.remove("hidden");
         }
 

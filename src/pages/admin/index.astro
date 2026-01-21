@@ -12,6 +12,7 @@ import { formatPrice } from "@/lib/formatters";
 // React Island Components
 import KPICard from "@/components/islands/KPICard";
 import SalesChart from "@/components/islands/SalesChart";
+import { Star } from "lucide-react";
 
 // Get authenticated client for RLS compliance
 const accessToken = Astro.cookies.get("sb-access-token")?.value;
@@ -206,7 +207,7 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
             {/* Ventas del Mes */}
             <KPICard
               client:load
-              title="💰 Ventas del Mes"
+              title="Ventas del Mes"
               value={formatPrice(analytics.monthlyRevenue.total)}
               trend={analytics.monthlyRevenue.trend}
               subtitle={`De ${analytics.monthlyRevenue.orderCount} pedido${analytics.monthlyRevenue.orderCount !== 1 ? "s" : ""}`}
@@ -217,7 +218,7 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
             {/* Pedidos Pendientes */}
             <KPICard
               client:load
-              title="⏳ Por Procesar"
+              title="Por Procesar"
               value={analytics.pendingOrders.total}
               subtitle={
                 analytics.pendingOrders.total === 0
@@ -232,19 +233,22 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
             {analytics.bestSelling ? (
               <KPICard
                 client:load
-                title="⭐ Más Vendido"
+                title="Más Vendido"
                 value={analytics.bestSelling.product.name}
                 subtitle={`${analytics.bestSelling.totalQuantity} uds vendidas`}
                 colorClass="text-primary"
                 iconName="star"
               />
             ) : (
-              <div class="stat-card">
+              <div class="stat-card group">
                 <div>
-                  <p class="stat-label">⭐ Más Vendido</p>
+                  <p class="stat-label">Más Vendido</p>
                   <p class="text-sm text-muted-foreground mt-2">
                     Aún no hay ventas este mes
                   </p>
+                </div>
+                <div class="stat-icon bg-primary/10 group-hover:bg-primary/20 transition-colors text-primary">
+                  <Star className="w-7 h-7" />
                 </div>
               </div>
             )}
@@ -255,7 +259,7 @@ const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
             <div class="flex items-center justify-between mb-6">
               <div>
                 <h2 class="font-heading text-xl text-foreground">
-                  📊 Ventas de la Semana
+                  Ventas de la Semana
                 </h2>
                 <p class="text-sm text-muted-foreground mt-1">
                   Tu evolución diaria de ingresos

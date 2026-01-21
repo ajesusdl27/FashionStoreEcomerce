@@ -2,6 +2,7 @@
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { createAuthenticatedClient } from "@/lib/supabase";
 import { CAMPAIGN_STATUS } from "@/lib/constants/newsletter";
+import { AlertTriangle, Mail, Eye, CheckCircle } from "lucide-react";
 
 const { id } = Astro.params;
 
@@ -49,9 +50,12 @@ const { count: subscriberCount } = await supabase
     </div>
 
     <!-- Warning -->
-    <div class="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+    <div
+      class="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg flex items-start gap-3"
+    >
+      <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
       <p class="text-sm text-yellow-400">
-        ⚠️ <strong>Importante:</strong> El proceso de envío puede tardar varios minutos
+        <strong>Importante:</strong> El proceso de envío puede tardar varios minutos
         dependiendo del número de suscriptores.
         <strong>No cierres esta pestaña</strong> hasta que finalice.
       </p>
@@ -59,8 +63,8 @@ const { count: subscriberCount } = await supabase
 
     <!-- Test Email Section -->
     <div class="admin-card">
-      <h3 class="font-semibold text-foreground mb-3">
-        📧 Enviar email de prueba
+      <h3 class="font-semibold text-foreground mb-3 flex items-center gap-2">
+        <Mail className="w-4 h-4" /> Enviar email de prueba
       </h3>
       <p class="text-sm text-muted-foreground mb-4">
         Envía una vista previa a tu correo antes de hacer el envío masivo.
@@ -104,7 +108,9 @@ const { count: subscriberCount } = await supabase
     <!-- Email Preview -->
     <div class="admin-card">
       <div class="flex items-center justify-between mb-3">
-        <h3 class="font-semibold text-foreground">👁️ Vista previa del email</h3>
+        <h3 class="font-semibold text-foreground flex items-center gap-2">
+          <Eye className="w-4 h-4" /> Vista previa del email
+        </h3>
         <button
           id="toggle-preview"
           class="text-sm text-primary hover:underline"
@@ -162,7 +168,9 @@ const { count: subscriberCount } = await supabase
 
     <!-- Result Section -->
     <div id="result-section" class="hidden admin-card text-center">
-      <div class="text-5xl mb-4">✅</div>
+      <div class="mb-4 flex justify-center">
+        <CheckCircle className="w-16 h-16 text-green-500" />
+      </div>
       <h2 class="text-xl font-bold text-foreground">¡Campaña enviada!</h2>
       <p id="result-text" class="text-muted-foreground mt-2"></p>
       <a
@@ -199,8 +207,10 @@ const { count: subscriberCount } = await supabase
       <div
         class="bg-background border border-border rounded-xl shadow-lg max-w-md w-full p-6"
       >
-        <h3 class="text-xl font-bold text-foreground mb-4">
-          ⚠️ Confirmar envío masivo
+        <h3
+          class="text-xl font-bold text-foreground mb-4 flex items-center gap-2"
+        >
+          <AlertTriangle className="w-6 h-6 text-yellow-500" /> Confirmar envío masivo
         </h3>
         <p class="text-muted-foreground mb-4">
           Estás a punto de enviar "<strong class="text-foreground"
@@ -435,12 +445,12 @@ const { count: subscriberCount } = await supabase
         const data = await response.json();
 
         if (response.ok) {
-          showTestResult(`✅ ${data.message}`, "success");
+          showTestResult(data.message, "success");
         } else {
-          showTestResult(`❌ ${data.error}`, "error");
+          showTestResult(data.error, "error");
         }
       } catch (error) {
-        showTestResult("❌ Error al enviar email de prueba", "error");
+        showTestResult("Error al enviar email de prueba", "error");
       } finally {
         sendTestBtn.disabled = false;
         testBtnText!.textContent = "Enviar prueba";
@@ -450,7 +460,12 @@ const { count: subscriberCount } = await supabase
 
     function showTestResult(message: string, type: "success" | "error") {
       if (testResult) {
-        testResult.textContent = message;
+        const icon =
+          type === "success"
+            ? `<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`
+            : `<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+
+        testResult.innerHTML = `<div class="flex items-center gap-2">${icon} <span>${message}</span></div>`;
         testResult.className = `text-sm mt-2 ${type === "success" ? "text-green-400" : "text-red-400"}`;
         testResult.classList.remove("hidden");
         setTimeout(() => testResult.classList.add("hidden"), 5000);

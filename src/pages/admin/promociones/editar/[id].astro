@@ -3,6 +3,18 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
 import ImageUploader from "@/components/islands/ImageUploader";
 import ToggleSwitch from "@/components/ui/ToggleSwitch.astro";
 import { createAuthenticatedClient } from "@/lib/supabase";
+import {
+  Plus,
+  Pencil,
+  CheckCircle,
+  PauseCircle,
+  Trash2,
+  FileText,
+  Home,
+  Megaphone,
+  ShoppingCart,
+  Package,
+} from "lucide-react";
 
 const { id } = Astro.params;
 
@@ -63,15 +75,12 @@ const { data: history } = await authClient
 const historyData = history || [];
 
 // Action config for history display
-const actionConfig: Record<
-  string,
-  { label: string; icon: string; color: string }
-> = {
-  created: { label: "Creada", icon: "➕", color: "text-green-400" },
-  updated: { label: "Editada", icon: "✏️", color: "text-blue-400" },
-  activated: { label: "Activada", icon: "✅", color: "text-emerald-400" },
-  deactivated: { label: "Desactivada", icon: "⏸️", color: "text-yellow-400" },
-  deleted: { label: "Eliminada", icon: "🗑️", color: "text-red-400" },
+const actionConfig: Record<string, { label: string; color: string }> = {
+  created: { label: "Creada", color: "text-green-400" },
+  updated: { label: "Editada", color: "text-blue-400" },
+  activated: { label: "Activada", color: "text-emerald-400" },
+  deactivated: { label: "Desactivada", color: "text-yellow-400" },
+  deleted: { label: "Eliminada", color: "text-red-400" },
 };
 
 const timeAgo = (date: string) => {
@@ -256,27 +265,27 @@ const timeAgo = (date: string) => {
                   <option
                     value="white"
                     selected={promotion.style_config?.text_color === "white"}
-                    >⚪ Blanco (fondos oscuros)</option
+                    >Blanco (fondos oscuros)</option
                   >
                   <option
                     value="black"
                     selected={promotion.style_config?.text_color === "black"}
-                    >⚫ Negro (fondos claros)</option
+                    >Negro (fondos claros)</option
                   >
                   <option
                     value="gold"
                     selected={promotion.style_config?.text_color === "gold"}
-                    >🟡 Dorado (premium)</option
+                    >Dorado (premium)</option
                   >
                   <option
                     value="red"
                     selected={promotion.style_config?.text_color === "red"}
-                    >🔴 Rojo (urgencia)</option
+                    >Rojo (urgencia)</option
                   >
                   <option
                     value="gray"
                     selected={promotion.style_config?.text_color === "gray"}
-                    >⚪ Gris claro</option
+                    >Gris claro</option
                   >
                 </select>
               </div>
@@ -370,12 +379,11 @@ const timeAgo = (date: string) => {
                 <option
                   value="/productos"
                   selected={promotion.cta_link === "/productos" ||
-                    !promotion.cta_link}>📦 Página de Productos</option
+                    !promotion.cta_link}>Página de Productos</option
                 >
                 <option
                   value="/ofertas"
-                  selected={promotion.cta_link === "/ofertas"}
-                  >🎁 Ofertas</option
+                  selected={promotion.cta_link === "/ofertas"}>Offers</option
                 >
                 {
                   categories?.map((cat: any) => (
@@ -383,7 +391,7 @@ const timeAgo = (date: string) => {
                       value={`/categoria/${cat.slug}`}
                       selected={promotion.cta_link === `/categoria/${cat.slug}`}
                     >
-                      📁 Categoría: {cat.name}
+                      Categoría: {cat.name}
                     </option>
                   ))
                 }
@@ -427,13 +435,16 @@ const timeAgo = (date: string) => {
                               : "bg-purple-500/10"
                       }`}
                     >
-                      {zone.id === "home_hero"
-                        ? "🏠"
-                        : zone.id === "announcement_top"
-                          ? "📢"
-                          : zone.id === "cart_sidebar"
-                            ? "🛒"
-                            : "📦"}
+                      {zone.id === "home_hero" && <Home className="w-5 h-5" />}
+                      {zone.id === "announcement_top" && (
+                        <Megaphone className="w-5 h-5" />
+                      )}
+                      {zone.id === "cart_sidebar" && (
+                        <ShoppingCart className="w-5 h-5" />
+                      )}
+                      {zone.id === "product_page" && (
+                        <Package className="w-5 h-5" />
+                      )}
                     </div>
                     <div>
                       <span class="block text-sm font-medium text-foreground">
@@ -653,7 +664,30 @@ const timeAgo = (date: string) => {
               const config = actionConfig[entry.action] ?? defaultConfig;
               return (
                 <div class="flex items-start gap-3 text-sm">
-                  <span class="text-lg">{config.icon}</span>
+                  <span class="text-lg">
+                    {entry.action === "created" && <Plus className="w-5 h-5" />}
+                    {entry.action === "updated" && (
+                      <Pencil className="w-5 h-5" />
+                    )}
+                    {entry.action === "activated" && (
+                      <CheckCircle className="w-5 h-5" />
+                    )}
+                    {entry.action === "deactivated" && (
+                      <PauseCircle className="w-5 h-5" />
+                    )}
+                    {entry.action === "deleted" && (
+                      <Trash2 className="w-5 h-5" />
+                    )}
+                    {![
+                      "created",
+                      "updated",
+                      "activated",
+                      "deactivated",
+                      "deleted",
+                    ].includes(entry.action) && (
+                      <FileText className="w-5 h-5" />
+                    )}
+                  </span>
                   <div class="flex-1">
                     <span class={`font-medium ${config.color}`}>
                       {config.label}

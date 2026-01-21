@@ -2,6 +2,7 @@
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import ToggleSwitch from "@/components/ui/ToggleSwitch.astro";
 import { supabase } from "@/lib/supabase";
+import { AlertTriangle } from "lucide-react";
 
 // Fetch settings
 const { data: settings } = await supabase.from("settings").select("*");
@@ -828,8 +829,9 @@ const getSettingBool = (key: string) => {
           <label class="flex items-center justify-between cursor-pointer group">
             <div class="flex items-start gap-2">
               <div>
-                <span class="font-medium text-yellow-400"
-                  >⚠️ Activar Modo Mantenimiento</span
+                <span
+                  class="font-medium text-yellow-400 flex items-center gap-2"
+                  ><AlertTriangle className="w-5 h-5" /> Activar Modo Mantenimiento</span
                 >
                 <p class="text-sm text-muted-foreground">
                   Los visitantes verán una página de mantenimiento. Solo

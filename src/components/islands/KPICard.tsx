@@ -33,6 +33,10 @@ const icons = {
  * KPI Card Component
  * Displays a key performance indicator with optional trend and icon
  */
+import { TrendingUp, TrendingDown } from "lucide-react";
+
+// ... (existing icons object can stay or be updated, but focusing on replacing arrows)
+
 export default function KPICard({ 
   title, 
   value, 
@@ -52,7 +56,7 @@ export default function KPICard({
           <p className={`text-xs mt-1 flex items-center gap-1 ${
             trend >= 0 ? 'text-green-400' : 'text-red-400'
           }`}>
-            {trend >= 0 ? '▲' : '▼'}
+            {trend >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
             {Math.abs(trend)}% vs mes anterior
           </p>
         )}

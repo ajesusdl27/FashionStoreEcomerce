@@ -1,6 +1,7 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { createAuthenticatedClient } from "@/lib/supabase";
+import { Plus, Pencil, CheckCircle, PauseCircle, Trash2, FileText } from "lucide-react";
 
 // Get authenticated client for RLS compliance
 const accessToken = Astro.cookies.get("sb-access-token")?.value;
@@ -26,12 +27,12 @@ const { data: history, error } = await authClient
 const historyData = error ? [] : (history || []);
 
 // Action labels and colors
-const actionConfig: Record<string, { label: string; icon: string; color: string; bgColor: string }> = {
-  created: { label: "Creada", icon: "➕", color: "text-green-400", bgColor: "bg-green-500/10" },
-  updated: { label: "Editada", icon: "✏️", color: "text-blue-400", bgColor: "bg-blue-500/10" },
-  activated: { label: "Activada", icon: "✅", color: "text-emerald-400", bgColor: "bg-emerald-500/10" },
-  deactivated: { label: "Desactivada", icon: "⏸️", color: "text-yellow-400", bgColor: "bg-yellow-500/10" },
-  deleted: { label: "Eliminada", icon: "🗑️", color: "text-red-400", bgColor: "bg-red-500/10" },
+const actionConfig: Record<string, { label: string; color: string; bgColor: string }> = {
+  created: { label: "Creada", color: "text-green-400", bgColor: "bg-green-500/10" },
+  updated: { label: "Editada", color: "text-blue-400", bgColor: "bg-blue-500/10" },
+  activated: { label: "Activada", color: "text-emerald-400", bgColor: "bg-emerald-500/10" },
+  deactivated: { label: "Desactivada", color: "text-yellow-400", bgColor: "bg-yellow-500/10" },
+  deleted: { label: "Eliminada", color: "text-red-400", bgColor: "bg-red-500/10" },
 };
 
 const formatDate = (date: string) => {
@@ -91,11 +92,11 @@ const timeAgo = (date: string) => {
       
       <select id="filter-action" class="admin-input text-sm py-1.5 px-3 pr-8 min-w-[130px]">
         <option value="">Todas las acciones</option>
-        <option value="created">➕ Creadas</option>
-        <option value="updated">✏️ Editadas</option>
-        <option value="activated">✅ Activadas</option>
-        <option value="deactivated">⏸️ Desactivadas</option>
-        <option value="deleted">🗑️ Eliminadas</option>
+        <option value="created">Creadas</option>
+        <option value="updated">Editadas</option>
+        <option value="activated">Activadas</option>
+        <option value="deactivated">Desactivadas</option>
+        <option value="deleted">Eliminadas</option>
       </select>
 
       <button id="clear-filters" class="text-sm text-primary hover:underline hidden">
@@ -108,7 +109,7 @@ const timeAgo = (date: string) => {
       {historyData.length > 0 ? (
         <div class="space-y-4">
           {historyData.map((entry: any, index: number) => {
-            const defaultConfig = { label: "Cambio", icon: "📝", color: "text-muted-foreground", bgColor: "bg-muted" };
+            const defaultConfig = { label: "Cambio", color: "text-muted-foreground", bgColor: "bg-muted" };
             const config = actionConfig[entry.action] ?? defaultConfig;
             const promotionTitle = entry.promotions?.title || 
               (entry.changes?.old?.title) || 
@@ -123,7 +124,12 @@ const timeAgo = (date: string) => {
                 <!-- Timeline indicator -->
                 <div class="flex flex-col items-center">
                   <div class={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${config.bgColor}`}>
-                    {config.icon}
+                    {entry.action === 'created' && <Plus className="w-5 h-5" />}
+                    {entry.action === 'updated' && <Pencil className="w-5 h-5" />}
+                    {entry.action === 'activated' && <CheckCircle className="w-5 h-5" />}
+                    {entry.action === 'deactivated' && <PauseCircle className="w-5 h-5" />}
+                    {entry.action === 'deleted' && <Trash2 className="w-5 h-5" />}
+                    {!['created','updated','activated','deactivated','deleted'].includes(entry.action) && <FileText className="w-5 h-5" />}
                   </div>
                   {index < historyData.length - 1 && (
                     <div class="w-0.5 flex-1 bg-border mt-2"></div>
