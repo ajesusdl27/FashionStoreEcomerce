@@ -198,7 +198,7 @@ export default function ProductAddToCart({
       {/* Mobile Sticky Add-to-Cart Bar */}
       <div 
         className={`
-          fixed bottom-0 left-0 right-0 z-50 md:hidden
+          fixed bottom-0 left-0 right-0 z-[45] md:hidden
           bg-card/95 backdrop-blur-md border-t border-border
           px-4 py-3 transform transition-transform duration-300 ease-out
           ${showStickyBar ? 'translate-y-0' : 'translate-y-full'}
@@ -272,7 +272,7 @@ export default function ProductAddToCart({
       {/* Size Guide Modal */}
       {showSizeGuide && (
         <div 
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[95] flex items-center justify-center p-4"
           onClick={() => setShowSizeGuide(false)}
         >
           {/* Backdrop */}

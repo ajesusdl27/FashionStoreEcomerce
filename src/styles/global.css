@@ -363,6 +363,48 @@
     font-weight: 600;
     text-decoration: none;
   }
+
+  /* ===== Z-INDEX HIERARCHY ===== */
+  /* This ensures proper stacking order across the entire application
+   * 
+   * Z-Index Scale:
+   * 1-9:      Base content
+   * 10-19:    Page elements (badges, decorations)
+   * 20-29:    Floating elements
+   * 30-39:    Announcement bars
+   * 40-49:    Sticky headers, navigation dropdowns
+   * 50-89:    Modals, dialogs (admin)
+   * 90-99:    Mobile menu, cart slideover
+   * 100-999:  Toast notifications, critical overlays
+   * 9999+:    Accessibility (skip links, admin critical modals)
+   */
+}
+
+/* Z-Index utility classes */
+@layer utilities {
+  .z-modal {
+    z-index: 100;
+  }
+  
+  .z-cart {
+    z-index: 100;
+  }
+  
+  .z-mobile-menu {
+    z-index: 90;
+  }
+  
+  .z-header {
+    z-index: 40;
+  }
+  
+  .z-dropdown {
+    z-index: 45;
+  }
+  
+  .z-toast {
+    z-index: 100;
+  }
 }
 
 /* ===== HERO ANIMATIONS ===== */

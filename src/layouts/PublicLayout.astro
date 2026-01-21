@@ -33,7 +33,7 @@ const settings = await getSettings();
   />
 
   <!-- Header with Announcement Bar -->
-  <div class="sticky top-0 z-50">
+  <div class="sticky top-0 z-40">
     <!-- Announcement Bar (React Island) -->
     <AnnouncementBar
       client:load
@@ -99,7 +99,7 @@ const settings = await getSettings();
   </div>
 
   <!-- Mobile Menu Overlay -->
-  <div id="mobile-menu" class="fixed inset-0 z-60 hidden" aria-hidden="true">
+  <div id="mobile-menu" class="fixed inset-0 z-[90] hidden" aria-hidden="true">
     <!-- Backdrop with aria-hidden to prevent screen reader focus -->
     <div
       class="absolute inset-0 bg-black/60 backdrop-blur-sm"
