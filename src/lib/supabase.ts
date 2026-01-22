@@ -46,3 +46,33 @@ export function createAuthenticatedClient(accessToken?: string, refreshToken?: s
   return client;
 }
 
+// Service role client for server-side operations that need to bypass RLS
+// WARNING: Only use this in server-side code (API routes, webhooks, etc.)
+const serviceRoleKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY as string;
+
+let serviceRoleInstance: SupabaseClient | null = null;
+
+export function getServiceSupabase(): SupabaseClient {
+  if (serviceRoleInstance) {
+    return serviceRoleInstance;
+  }
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.warn('⚠️ [SUPABASE] Service role key not configured, falling back to anon client');
+    return getSupabase();
+  }
+
+  console.log('🔑 [SUPABASE] Creating service role client (bypasses RLS)');
+  
+  serviceRoleInstance = createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    }
+  });
+  
+  return serviceRoleInstance;
+}
+
+// Export service client for backwards compatibility
+export const supabaseAdmin = getServiceSupabase();

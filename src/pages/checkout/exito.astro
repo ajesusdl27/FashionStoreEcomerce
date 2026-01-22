@@ -1,7 +1,7 @@
 ---
 import PublicLayout from "@/layouts/PublicLayout.astro";
 import Button from "@/components/ui/Button.astro";
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseAdmin } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe";
 import { sendOrderConfirmation } from "@/lib/email";
 import { formatOrderId } from "@/lib/order-utils";
@@ -19,16 +19,18 @@ if (sessionId) {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
     if (session.payment_status === "paid" && session.metadata?.order_id) {
-      // Get current order status first
-      const { data: existingOrder } = await supabase
+      // Get current order status first using service role (bypasses RLS)
+      const { data: existingOrder } = await supabaseAdmin
         .from("orders")
         .select("status")
         .eq("id", session.metadata.order_id)
         .single();
 
       const wasAlreadyPaid = existingOrder?.status === "paid";
-      
-      console.log(`Order status before update: ${existingOrder?.status}, wasAlreadyPaid: ${wasAlreadyPaid}`);
+
+      console.log(
+        `Order status before update: ${existingOrder?.status}, wasAlreadyPaid: ${wasAlreadyPaid}`,
+      );
 
       // Update order status to paid (backup in case webhook didn't fire)
       const { error: updateError } = await supabase.rpc("update_order_status", {
@@ -39,7 +41,7 @@ if (sessionId) {
       if (updateError) {
         console.error(
           "Error updating order status in success page:",
-          updateError
+          updateError,
         );
       } else {
         console.log("Order status updated to paid via success page");
@@ -62,7 +64,7 @@ if (sessionId) {
           if (couponError.code !== "23505") {
             console.error(
               "Error recording coupon usage in success page:",
-              couponError
+              couponError,
             );
           } else {
             console.log("Coupon already recorded (likely by webhook)");
@@ -73,11 +75,17 @@ if (sessionId) {
       }
 
       // Get order details
-      console.log('🛒 [CHECKOUT SUCCESS] Fetching order details...');
-      console.log('🛒 [CHECKOUT SUCCESS] Order ID from session:', session.metadata.order_id);
-      console.log('🛒 [CHECKOUT SUCCESS] Using client type:', 'anonymous (supabase)');
-      
-      const { data: orderData, error: orderFetchError } = await supabase
+      console.log("🛒 [CHECKOUT SUCCESS] Fetching order details...");
+      console.log(
+        "🛒 [CHECKOUT SUCCESS] Order ID from session:",
+        session.metadata.order_id,
+      );
+      console.log(
+        "🛒 [CHECKOUT SUCCESS] Using client type:",
+        "supabaseAdmin (service role)",
+      );
+
+      const { data: orderData, error: orderFetchError } = await supabaseAdmin
         .from("orders")
         .select("*, order_number")
         .eq("id", session.metadata.order_id)
@@ -89,25 +97,27 @@ if (sessionId) {
           message: orderFetchError.message,
           details: orderFetchError.details,
           hint: orderFetchError.hint,
-          orderId: session.metadata.order_id
+          orderId: session.metadata.order_id,
         });
       } else {
-        console.log('🛒 [CHECKOUT SUCCESS] ✅ Order fetched successfully');
+        console.log("🛒 [CHECKOUT SUCCESS] ✅ Order fetched successfully");
       }
 
       order = orderData;
-      console.log(`🛒 [CHECKOUT SUCCESS] Order result: ${order ? 'YES' : 'NO'}, order_number: ${order?.order_number}, email: ${order?.customer_email}, status: ${order?.status}`);
+      console.log(
+        `🛒 [CHECKOUT SUCCESS] Order result: ${order ? "YES" : "NO"}, order_number: ${order?.order_number}, email: ${order?.customer_email}, status: ${order?.status}`,
+      );
 
       if (order) {
-        // Get order items with product info
-        const { data: items } = await supabase
+        // Get order items with product info using service role
+        const { data: items } = await supabaseAdmin
           .from("order_items")
           .select(
             `
             *,
             products (name),
             product_variants (size)
-          `
+          `,
           )
           .eq("order_id", order.id);
 
@@ -115,11 +125,15 @@ if (sessionId) {
 
         // Send confirmation email if webhook didn't already do it
         // (check if order was already paid before we updated it)
-        console.log(`Checking email sending: wasAlreadyPaid=${wasAlreadyPaid}, customerEmail=${order.customer_email}`);
-        
+        console.log(
+          `Checking email sending: wasAlreadyPaid=${wasAlreadyPaid}, customerEmail=${order.customer_email}`,
+        );
+
         if (!wasAlreadyPaid && order.customer_email) {
-          console.log("Attempting to send confirmation email from success page...");
-          
+          console.log(
+            "Attempting to send confirmation email from success page...",
+          );
+
           try {
             const emailItems = orderItems.map((item: any) => ({
               productName: item.products?.name || "Producto",
@@ -147,13 +161,17 @@ if (sessionId) {
             if (!result.success) {
               console.error("Failed to send confirmation email:", result.error);
             } else {
-              console.log("✅ Confirmation email sent successfully from success page");
+              console.log(
+                "✅ Confirmation email sent successfully from success page",
+              );
             }
           } catch (emailError) {
             console.error("Exception sending confirmation email:", emailError);
           }
         } else {
-          console.log(`Email NOT sent: wasAlreadyPaid=${wasAlreadyPaid}, has email=${!!order.customer_email}`);
+          console.log(
+            `Email NOT sent: wasAlreadyPaid=${wasAlreadyPaid}, has email=${!!order.customer_email}`,
+          );
         }
       }
     }
@@ -210,7 +228,9 @@ function formatDate(date: string): string {
               <div>
                 <p class="text-sm text-muted-foreground">Número de pedido</p>
                 <p class="font-mono text-sm mt-1">
-                  {order.order_number ? formatOrderId(order.order_number) : order.id?.slice(0, 8).toUpperCase()}
+                  {order.order_number
+                    ? formatOrderId(order.order_number)
+                    : order.id?.slice(0, 8).toUpperCase()}
                 </p>
               </div>
               <div class="text-right">
@@ -285,26 +305,26 @@ function formatDate(date: string): string {
     // Clear cart on success page with verification
     try {
       clearCart();
-      
+
       // Verify cart was cleared
       setTimeout(() => {
         if ($cart.get().length > 0) {
-          console.warn('Cart not properly cleared, retrying...');
-          localStorage.removeItem('fashionstore_cart');
+          console.warn("Cart not properly cleared, retrying...");
+          localStorage.removeItem("fashionstore_cart");
           clearCart();
         }
       }, 100);
     } catch (e) {
-      console.error('Error clearing cart:', e);
+      console.error("Error clearing cart:", e);
       // Fallback: clear localStorage directly
       try {
-        localStorage.removeItem('fashionstore_cart');
+        localStorage.removeItem("fashionstore_cart");
       } catch {}
     }
 
     // Confetti animation
     const canvas = document.getElementById(
-      "confetti-canvas"
+      "confetti-canvas",
     ) as HTMLCanvasElement;
     const ctx = canvas.getContext("2d");
 

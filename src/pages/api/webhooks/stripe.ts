@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { stripe } from '@/lib/stripe';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { sendOrderConfirmation, sendOrderCancelled } from '@/lib/email';
 import { formatOrderId } from '@/lib/order-utils';
 import type Stripe from 'stripe';
@@ -139,8 +139,9 @@ export const POST: APIRoute = async ({ request }) => {
       if (isNewPayment) {
         console.log('🔔 [WEBHOOK] 📧 Preparing to send confirmation email...');
         try {
-          // Fetch order details
-          const { data: order, error: orderError } = await supabase
+          // Fetch order details using service role client (bypasses RLS)
+          console.log('🔔 [WEBHOOK] Using supabaseAdmin to fetch order (bypasses RLS)');
+          const { data: order, error: orderError } = await supabaseAdmin
             .from('orders')
             .select('*, order_number')
             .eq('id', orderId)
@@ -151,8 +152,8 @@ export const POST: APIRoute = async ({ request }) => {
             break;
           }
           
-          // Fetch order items with product details
-          const { data: items, error: itemsError } = await supabase
+          // Fetch order items with product details using service role
+          const { data: items, error: itemsError } = await supabaseAdmin
             .from('order_items')
             .select(`
               quantity,
