@@ -10,7 +10,7 @@ export default defineConfig({
   adapter: node({ mode: "standalone" }),
   server: {
     host: process.env.HOST || "0.0.0.0",
-    port: parseInt(process.env.PORT || "3000")
+    port: parseInt(process.env.PORT || "4321")
   },
   integrations: [
     react(),
@@ -20,7 +20,10 @@ export default defineConfig({
   ],
   vite: {
     server: {
-      allowedHosts: ['lk8s0o440kskkcogwsccc8gg.victoriafp.online']
+      allowedHosts: [
+        'lk8s0o440kskkcogwsccc8gg.victoriafp.online',
+        'fashionstoreajesusdl.victoriafp.online'
+      ]
     },
     resolve: {
       alias: {
