@@ -85,17 +85,14 @@ export default function AuthForm({ mode, redirectTo = '/cuenta' }: AuthFormProps
         console.log('🔑 [CLIENT LOGIN] Email:', email);
         console.log('🔑 [CLIENT LOGIN] Redirect:', isAdminLogin ? '/admin' : redirectTo);
         
-        const formData = new FormData();
-        formData.append('email', email);
-        formData.append('password', password);
-        formData.append('redirectTo', isAdminLogin ? '/admin' : redirectTo);
-
-        console.log('🔑 [CLIENT LOGIN] Sending request to /api/auth/login...');
-        const startTime = Date.now();
-        
         const response = await fetch('/api/auth/login', {
           method: 'POST',
-          body: formData,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            password,
+            redirectTo: isAdminLogin ? '/admin' : redirectTo
+          }),
         });
 
         const duration = Date.now() - startTime;

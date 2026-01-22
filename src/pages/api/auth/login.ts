@@ -5,10 +5,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   console.log('🔐 [AUTH LOGIN] Request received');
   
   try {
-    const formData = await request.formData();
-    const email = formData.get('email')?.toString();
-    const password = formData.get('password')?.toString();
-    const redirectTo = formData.get('redirectTo')?.toString() || '/cuenta';
+    const contentType = request.headers.get('content-type');
+    let email, password, redirectTo;
+
+    if (contentType?.includes('application/json')) {
+      const body = await request.json();
+      email = body.email;
+      password = body.password;
+      redirectTo = body.redirectTo || '/cuenta';
+    } else {
+      const formData = await request.formData();
+      email = formData.get('email')?.toString();
+      password = formData.get('password')?.toString();
+      redirectTo = formData.get('redirectTo')?.toString() || '/cuenta';
+    }
 
     console.log(`🔐 [AUTH LOGIN] Email: ${email}, RedirectTo: ${redirectTo}`);
     console.log(`🔐 [AUTH LOGIN] Environment:`, {
