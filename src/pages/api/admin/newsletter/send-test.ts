@@ -69,7 +69,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Generate email HTML
-    const siteUrl = import.meta.env.SITE_URL || 'http://localhost:4321';
+    const siteUrl = import.meta.env.PUBLIC_SITE_URL || 'http://fashionstoreajesusdl.victoriafp.online';
     const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
     
     // For test email, use a dummy unsubscribe URL

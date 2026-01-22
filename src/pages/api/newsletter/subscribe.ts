@@ -174,7 +174,7 @@ async function sendWelcomeEmail(email: string, isReactivation: boolean, unsubscr
     }
 
     const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
-    const siteUrl = import.meta.env.SITE_URL || 'http://localhost:4321';
+    const siteUrl = import.meta.env.PUBLIC_SITE_URL || 'http://fashionstoreajesusdl.victoriafp.online';
     
     // Generate unsubscribe URL (GDPR CRITICAL)
     const unsubscribeUrl = unsubscribeToken 

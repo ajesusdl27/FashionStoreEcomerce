@@ -9,14 +9,14 @@ async function getEmailTemplateOptions(): Promise<EmailTemplateOptions> {
   try {
     const contactInfo = await getContactInfo();
     return {
-      siteUrl: import.meta.env.SITE_URL || 'http://localhost:4321',
+      siteUrl: import.meta.env.PUBLIC_SITE_URL || 'http://fashionstoreajesusdl.victoriafp.online',
       contactEmail: contactInfo.email || import.meta.env.CONTACT_EMAIL || 'info@fashionstore.es',
       storeName: contactInfo.name || 'FashionStore'
     };
   } catch (error) {
     console.warn('Could not fetch contact info from settings, using defaults');
     return {
-      siteUrl: import.meta.env.SITE_URL || 'http://localhost:4321',
+      siteUrl: import.meta.env.PUBLIC_SITE_URL || 'http://fashionstoreajesusdl.victoriafp.online',
       contactEmail: import.meta.env.CONTACT_EMAIL || 'info@fashionstore.es',
       storeName: 'FashionStore'
     };

@@ -11,7 +11,7 @@ export interface EmailTemplateOptions {
 
 // Valores por defecto (fallback si no se pasan opciones)
 const getDefaultOptions = (): EmailTemplateOptions => ({
-  siteUrl: import.meta.env.SITE_URL || 'http://localhost:4321',
+  siteUrl: import.meta.env.PUBLIC_SITE_URL || 'http://fashionstoreajesusdl.victoriafp.online',
   contactEmail: import.meta.env.CONTACT_EMAIL || 'info@fashionstore.es',
   storeName: 'FashionStore'
 });

@@ -69,7 +69,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     let sentCount = 0;
     let failedCount = 0;
     const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
-    const siteUrl = import.meta.env.SITE_URL || 'http://localhost:4321';
+    const siteUrl = import.meta.env.PUBLIC_SITE_URL || 'http://fashionstoreajesusdl.victoriafp.online';
 
     for (const sub of subscribers) {
       // Generate unique unsubscribe URL for each subscriber (GDPR CRITICAL)
