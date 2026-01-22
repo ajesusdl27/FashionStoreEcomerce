@@ -25,8 +25,17 @@ async function getEmailTemplateOptions(): Promise<EmailTemplateOptions> {
 
 const resendApiKey = import.meta.env.RESEND_API_KEY;
 
+console.log('📧 [EMAIL-INIT] Initializing Resend...');
+console.log('📧 [EMAIL-INIT] RESEND_API_KEY present:', resendApiKey ? 'YES' : 'NO');
+if (resendApiKey) {
+  console.log('📧 [EMAIL-INIT] API Key length:', resendApiKey.length);
+  console.log('📧 [EMAIL-INIT] API Key starts with:', resendApiKey.substring(0, 8));
+}
+
 if (!resendApiKey) {
-  console.warn('RESEND_API_KEY not configured - emails will not be sent');
+  console.warn('📧 [EMAIL-INIT] ⚠️ RESEND_API_KEY not configured - emails will not be sent');
+} else {
+  console.log('📧 [EMAIL-INIT] ✅ Resend client created successfully');
 }
 
 export const resend = resendApiKey ? new Resend(resendApiKey) : null;
@@ -66,10 +75,12 @@ export interface CancellationEmailData {
 export async function sendOrderConfirmation(order: OrderEmailData): Promise<{ success: boolean; error?: string }> {
   console.log('📧 [EMAIL] Starting order confirmation email...');
   console.log('📧 [EMAIL] Order:', order.orderNumber, 'Customer:', order.customerEmail);
+  console.log('📧 [EMAIL] Resend client available:', resend ? 'YES' : 'NO');
   
   if (!resend) {
     console.warn('📧 [EMAIL] ⚠️ Resend not configured - skipping order confirmation email');
     console.log('📧 [EMAIL] RESEND_API_KEY:', import.meta.env.RESEND_API_KEY ? 'Set' : 'Missing');
+    console.log('📧 [EMAIL] Environment:', import.meta.env.MODE);
     return { success: false, error: 'Email service not configured' };
   }
 
@@ -77,6 +88,7 @@ export async function sendOrderConfirmation(order: OrderEmailData): Promise<{ su
     const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
     console.log('📧 [EMAIL] From address:', fromEmail);
     console.log('📧 [EMAIL] RESEND_FROM_EMAIL env:', import.meta.env.RESEND_FROM_EMAIL ? 'Set' : 'Using fallback');
+    console.log('📧 [EMAIL] To address:', order.customerEmail);
     
     // Obtener configuración dinámica de la tienda
     const templateOptions = await getEmailTemplateOptions();
@@ -143,6 +155,7 @@ export async function sendOrderConfirmation(order: OrderEmailData): Promise<{ su
     }
 
     console.log(`📧 [EMAIL] ✅ Order confirmation email sent successfully. Resend ID: ${data?.id}`);
+    console.log('📧 [EMAIL] Email data:', JSON.stringify(data, null, 2));
     return { success: true };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';

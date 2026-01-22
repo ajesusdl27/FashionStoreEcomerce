@@ -8,8 +8,11 @@ import type Stripe from 'stripe';
 const webhookSecret = import.meta.env.STRIPE_WEBHOOK_SECRET;
 
 export const POST: APIRoute = async ({ request }) => {
+  console.log('🔔 [WEBHOOK] Stripe webhook received');
+  console.log('🔔 [WEBHOOK] STRIPE_WEBHOOK_SECRET configured:', webhookSecret ? 'YES' : 'NO');
+  
   if (!webhookSecret) {
-    console.error('Missing STRIPE_WEBHOOK_SECRET');
+    console.error('🔔 [WEBHOOK] ❌ Missing STRIPE_WEBHOOK_SECRET');
     return new Response('Webhook secret not configured', { status: 500 });
   }
 
@@ -17,8 +20,10 @@ export const POST: APIRoute = async ({ request }) => {
   const rawBody = await request.arrayBuffer();
   const body = new TextDecoder().decode(rawBody);
   const signature = request.headers.get('stripe-signature');
+  console.log('🔔 [WEBHOOK] Signature present:', signature ? 'YES' : 'NO');
 
   if (!signature) {
+    console.error('🔔 [WEBHOOK] ❌ Missing stripe-signature header');
     return new Response('Missing stripe-signature header', { status: 400 });
   }
 
@@ -26,8 +31,10 @@ export const POST: APIRoute = async ({ request }) => {
 
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    console.log('🔔 [WEBHOOK] ✅ Signature verified successfully');
+    console.log('🔔 [WEBHOOK] Event type:', event.type);
   } catch (err) {
-    console.error('Webhook signature verification failed:', err);
+    console.error('🔔 [WEBHOOK] ❌ Signature verification failed:', err);
     return new Response('Webhook signature verification failed', { status: 400 });
   }
 
@@ -45,7 +52,9 @@ export const POST: APIRoute = async ({ request }) => {
 
       // Log con formato legible
       const displayId = orderNumber ? formatOrderId(Number(orderNumber)) : `#${orderId.slice(0, 8)}`;
-      console.log(`Processing payment for order: ${displayId} (UUID: ${orderId})`);
+      console.log(`🔔 [WEBHOOK] 💳 Processing payment for order: ${displayId} (UUID: ${orderId})`);
+      console.log('🔔 [WEBHOOK] Session ID:', session.id);
+      console.log('🔔 [WEBHOOK] Payment status:', session.payment_status);
 
       // Idempotency check: verify if order was already processed
       const { data: existingOrder } = await supabase
@@ -57,6 +66,9 @@ export const POST: APIRoute = async ({ request }) => {
       let isNewPayment = false;
 
       if (existingOrder?.status !== 'paid') {
+        console.log('🔔 [WEBHOOK] Current order status:', existingOrder?.status || 'NOT FOUND');
+        console.log('🔔 [WEBHOOK] Attempting to update order status to "paid"...');
+        
         // Update order status to paid using RPC function
         const { error } = await supabase.rpc('update_order_status', {
           p_stripe_session_id: session.id,
@@ -64,13 +76,14 @@ export const POST: APIRoute = async ({ request }) => {
         });
 
         if (error) {
-          console.error('Error updating order status:', error);
+          console.error('🔔 [WEBHOOK] ❌ Error updating order status:', error);
+          console.error('🔔 [WEBHOOK] Error details:', JSON.stringify(error, null, 2));
         } else {
-          console.log(`Order ${displayId} marked as paid`);
+          console.log(`🔔 [WEBHOOK] ✅ Order ${displayId} marked as paid`);
           isNewPayment = true;
         }
       } else {
-        console.log(`Order ${displayId} already marked as paid - checking side effects`);
+        console.log(`🔔 [WEBHOOK] ℹ️ Order ${displayId} already marked as paid - checking side effects`);
       }
 
       // Record coupon usage if present (regardless of whether we just updated the status or it was already paid)
@@ -122,7 +135,9 @@ export const POST: APIRoute = async ({ request }) => {
       // If the webhook runs AFTER success page, `isNewPayment` will be false, so we SKIP email.
       // If the webhook runs BEFORE success page, `isNewPayment` will be true, so we SEND email.
       // This seems correct to prevent duplicates.
+      console.log('🔔 [WEBHOOK] isNewPayment:', isNewPayment);
       if (isNewPayment) {
+        console.log('🔔 [WEBHOOK] 📧 Preparing to send confirmation email...');
         try {
           // Fetch order details
           const { data: order, error: orderError } = await supabase
@@ -180,14 +195,16 @@ export const POST: APIRoute = async ({ request }) => {
           });
           
           if (emailResult.success) {
-            console.log(`Confirmation email sent to ${order.customer_email}`);
+            console.log(`🔔 [WEBHOOK] ✅ Confirmation email sent to ${order.customer_email}`);
           } else {
-            console.error('Failed to send confirmation email:', emailResult.error);
+            console.error('🔔 [WEBHOOK] ❌ Failed to send confirmation email:', emailResult.error);
           }
         } catch (emailError) {
-          console.error('Exception sending confirmation email:', emailError);
+          console.error('🔔 [WEBHOOK] ❌ Exception sending confirmation email:', emailError);
           // Don't break - order is already paid, email failure is non-critical
         }
+      } else {
+        console.log('🔔 [WEBHOOK] ℹ️ Skipping email (not a new payment)');
       }
 
       break;
