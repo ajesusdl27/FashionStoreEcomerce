@@ -67,7 +67,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     cookies.set('sb-access-token', access_token, {
       path: '/',
       httpOnly: true,
-      secure: import.meta.env.PROD,
+      secure: false, // TEMPORAL: Fuerza false para que funcione tras el proxy de Coolify
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
@@ -75,7 +75,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     cookies.set('sb-refresh-token', refresh_token, {
       path: '/',
       httpOnly: true,
-      secure: import.meta.env.PROD,
+      secure: false, // TEMPORAL: Fuerza false para que funcione tras el proxy de Coolify
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 30, // 30 days
     });
