@@ -85,6 +85,7 @@ export default function AuthForm({ mode, redirectTo = '/cuenta' }: AuthFormProps
         console.log('🔑 [CLIENT LOGIN] Email:', email);
         console.log('🔑 [CLIENT LOGIN] Redirect:', isAdminLogin ? '/admin' : redirectTo);
         
+        const startTime = Date.now();
         const response = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
