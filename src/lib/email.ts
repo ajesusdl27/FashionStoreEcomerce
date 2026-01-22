@@ -64,23 +64,32 @@ export interface CancellationEmailData {
 
 // Envía el email de confirmación de pedido con ticket PDF adjunto
 export async function sendOrderConfirmation(order: OrderEmailData): Promise<{ success: boolean; error?: string }> {
+  console.log('📧 [EMAIL] Starting order confirmation email...');
+  console.log('📧 [EMAIL] Order:', order.orderNumber, 'Customer:', order.customerEmail);
+  
   if (!resend) {
-    console.warn('Resend not configured - skipping order confirmation email');
+    console.warn('📧 [EMAIL] ⚠️ Resend not configured - skipping order confirmation email');
+    console.log('📧 [EMAIL] RESEND_API_KEY:', import.meta.env.RESEND_API_KEY ? 'Set' : 'Missing');
     return { success: false, error: 'Email service not configured' };
   }
 
   try {
     const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
+    console.log('📧 [EMAIL] From address:', fromEmail);
+    console.log('📧 [EMAIL] RESEND_FROM_EMAIL env:', import.meta.env.RESEND_FROM_EMAIL ? 'Set' : 'Using fallback');
     
     // Obtener configuración dinámica de la tienda
     const templateOptions = await getEmailTemplateOptions();
+    console.log('📧 [EMAIL] Template options:', templateOptions);
     
     // Formatear número de pedido
     const formattedOrderId = formatOrderId(order.orderNumber);
+    console.log('📧 [EMAIL] Formatted order ID:', formattedOrderId);
     
     // Generar ticket PDF
     let ticketBuffer: Buffer | null = null;
     try {
+      console.log('📧 [EMAIL] Generating PDF ticket...');
       ticketBuffer = await generateTicketPDF({
         orderId: formattedOrderId,  // Usar formato #A000001
         orderDate: order.orderDate || new Date(),
@@ -93,9 +102,9 @@ export async function sendOrderConfirmation(order: OrderEmailData): Promise<{ su
         items: order.items,
         totalAmount: order.totalAmount,
       });
-      console.log('Ticket PDF generated successfully');
+      console.log('📧 [EMAIL] ✅ Ticket PDF generated successfully');
     } catch (pdfError) {
-      console.error('Error generating ticket PDF:', pdfError);
+      console.error('📧 [EMAIL] ❌ Error generating ticket PDF:', pdfError);
       // Continuamos sin adjunto si falla la generación
     }
     
@@ -109,26 +118,40 @@ export async function sendOrderConfirmation(order: OrderEmailData): Promise<{ su
     
     // Añadir adjunto solo si se generó correctamente
     if (ticketBuffer) {
+      console.log('📧 [EMAIL] Adding PDF attachment to email');
       emailOptions.attachments = [
         {
           filename: `ticket-${formattedOrderId.replace('#', '')}.pdf`,
           content: ticketBuffer.toString('base64'),
         }
       ];
+    } else {
+      console.log('📧 [EMAIL] No PDF attachment (generation failed)');
     }
     
+    console.log('📧 [EMAIL] Sending email via Resend...');
     const { data, error } = await resend.emails.send(emailOptions);
 
     if (error) {
-      console.error('Error sending order confirmation email:', error);
+      console.error('📧 [EMAIL] ❌ Error sending order confirmation email:', {
+        message: error.message,
+        name: error.name,
+        to: order.customerEmail,
+        from: fromEmail
+      });
       return { success: false, error: error.message };
     }
 
-    console.log(`Order confirmation email sent successfully. ID: ${data?.id}`);
+    console.log(`📧 [EMAIL] ✅ Order confirmation email sent successfully. Resend ID: ${data?.id}`);
     return { success: true };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-    console.error('Exception sending order confirmation email:', errorMessage);
+    console.error('📧 [EMAIL] ❌ Exception sending order confirmation email:', {
+      error: errorMessage,
+      stack: err instanceof Error ? err.stack : undefined,
+      orderNumber: order.orderNumber,
+      customerEmail: order.customerEmail
+    });
     return { success: false, error: errorMessage };
   }
 }

@@ -81,31 +81,66 @@ export default function AuthForm({ mode, redirectTo = '/cuenta' }: AuthFormProps
         }
       } else {
         // Login via API
+        console.log('🔑 [CLIENT LOGIN] Starting login process...');
+        console.log('🔑 [CLIENT LOGIN] Email:', email);
+        console.log('🔑 [CLIENT LOGIN] Redirect:', isAdminLogin ? '/admin' : redirectTo);
+        
         const formData = new FormData();
         formData.append('email', email);
         formData.append('password', password);
         formData.append('redirectTo', isAdminLogin ? '/admin' : redirectTo);
 
+        console.log('🔑 [CLIENT LOGIN] Sending request to /api/auth/login...');
+        const startTime = Date.now();
+        
         const response = await fetch('/api/auth/login', {
           method: 'POST',
           body: formData,
         });
 
-        const result = await response.json();
+        const duration = Date.now() - startTime;
+        console.log(`🔑 [CLIENT LOGIN] Response received in ${duration}ms`);
+        console.log('🔑 [CLIENT LOGIN] Response status:', response.status, response.statusText);
+        console.log('🔑 [CLIENT LOGIN] Response headers:', {
+          contentType: response.headers.get('content-type'),
+          setCookie: response.headers.get('set-cookie')
+        });
+
+        let result;
+        try {
+          result = await response.json();
+          console.log('🔑 [CLIENT LOGIN] Response data:', result);
+        } catch (jsonError) {
+          console.error('🔑 [CLIENT LOGIN] ❌ Failed to parse JSON:', jsonError);
+          const text = await response.text();
+          console.error('🔑 [CLIENT LOGIN] Raw response:', text);
+          setError('Error al procesar la respuesta del servidor');
+          setLoading(false);
+          return;
+        }
 
         if (!response.ok) {
+          console.error('🔑 [CLIENT LOGIN] ❌ Login failed:', result.error);
           setError(result.error || 'Error al iniciar sesión');
           setLoading(false);
           return;
         }
 
+        console.log('🔑 [CLIENT LOGIN] ✅ Login successful!');
         setSuccess('¡Bienvenido! Redirigiendo...');
         setTimeout(() => {
+          console.log('🔑 [CLIENT LOGIN] Redirecting to:', result.redirectTo);
           window.location.href = result.redirectTo;
         }, 1000);
       }
     } catch (err) {
-      setError('Error de conexión. Inténtalo de nuevo.');
+      console.error('🔑 [CLIENT LOGIN] ❌ Exception caught:', err);
+      console.error('🔑 [CLIENT LOGIN] Error details:', {
+        name: err instanceof Error ? err.name : 'Unknown',
+        message: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined
+      });
+      setError(`Error de conexión: ${err instanceof Error ? err.message : 'Inténtalo de nuevo'}`);
     } finally {
       setLoading(false);
     }

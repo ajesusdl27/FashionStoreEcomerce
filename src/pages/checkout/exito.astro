@@ -73,6 +73,10 @@ if (sessionId) {
       }
 
       // Get order details
+      console.log('🛒 [CHECKOUT SUCCESS] Fetching order details...');
+      console.log('🛒 [CHECKOUT SUCCESS] Order ID from session:', session.metadata.order_id);
+      console.log('🛒 [CHECKOUT SUCCESS] Using client type:', 'anonymous (supabase)');
+      
       const { data: orderData, error: orderFetchError } = await supabase
         .from("orders")
         .select("*, order_number")
@@ -80,11 +84,19 @@ if (sessionId) {
         .single();
 
       if (orderFetchError) {
-        console.error("Error fetching order:", orderFetchError);
+        console.error("🛒 [CHECKOUT SUCCESS] ❌ Error fetching order:", {
+          code: orderFetchError.code,
+          message: orderFetchError.message,
+          details: orderFetchError.details,
+          hint: orderFetchError.hint,
+          orderId: session.metadata.order_id
+        });
+      } else {
+        console.log('🛒 [CHECKOUT SUCCESS] ✅ Order fetched successfully');
       }
 
       order = orderData;
-      console.log(`Order fetched: ${order ? 'YES' : 'NO'}, order_number: ${order?.order_number}, email: ${order?.customer_email}`);
+      console.log(`🛒 [CHECKOUT SUCCESS] Order result: ${order ? 'YES' : 'NO'}, order_number: ${order?.order_number}, email: ${order?.customer_email}, status: ${order?.status}`);
 
       if (order) {
         // Get order items with product info

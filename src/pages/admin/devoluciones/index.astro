@@ -212,32 +212,12 @@ const statusCounts = {
                         {formatDate(returnItem.created_at)}
                       </td>
                       <td class="text-right">
-                        <div class="flex items-center justify-end gap-2">
-                          {returnItem.status === 'requested' && (
-                            <>
-                              <button
-                                class="approve-return-btn admin-btn-sm bg-green-500/10 text-green-500 hover:bg-green-500/20"
-                                data-id={returnItem.id}
-                                title="Aprobar"
-                              >
-                                Aprobar
-                              </button>
-                              <button
-                                class="reject-return-btn admin-btn-sm bg-red-500/10 text-red-500 hover:bg-red-500/20"
-                                data-id={returnItem.id}
-                                title="Rechazar"
-                              >
-                                Rechazar
-                              </button>
-                            </>
-                          )}
-                          <a
-                            href={`/admin/devoluciones/${returnItem.id}`}
-                            class="admin-btn admin-btn-sm bg-muted hover:bg-muted/80"
-                          >
-                            Ver detalles
-                          </a>
-                        </div>
+                        <a
+                          href={`/admin/devoluciones/${returnItem.id}`}
+                          class="admin-btn admin-btn-sm"
+                        >
+                          Ver detalles
+                        </a>
                       </td>
                     </tr>
                   );
@@ -271,55 +251,4 @@ const statusCounts = {
       }
     </div>
   </div>
-  <script>
-    // Quick approve/reject actions
-    document.querySelectorAll('.approve-return-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = btn.getAttribute('data-id');
-        if (!confirm('¿Aprobar esta devolución?')) return;
-        
-        try {
-          const response = await fetch('/api/admin/returns', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, status: 'approved' })
-          });
-          
-          if (response.ok) {
-            window.location.reload();
-          } else {
-            alert('Error al aprobar la devolución');
-          }
-        } catch (error) {
-          console.error('Error:', error);
-          alert('Error al aprobar la devolución');
-        }
-      });
-    });
-
-    document.querySelectorAll('.reject-return-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = btn.getAttribute('data-id');
-        const reason = prompt('Motivo del rechazo:');
-        if (!reason) return;
-        
-        try {
-          const response = await fetch('/api/admin/returns', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, status: 'rejected', rejection_reason: reason })
-          });
-          
-          if (response.ok) {
-            window.location.reload();
-          } else {
-            alert('Error al rechazar la devolución');
-          }
-        } catch (error) {
-          console.error('Error:', error);
-          alert('Error al rechazar la devolución');
-        }
-      });
-    });
-  </script>
 </AdminLayout>

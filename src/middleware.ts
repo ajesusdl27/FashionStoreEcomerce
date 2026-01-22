@@ -50,15 +50,25 @@ export const onRequest = defineMiddleware(async (context, next) => {
     pathname !== '/cuenta/recuperar-password' &&
     pathname !== '/cuenta/reset-password';
 
+  // Log auth checks for protected routes
+  if (isAdminRoute || isAccountRoute) {
+    console.log('🔒 [MIDDLEWARE] Auth check for:', pathname);
+    console.log('🔒 [MIDDLEWARE] Has access token:', !!accessToken);
+    console.log('🔒 [MIDDLEWARE] Has refresh token:', !!refreshToken);
+  }
+
   // If we have tokens, try to validate the user
   if (accessToken) {
+    console.log('🔒 [MIDDLEWARE] Validating access token...');
     let user = await validateToken(accessToken);
 
     // If access token is invalid but we have refresh token, try to refresh
     if (!user && refreshToken) {
+      console.log('🔒 [MIDDLEWARE] Access token invalid, attempting refresh...');
       const newTokens = await refreshSession(refreshToken);
       
       if (newTokens) {
+        console.log('🔒 [MIDDLEWARE] ✅ Session refreshed successfully');
         // Update cookies with new tokens
         cookies.set('sb-access-token', newTokens.access_token, {
           path: '/',
@@ -79,12 +89,17 @@ export const onRequest = defineMiddleware(async (context, next) => {
         // Validate with new token
         user = await validateToken(newTokens.access_token);
         accessToken = newTokens.access_token;
+      } else {
+        console.log('🔒 [MIDDLEWARE] ❌ Failed to refresh session');
       }
     }
 
     if (user) {
+      console.log('🔒 [MIDDLEWARE] ✅ User authenticated:', user.email);
       // Attach user to locals for use in pages
       context.locals.user = user;
+    } else {
+      console.log('🔒 [MIDDLEWARE] ❌ User validation failed');
     }
   }
 
@@ -92,21 +107,26 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (isAdminRoute || isAccountRoute) {
     // If no user found (either no tokens or invalid tokens)
     if (!context.locals.user) {
+      console.log('🔒 [MIDDLEWARE] ❌ No authenticated user, redirecting to login');
       // Clear invalid cookies if they existed but failed
       if (accessToken || refreshToken) {
+        console.log('🔒 [MIDDLEWARE] Clearing invalid tokens');
         cookies.delete('sb-access-token', { path: '/' });
         cookies.delete('sb-refresh-token', { path: '/' });
       }
 
       const loginUrl = isAdminRoute ? '/admin/login' : '/cuenta/login';
+      console.log('🔒 [MIDDLEWARE] Redirect to:', loginUrl);
       return context.redirect(`${loginUrl}?redirect=${encodeURIComponent(pathname)}`);
     }
 
     // Admin routes require admin role
     if (isAdminRoute) {
       const isAdmin = context.locals.user.user_metadata?.is_admin === true;
+      console.log('🔒 [MIDDLEWARE] Admin check:', isAdmin);
       
       if (!isAdmin) {
+        console.log('🔒 [MIDDLEWARE] ❌ Not admin, access denied');
         return context.redirect('/admin/login?error=unauthorized');
       }
     }
