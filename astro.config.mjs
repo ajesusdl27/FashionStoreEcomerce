@@ -8,6 +8,9 @@ export default defineConfig({
   site: process.env.PUBLIC_SITE_URL || "http://localhost:4321",
   output: "server",
   adapter: node({ mode: "standalone" }),
+  security: {
+    checkOrigin: false
+  },
   server: {
     host: process.env.HOST || "0.0.0.0",
     port: parseInt(process.env.PORT || "4321")
