@@ -19,12 +19,60 @@ const { count: subscriberCount } = await supabase
   .select("*", { count: "exact", head: true })
   .eq("is_active", true);
 
+// Fetch coupon BIENVENIDA10 metrics
+const { data: welcomeCoupon } = await supabase
+  .from("coupons")
+  .select("id, code, current_uses")
+  .eq("code", "BIENVENIDA10")
+  .single();
+
+// Get usage count and calculate revenue for BIENVENIDA10
+let couponUsageCount = 0;
+let couponRevenue = 0;
+let conversionRate = 0;
+
+if (welcomeCoupon) {
+  couponUsageCount = welcomeCoupon.current_uses || 0;
+  
+  // Get orders that used this coupon
+  const { data: couponUsages } = await supabase
+    .from("coupon_usages")
+    .select("order_id")
+    .eq("coupon_id", welcomeCoupon.id);
+  
+  if (couponUsages && couponUsages.length > 0) {
+    const orderIds = couponUsages.map(u => u.order_id).filter(Boolean);
+    if (orderIds.length > 0) {
+      const { data: orders } = await supabase
+        .from("orders")
+        .select("total")
+        .in("id", orderIds);
+      
+      if (orders) {
+        couponRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);
+      }
+    }
+  }
+  
+  // Calculate conversion rate (subscribers who used the coupon)
+  if (subscriberCount && subscriberCount > 0) {
+    conversionRate = (couponUsageCount / subscriberCount) * 100;
+  }
+}
+
 const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString("es-ES", {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
+};
+
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'EUR'
+  }).format(amount);
 };
 
 // Helper to get status label and color
@@ -76,6 +124,72 @@ const getStatusInfo = (status: string) => {
           {campaigns?.filter((c) => c.status === CAMPAIGN_STATUS.FAILED).length || 0}
         </p>
       </div>
+    </div>
+
+    <!-- BIENVENIDA10 Coupon Metrics -->
+    <div class="admin-card">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="font-semibold text-lg text-foreground flex items-center gap-2">
+            🎁 Promoción Newsletter
+            <span class="px-2 py-0.5 bg-primary/10 text-primary text-xs font-medium rounded">BIENVENIDA10</span>
+          </h2>
+          <p class="text-sm text-muted-foreground">Métricas del cupón de bienvenida del 10%</p>
+        </div>
+        <a href="/admin/cupones" class="text-sm text-primary hover:underline">
+          Gestionar cupones →
+        </a>
+      </div>
+      
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-muted/50 rounded-lg p-4">
+          <div class="flex items-center gap-2 mb-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <p class="text-sm text-muted-foreground">Usos del Cupón</p>
+          </div>
+          <p class="text-2xl font-bold text-foreground">{couponUsageCount}</p>
+          <p class="text-xs text-muted-foreground mt-1">
+            {welcomeCoupon ? 'Total de veces usado' : 'Cupón no configurado'}
+          </p>
+        </div>
+        
+        <div class="bg-muted/50 rounded-lg p-4">
+          <div class="flex items-center gap-2 mb-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="1" x2="12" y2="23"></line>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+            <p class="text-sm text-muted-foreground">Revenue Generado</p>
+          </div>
+          <p class="text-2xl font-bold text-green-500">{formatCurrency(couponRevenue)}</p>
+          <p class="text-xs text-muted-foreground mt-1">Pedidos con cupón</p>
+        </div>
+        
+        <div class="bg-muted/50 rounded-lg p-4">
+          <div class="flex items-center gap-2 mb-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            <p class="text-sm text-muted-foreground">Tasa de Conversión</p>
+          </div>
+          <p class="text-2xl font-bold text-foreground">{conversionRate.toFixed(1)}%</p>
+          <p class="text-xs text-muted-foreground mt-1">Suscriptores que compraron</p>
+        </div>
+      </div>
+      
+      {!welcomeCoupon && (
+        <div class="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+          <p class="text-sm text-yellow-600 dark:text-yellow-400">
+            ⚠️ El cupón <strong>BIENVENIDA10</strong> no está configurado. 
+            <a href="/admin/cupones" class="underline hover:no-underline">Créalo aquí</a> para activar la promoción del newsletter.
+          </p>
+        </div>
+      )}
     </div>
 
     <!-- Quick Links -->

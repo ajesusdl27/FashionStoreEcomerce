@@ -53,8 +53,11 @@ export default function NewsletterForm() {
       <h4 className="font-heading text-sm font-semibold uppercase tracking-wider mb-4">
         Newsletter
       </h4>
-      <p className="text-sm text-muted-foreground mb-4">
-        Recibe las últimas novedades y ofertas exclusivas.
+      <p className="text-sm text-muted-foreground mb-2">
+        Suscríbete y recibe un <strong className="text-primary">10% de descuento</strong> en tu primera compra.
+      </p>
+      <p className="text-xs text-muted-foreground mb-4">
+        Además: ofertas exclusivas y novedades antes que nadie.
       </p>
       
       {status === 'success' ? (
@@ -112,7 +115,13 @@ export default function NewsletterForm() {
           )}
           
           <p className="text-xs text-muted-foreground">
-            Sin spam. Puedes darte de baja cuando quieras.
+            Sin spam. Puedes darte de baja cuando quieras.{' '}
+            <a 
+              href="/promociones/newsletter-bienvenida" 
+              className="underline hover:text-primary transition-colors"
+            >
+              Ver condiciones
+            </a>
           </p>
         </form>
       )}

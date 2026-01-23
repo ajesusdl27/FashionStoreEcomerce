@@ -1,0 +1,234 @@
+---
+import PublicLayout from "@/layouts/PublicLayout.astro";
+---
+
+<PublicLayout title="Promoción Newsletter - 10% de Descuento" description="Condiciones de la promoción de bienvenida al suscribirse a nuestra newsletter. 10% de descuento en tu primera compra.">
+  <main id="main-content" class="min-h-screen py-12 md:py-16">
+    <div class="container mx-auto px-4 max-w-3xl">
+      <!-- Header -->
+      <div class="text-center mb-12">
+        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6"></path>
+            <path d="M12 12V3"></path>
+            <path d="m8 7 4-4 4 4"></path>
+            <circle cx="12" cy="21" r="1"></circle>
+          </svg>
+          Promoción Exclusiva
+        </span>
+        <h1 class="font-display text-4xl md:text-5xl text-foreground mb-4">
+          10% de Descuento en tu Primera Compra
+        </h1>
+        <p class="text-lg text-muted-foreground max-w-xl mx-auto">
+          Suscríbete a nuestra newsletter y recibe un código de descuento exclusivo para nuevos clientes.
+        </p>
+      </div>
+
+      <!-- Cupón destacado -->
+      <div class="bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-8 text-center mb-12 shadow-lg">
+        <p class="text-primary-foreground/80 text-sm font-medium uppercase tracking-wider mb-2">¿Cómo conseguir el código?</p>
+        <div class="bg-background/95 dark:bg-background/90 rounded-xl py-6 px-8 mb-4">
+          <p class="text-2xl md:text-3xl font-bold text-foreground mb-2">
+            🎁 Suscríbete al Newsletter
+          </p>
+          <p class="text-muted-foreground">
+            Recibirás tu código de descuento exclusivo por email
+          </p>
+        </div>
+        <a 
+          href="/#newsletter" 
+          class="inline-flex items-center gap-2 px-6 py-3 bg-background/20 hover:bg-background/30 text-primary-foreground rounded-lg font-medium transition-colors"
+        >
+          Suscribirme ahora
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </a>
+      </div>
+
+      <!-- Condiciones principales -->
+      <div class="bg-card border border-border rounded-xl p-6 md:p-8 mb-8">
+        <h2 class="font-heading text-xl font-semibold mb-6 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"></path>
+            <path d="m9 12 2 2 4-4"></path>
+          </svg>
+          Condiciones de la Promoción
+        </h2>
+        
+        <div class="space-y-4">
+          <div class="flex items-start gap-4 p-4 bg-muted/50 rounded-lg">
+            <div class="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+              <span class="text-primary font-bold">%</span>
+            </div>
+            <div>
+              <h3 class="font-medium text-foreground">Descuento del 10%</h3>
+              <p class="text-sm text-muted-foreground">Se aplica un 10% de descuento sobre el subtotal de tu pedido.</p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-4 p-4 bg-muted/50 rounded-lg">
+            <div class="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+              <span class="text-primary font-bold">€</span>
+            </div>
+            <div>
+              <h3 class="font-medium text-foreground">Descuento máximo: 20€</h3>
+              <p class="text-sm text-muted-foreground">El descuento aplicado no superará los 20€ independientemente del valor del pedido.</p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-4 p-4 bg-muted/50 rounded-lg">
+            <div class="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="8" cy="21" r="1"></circle>
+                <circle cx="19" cy="21" r="1"></circle>
+                <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-medium text-foreground">Compra mínima: 30€</h3>
+              <p class="text-sm text-muted-foreground">El cupón solo es válido para pedidos con un subtotal igual o superior a 30€.</p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-4 p-4 bg-muted/50 rounded-lg">
+            <div class="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+              <span class="text-primary font-bold">1</span>
+            </div>
+            <div>
+              <h3 class="font-medium text-foreground">Un solo uso por cliente</h3>
+              <p class="text-sm text-muted-foreground">El código solo puede utilizarse una vez por dirección de email.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Condiciones legales -->
+      <div class="bg-card border border-border rounded-xl p-6 md:p-8 mb-8">
+        <h2 class="font-heading text-xl font-semibold mb-6 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          Términos y Condiciones
+        </h2>
+        
+        <ul class="space-y-3 text-sm text-muted-foreground">
+          <li class="flex items-start gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>El cupón es <strong class="text-foreground">exclusivo para nuevos suscriptores</strong> de la newsletter. Recibirás el código por email tras confirmar tu suscripción.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>Este cupón <strong class="text-foreground">no es acumulable</strong> con otras promociones, descuentos o cupones activos.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>El descuento se aplica sobre el subtotal del pedido, <strong class="text-foreground">antes de gastos de envío</strong>.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>Válido para <strong class="text-foreground">todos los productos</strong> de la tienda sin excepciones.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>El código debe introducirse en el proceso de checkout antes de finalizar el pago.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>El cupón no tiene fecha de caducidad, pero FashionStore se reserva el derecho de modificar o cancelar esta promoción en cualquier momento.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>En caso de devolución del pedido, el reembolso se realizará sobre el importe efectivamente pagado.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>FashionStore se reserva el derecho de anular pedidos que hagan un uso fraudulento de este cupón.</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Cómo usar el cupón -->
+      <div class="bg-card border border-border rounded-xl p-6 md:p-8 mb-8">
+        <h2 class="font-heading text-xl font-semibold mb-6 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          ¿Cómo usar tu cupón?
+        </h2>
+        
+        <ol class="space-y-4">
+          <li class="flex items-start gap-4">
+            <span class="flex-shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-sm">1</span>
+            <div>
+              <h3 class="font-medium text-foreground">Añade productos a tu carrito</h3>
+              <p class="text-sm text-muted-foreground">Navega por nuestra tienda y selecciona los productos que más te gusten.</p>
+            </div>
+          </li>
+          <li class="flex items-start gap-4">
+            <span class="flex-shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-sm">2</span>
+            <div>
+              <h3 class="font-medium text-foreground">Accede al checkout</h3>
+              <p class="text-sm text-muted-foreground">Asegúrate de que el subtotal de tu carrito sea de al menos 30€.</p>
+            </div>
+          </li>
+          <li class="flex items-start gap-4">
+            <span class="flex-shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-sm">3</span>
+            <div>
+              <h3 class="font-medium text-foreground">Introduce el código</h3>
+              <p class="text-sm text-muted-foreground">En el campo "Código de descuento", escribe <strong class="text-primary">tu código recibido por email</strong> y pulsa aplicar.</p>
+            </div>
+          </li>
+          <li class="flex items-start gap-4">
+            <span class="flex-shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-sm">4</span>
+            <div>
+              <h3 class="font-medium text-foreground">¡Disfruta tu descuento!</h3>
+              <p class="text-sm text-muted-foreground">Verás el descuento aplicado automáticamente en el resumen de tu pedido.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+
+      <!-- CTA -->
+      <div class="text-center">
+        <a 
+          href="/productos" 
+          class="inline-flex items-center gap-2 px-8 py-4 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary/90 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="8" cy="21" r="1"></circle>
+            <circle cx="19" cy="21" r="1"></circle>
+            <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
+          </svg>
+          Empezar a Comprar
+        </a>
+        <p class="mt-4 text-sm text-muted-foreground">
+          ¿Tienes dudas? <a href="/contacto" class="text-primary hover:underline">Contáctanos</a>
+        </p>
+      </div>
+    </div>
+  </main>
+</PublicLayout>

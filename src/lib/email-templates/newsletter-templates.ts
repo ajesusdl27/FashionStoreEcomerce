@@ -126,9 +126,46 @@ export function generateWelcomeHTML(options: WelcomeTemplateOptions): string {
       </td>
     </tr>
     
+    <!-- Coupon Code Section -->
+    <tr>
+      <td style="padding: 0 30px 30px;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #CCFF00 0%, #a8d900 100%); border-radius: 12px; overflow: hidden;">
+          <tr>
+            <td style="padding: 25px; text-align: center;">
+              <p style="color: #0a0a0a; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px;">
+                🎁 Tu código de descuento exclusivo
+              </p>
+              <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+                <tr>
+                  <td style="background-color: #0a0a0a; padding: 15px 30px; border-radius: 8px;">
+                    <span style="color: #CCFF00; font-size: 28px; font-weight: bold; letter-spacing: 3px; font-family: monospace;">
+                      BIENVENIDA10
+                    </span>
+                  </td>
+                </tr>
+              </table>
+              <p style="color: #0a0a0a; font-size: 16px; font-weight: 600; margin: 15px 0 5px;">
+                10% de descuento en tu primera compra
+              </p>
+              <p style="color: #333; font-size: 13px; margin: 0;">
+                Máximo 20€ de descuento · Compra mínima 30€ · Un solo uso
+              </p>
+              <a href="${siteUrl}/promociones/newsletter-bienvenida" 
+                 style="color: #0a0a0a; font-size: 12px; text-decoration: underline; display: inline-block; margin-top: 10px;">
+                Ver condiciones completas
+              </a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    
     <!-- Features -->
     <tr>
       <td style="padding: 0 40px 30px;">
+        <p style="color: #333; font-size: 14px; font-weight: 600; margin: 0 0 15px; text-align: center;">
+          Como suscriptor también disfrutarás de:
+        </p>
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
             <td style="padding: 15px; background-color: #f9f9f9; border-radius: 8px; margin-bottom: 10px;">
@@ -171,7 +208,7 @@ export function generateWelcomeHTML(options: WelcomeTemplateOptions): string {
       <td style="padding: 0 30px 40px; text-align: center;">
         <a href="${siteUrl}/productos" 
            style="display: inline-block; background-color: #CCFF00; color: #0a0a0a; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">
-          Explorar productos
+          Usar mi descuento ahora
         </a>
       </td>
     </tr>

@@ -62,7 +62,15 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         // Send welcome back email with unsubscribe link
         await sendWelcomeEmail(normalizedEmail, true, existing.unsubscribe_token);
 
-        return new Response(JSON.stringify({ success: true, reactivated: true }), {
+        return new Response(JSON.stringify({ 
+          success: true, 
+          reactivated: true,
+          coupon: {
+            code: 'BIENVENIDA10',
+            discount: '10%',
+            description: '10% de descuento en tu primera compra (máx. 20€, mín. 30€)',
+          }
+        }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
         });
@@ -87,7 +95,14 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     // Send welcome email with unsubscribe link
     await sendWelcomeEmail(normalizedEmail, false, newSubscriber?.unsubscribe_token);
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ 
+      success: true,
+      coupon: {
+        code: 'BIENVENIDA10',
+        discount: '10%',
+        description: '10% de descuento en tu primera compra (máx. 20€, mín. 30€)',
+      }
+    }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });

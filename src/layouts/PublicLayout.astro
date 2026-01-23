@@ -4,6 +4,7 @@ import CartIcon from "@/components/islands/CartIcon";
 import CartSlideOver from "@/components/islands/CartSlideOver";
 import HeaderSearch from "@/components/islands/HeaderSearch";
 import NewsletterForm from "@/components/islands/NewsletterForm";
+import NewsletterPopup from "@/components/islands/NewsletterPopup";
 import AnnouncementBar from "@/components/islands/AnnouncementBar";
 import UserMenuWithAuth from "@/components/islands/UserMenuWithAuth";
 import HeaderNavigation from "@/components/islands/HeaderNavigation";
@@ -186,6 +187,9 @@ const settings = await getSettings();
   <main id="main-content" class="flex-1" tabindex="-1">
     <slot />
   </main>
+
+  <!-- Newsletter Popup (React Island) - Shows after delay/scroll -->
+  <NewsletterPopup client:idle />
 
   <!-- Footer -->
   <footer class="bg-card border-t border-border mt-16">
