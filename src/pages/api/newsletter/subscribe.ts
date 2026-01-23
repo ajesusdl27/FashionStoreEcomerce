@@ -1,10 +1,21 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+import { createAuthenticatedClient } from '@/lib/supabase';
 import { resend } from '@/lib/email';
 import { isValidEmail, NEWSLETTER_CONFIG } from '@/lib/constants/newsletter';
 import { generateWelcomeHTML, getWelcomeSubject } from '@/lib/email-templates/newsletter-templates';
 
-export const POST: APIRoute = async ({ request, clientAddress }) => {
+// Create a dedicated anon client for newsletter operations (bypasses RLS issues)
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL as string;
+const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string;
+const anonClient = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+  }
+});
+
+export const POST: APIRoute = async ({ request, clientAddress, cookies }) => {
   try {
     const { email, _hp } = await request.json();
 
@@ -26,6 +37,27 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
+    // Check if user is authenticated and validate email matches
+    const accessToken = cookies.get('sb-access-token')?.value;
+    const refreshToken = cookies.get('sb-refresh-token')?.value;
+    
+    if (accessToken && refreshToken) {
+      const authenticatedClient = createAuthenticatedClient(accessToken, refreshToken);
+      const { data: { user } } = await authenticatedClient.auth.getUser();
+      
+      if (user && user.email) {
+        const userEmail = user.email.toLowerCase().trim();
+        if (userEmail !== normalizedEmail) {
+          return new Response(JSON.stringify({ 
+            error: `Estás autenticado como ${userEmail}. Por favor, usa el mismo email o cierra sesión para suscribirte con otro email.` 
+          }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+      }
+    }
+
     // Rate limiting check
     const ip = clientAddress || request.headers.get('x-forwarded-for') || 'unknown';
     const rateLimitResult = await checkRateLimit(ip);
@@ -40,7 +72,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
 
     // Check if already subscribed
-    const { data: existing } = await supabase
+    const { data: existing } = await anonClient
       .from('newsletter_subscribers')
       .select('id, is_active, unsubscribe_token')
       .eq('email', normalizedEmail)
@@ -54,7 +86,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         });
       } else {
         // Reactivate subscription
-        await supabase
+        await anonClient
           .from('newsletter_subscribers')
           .update({ is_active: true })
           .eq('id', existing.id);
@@ -78,7 +110,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
 
     // Insert new subscriber and get the token
-    const { data: newSubscriber, error } = await supabase
+    const { data: newSubscriber, error } = await anonClient
       .from('newsletter_subscribers')
       .insert({ email: normalizedEmail })
       .select('unsubscribe_token')
@@ -124,7 +156,7 @@ async function checkRateLimit(ip: string): Promise<{ allowed: boolean }> {
 
   try {
     // Check existing rate limit record
-    const { data: existing } = await supabase
+    const { data: existing } = await anonClient
       .from('newsletter_rate_limits')
       .select('*')
       .eq('ip_address', ip)
@@ -138,7 +170,7 @@ async function checkRateLimit(ip: string): Promise<{ allowed: boolean }> {
       
       // If outside window, reset counter
       if (now.getTime() - firstAttempt.getTime() > windowMs) {
-        await supabase
+        await anonClient
           .from('newsletter_rate_limits')
           .update({
             attempts: 1,
@@ -155,7 +187,7 @@ async function checkRateLimit(ip: string): Promise<{ allowed: boolean }> {
       }
 
       // Increment counter
-      await supabase
+      await anonClient
         .from('newsletter_rate_limits')
         .update({
           attempts: existing.attempts + 1,
@@ -166,7 +198,7 @@ async function checkRateLimit(ip: string): Promise<{ allowed: boolean }> {
     }
 
     // New IP - create record
-    await supabase.from('newsletter_rate_limits').insert({
+    await anonClient.from('newsletter_rate_limits').insert({
       ip_address: ip,
       attempts: 1,
       first_attempt_at: now.toISOString(),
