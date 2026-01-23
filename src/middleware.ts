@@ -38,6 +38,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
   const cookies = context.cookies;
 
+  // Skip middleware for API routes - they handle their own auth
+  if (pathname.startsWith('/api/')) {
+    return next();
+  }
+
   // Get tokens from cookies
   let accessToken = cookies.get('sb-access-token')?.value;
   const refreshToken = cookies.get('sb-refresh-token')?.value;

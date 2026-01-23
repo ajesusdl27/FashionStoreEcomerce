@@ -265,7 +265,7 @@ export default function NewsletterPopup() {
               <div className="hidden sm:block space-y-2 mb-6">
                 <div className="flex items-center gap-3 text-sm">
                   <span className="text-primary">✓</span>
-                  <span className="text-muted-foreground">Código: <strong className="text-foreground">BIENVENIDA10</strong></span>
+                  <span className="text-muted-foreground">Código de descuento exclusivo por email</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <span className="text-primary">✓</span>
@@ -279,7 +279,7 @@ export default function NewsletterPopup() {
 
               {/* Mobile: Simplified benefit text */}
               <p className="sm:hidden text-center text-sm text-muted-foreground mb-4">
-                🎁 10% descuento + ofertas exclusivas
+                🎁 Código exclusivo + ofertas por email
               </p>
 
               {/* Form */}
