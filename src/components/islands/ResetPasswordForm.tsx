@@ -7,6 +7,7 @@ export default function ResetPasswordForm() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
+  const [tokenExpired, setTokenExpired] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -32,10 +33,12 @@ export default function ResetPasswordForm() {
           console.warn('Failed to sync recovery session:', error);
         }
         setSessionReady(true);
+        setTokenExpired(false);
       } else if (event === 'INITIAL_SESSION') {
         // Check if we have a session (user might have refreshed the page)
         if (session) {
           setSessionReady(true);
+          setTokenExpired(false);
         } else {
           // No session - show error after a short delay
           // (give time for PASSWORD_RECOVERY event to fire)
@@ -43,8 +46,9 @@ export default function ResetPasswordForm() {
             if (mounted && !sessionReady) {
               setMessage({
                 type: 'error',
-                text: 'Enlace inválido o expirado. Por favor solicita uno nuevo.',
+                text: '⏰ Tu enlace de recuperación ha expirado. Los enlaces son válidos por 1 hora. Por favor solicita uno nuevo.',
               });
+              setTokenExpired(true);
               setSessionReady(true); // Show form anyway so user sees the error
             }
           }, 2000);
@@ -118,6 +122,12 @@ export default function ResetPasswordForm() {
         errorMessage = 'La nueva contraseña debe ser diferente a la anterior.';
       } else if (errorMessage.includes('Password should be at least')) {
         errorMessage = 'La contraseña debe tener al menos 6 caracteres.';
+      } else if (errorMessage.includes('invalid JWT') || errorMessage.includes('expired') || errorMessage.includes('invalid_token')) {
+        errorMessage = '⏰ Tu sesión ha expirado. El enlace de recuperación es válido por 1 hora. Por favor solicita uno nuevo.';
+        setTokenExpired(true);
+      } else if (errorMessage.includes('not authenticated') || errorMessage.includes('401')) {
+        errorMessage = '⏰ Tu enlace de recuperación no es válido o ha expirado. Por favor solicita uno nuevo.';
+        setTokenExpired(true);
       }
 
       setMessage({
@@ -156,7 +166,7 @@ export default function ResetPasswordForm() {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
-            disabled={message?.type === 'error' && message.text.includes('Enlace')}
+            disabled={tokenExpired}
             className="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all duration-300
               placeholder:text-muted-foreground
               focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
@@ -177,7 +187,7 @@ export default function ResetPasswordForm() {
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
             minLength={6}
-            disabled={message?.type === 'error' && message.text.includes('Enlace')}
+            disabled={tokenExpired}
             className="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground transition-all duration-300
               placeholder:text-muted-foreground
               focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
@@ -201,7 +211,7 @@ export default function ResetPasswordForm() {
 
         <button
           type="submit"
-          disabled={loading || (message?.type === 'error' && message.text.includes('Enlace'))}
+          disabled={loading || tokenExpired}
           className="w-full inline-flex items-center justify-center font-heading tracking-wider
             px-6 py-4 text-base
             bg-primary text-primary-foreground 
@@ -235,6 +245,27 @@ export default function ResetPasswordForm() {
             'CAMBIAR CONTRASEÑA'
           )}
         </button>
+
+        {tokenExpired && (
+          <div className="pt-4 border-t border-border">
+            <p className="text-sm text-muted-foreground text-center mb-4">
+              ¿Necesitas un nuevo enlace?
+            </p>
+            <a
+              href="/cuenta/recuperar-contrasena"
+              className="w-full inline-flex items-center justify-center font-heading tracking-wider
+                px-6 py-3 text-sm
+                bg-secondary text-secondary-foreground 
+                hover:shadow-[0_0_15px_rgba(120,119,198,0.3)] hover:scale-[1.02]
+                active:scale-[0.98]
+                transition-all duration-300 touch-target
+                focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary
+                rounded-lg"
+            >
+              SOLICITAR NUEVO ENLACE
+            </a>
+          </div>
+        )}
       </form>
     </div>
   );
