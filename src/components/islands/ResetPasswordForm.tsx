@@ -30,9 +30,9 @@ export default function ResetPasswordForm() {
         
         // Translate common error codes
         if (errorCode === 'otp_expired' || errorCode === 'invalid_otp') {
-          errorMessage = '⏰ Tu enlace de recuperación ha expirado. Los enlaces son válidos por 1 hora. Por favor solicita uno nuevo.';
+          errorMessage = 'Tu enlace de recuperación ha expirado. Los enlaces son válidos por 1 hora. Por favor solicita uno nuevo.';
         } else if (errorCode === 'access_denied') {
-          errorMessage = '⏰ El enlace no es válido o ha expirado. Por favor solicita uno nuevo.';
+          errorMessage = 'El enlace no es válido o ha expirado. Por favor solicita uno nuevo.';
         }
         
         setMessage({
@@ -289,7 +289,7 @@ export default function ResetPasswordForm() {
               ¿Necesitas un nuevo enlace?
             </p>
             <a
-              href="/cuenta/recuperar-contrasena"
+              href="/cuenta/recuperar-password"
               className="w-full inline-flex items-center justify-center font-heading tracking-wider
                 px-6 py-3 text-sm
                 bg-secondary text-secondary-foreground 
