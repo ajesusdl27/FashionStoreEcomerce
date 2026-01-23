@@ -9,6 +9,7 @@ import {
   dismissPopup,
   getPopupDelay,
   isProductPage,
+  checkAuthenticatedUserSubscription,
 } from '@/stores/newsletterPopup';
 
 // ============================================
@@ -48,25 +49,37 @@ export default function NewsletterPopup() {
 
     const pathname = window.location.pathname;
     
-    if (!shouldShowPopup(pathname)) return;
-
-    // Time-based trigger
-    const delay = getPopupDelay(pathname);
-    const timer = setTimeout(() => {
-      if (shouldShowPopup(pathname)) {
-        showPopup();
+    // First check if authenticated user is already subscribed
+    const initPopup = async () => {
+      const isAlreadySubscribed = await checkAuthenticatedUserSubscription();
+      
+      if (isAlreadySubscribed) {
+        console.log('📧 User already subscribed to newsletter, popup will not show');
+        return;
       }
-    }, delay);
+      
+      if (!shouldShowPopup(pathname)) return;
 
-    // Scroll-based trigger for product pages
-    if (isProductPage(pathname)) {
-      window.addEventListener('scroll', handleScroll, { passive: true });
-    }
+      // Time-based trigger
+      const delay = getPopupDelay(pathname);
+      const timer = setTimeout(() => {
+        if (shouldShowPopup(pathname)) {
+          showPopup();
+        }
+      }, delay);
 
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('scroll', handleScroll);
+      // Scroll-based trigger for product pages
+      if (isProductPage(pathname)) {
+        window.addEventListener('scroll', handleScroll, { passive: true });
+      }
+
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('scroll', handleScroll);
+      };
     };
+
+    initPopup();
   }, [handleScroll]);
 
   // Handle close with animation

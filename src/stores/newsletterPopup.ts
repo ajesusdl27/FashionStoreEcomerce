@@ -55,6 +55,29 @@ function loadInitialState(): PopupState {
   };
 }
 
+/**
+ * Check if authenticated user is already subscribed to newsletter
+ */
+export async function checkAuthenticatedUserSubscription(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  
+  try {
+    const response = await fetch('/api/newsletter/check-subscription');
+    if (!response.ok) return false;
+    
+    const data = await response.json();
+    if (data.isSubscribed) {
+      // Mark as subscribed to prevent popup
+      markSubscribed();
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error checking newsletter subscription:', error);
+    return false;
+  }
+}
+
 // Main popup state atom
 export const $popupState = atom<PopupState>(loadInitialState());
 

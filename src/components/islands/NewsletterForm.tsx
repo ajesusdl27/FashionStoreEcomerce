@@ -12,7 +12,7 @@ export default function NewsletterForm() {
     // Honeypot check - if filled, silently reject (bots fill hidden fields)
     if (honeypot) {
       setStatus('success');
-      setMessage('¡Gracias por suscribirte! 🎉');
+      setMessage('¡Gracias por suscribirte!');
       setEmail('');
       return;
     }
@@ -39,7 +39,7 @@ export default function NewsletterForm() {
       }
 
       setStatus('success');
-      setMessage('¡Gracias por suscribirte! 🎉');
+      setMessage('¡Gracias por suscribirte!');
       setEmail('');
     } catch (error: unknown) {
       setStatus('error');
