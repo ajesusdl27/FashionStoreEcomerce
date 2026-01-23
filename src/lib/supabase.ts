@@ -76,3 +76,43 @@ export function getServiceSupabase(): SupabaseClient {
 
 // Export service client for backwards compatibility
 export const supabaseAdmin = getServiceSupabase();
+
+/**
+ * Get related products based on category
+ * Excludes the current product and returns up to 6 products from the same category
+ * @param categoryId - Category ID to filter by
+ * @param excludeProductId - Product ID to exclude (current product)
+ * @param limit - Maximum number of products to return (default: 6)
+ */
+export async function getRelatedProducts(
+  categoryId: string,
+  excludeProductId: string,
+  limit: number = 6
+) {
+  const { data, error } = await getSupabase()
+    .from('products')
+    .select(`
+      id,
+      name,
+      slug,
+      price,
+      offer_price,
+      is_offer,
+      category:categories(id, name, slug),
+      images:product_images(id, image_url, order),
+      variants:product_variants(id, size, stock)
+    `)
+    .eq('category_id', categoryId)
+    .eq('active', true)
+    .is('deleted_at', null)
+    .neq('id', excludeProductId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Error fetching related products:', error);
+    return [];
+  }
+
+  return data || [];
+}

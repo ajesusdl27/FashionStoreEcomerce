@@ -4,7 +4,8 @@ import Badge from "@/components/ui/Badge.astro";
 import CloudinaryImage from "@/components/ui/CloudinaryImage.astro";
 import ProductAddToCart from "@/components/islands/ProductAddToCart";
 import PromotionBanner from "@/components/ui/PromotionBanner";
-import { supabase } from "@/lib/supabase";
+import RelatedProductsCarousel from "@/components/islands/RelatedProductsCarousel";
+import { supabase, getRelatedProducts } from "@/lib/supabase";
 import { getOptimizedUrl, isCloudinaryUrl } from "@/lib/cloudinary";
 import { formatPrice } from "@/lib/formatters";
 import { getShippingConfig, getSettings } from "@/lib/settings";
@@ -63,6 +64,11 @@ const getThumbnailUrl = (url: string) => {
 // Get shipping and store settings
 const shippingConfig = await getShippingConfig();
 const settings = await getSettings();
+
+// Get related products from the same category
+const relatedProducts = product.category?.id
+  ? await getRelatedProducts(product.category.id, product.id, 6)
+  : [];
 ---
 
 <PublicLayout
@@ -355,6 +361,11 @@ const settings = await getSettings();
         </div>
       </div>
     </div>
+
+    <!-- Related Products Carousel -->
+    {relatedProducts.length > 0 && (
+      <RelatedProductsCarousel client:load products={relatedProducts} />
+    )}
   </div>
 
   <script>
