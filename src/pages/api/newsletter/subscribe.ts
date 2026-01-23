@@ -5,10 +5,15 @@ import { resend } from '@/lib/email';
 import { isValidEmail, NEWSLETTER_CONFIG } from '@/lib/constants/newsletter';
 import { generateWelcomeHTML, getWelcomeSubject } from '@/lib/email-templates/newsletter-templates';
 
-// Create a dedicated anon client for newsletter operations (bypasses RLS issues)
+// Create service role client for newsletter operations (bypasses RLS for public operations)
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL as string;
-const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string;
-const anonClient = createClient(supabaseUrl, supabaseAnonKey, {
+const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY as string;
+
+if (!supabaseServiceKey) {
+  console.error('❌ SUPABASE_SERVICE_ROLE_KEY not found');
+}
+
+const serviceClient = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
     persistSession: false,
     autoRefreshToken: false,
@@ -72,7 +77,7 @@ export const POST: APIRoute = async ({ request, clientAddress, cookies }) => {
     }
 
     // Check if already subscribed
-    const { data: existing } = await anonClient
+    const { data: existing } = await serviceClient
       .from('newsletter_subscribers')
       .select('id, is_active, unsubscribe_token')
       .eq('email', normalizedEmail)
@@ -86,7 +91,7 @@ export const POST: APIRoute = async ({ request, clientAddress, cookies }) => {
         });
       } else {
         // Reactivate subscription
-        await anonClient
+        await serviceClient
           .from('newsletter_subscribers')
           .update({ is_active: true })
           .eq('id', existing.id);
@@ -110,7 +115,7 @@ export const POST: APIRoute = async ({ request, clientAddress, cookies }) => {
     }
 
     // Insert new subscriber and get the token
-    const { data: newSubscriber, error } = await anonClient
+    const { data: newSubscriber, error } = await serviceClient
       .from('newsletter_subscribers')
       .insert({ email: normalizedEmail })
       .select('unsubscribe_token')
@@ -156,7 +161,7 @@ async function checkRateLimit(ip: string): Promise<{ allowed: boolean }> {
 
   try {
     // Check existing rate limit record
-    const { data: existing } = await anonClient
+    const { data: existing } = await serviceClient
       .from('newsletter_rate_limits')
       .select('*')
       .eq('ip_address', ip)
@@ -170,7 +175,7 @@ async function checkRateLimit(ip: string): Promise<{ allowed: boolean }> {
       
       // If outside window, reset counter
       if (now.getTime() - firstAttempt.getTime() > windowMs) {
-        await anonClient
+        await serviceClient
           .from('newsletter_rate_limits')
           .update({
             attempts: 1,
@@ -187,7 +192,7 @@ async function checkRateLimit(ip: string): Promise<{ allowed: boolean }> {
       }
 
       // Increment counter
-      await anonClient
+      await serviceClient
         .from('newsletter_rate_limits')
         .update({
           attempts: existing.attempts + 1,
@@ -198,7 +203,7 @@ async function checkRateLimit(ip: string): Promise<{ allowed: boolean }> {
     }
 
     // New IP - create record
-    await anonClient.from('newsletter_rate_limits').insert({
+    await serviceClient.from('newsletter_rate_limits').insert({
       ip_address: ip,
       attempts: 1,
       first_attempt_at: now.toISOString(),
