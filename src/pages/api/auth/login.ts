@@ -1,6 +1,23 @@
 import type { APIRoute } from 'astro';
 import { supabase } from '@/lib/supabase';
 
+// Translation helper for Supabase error messages
+function translateSupabaseError(message: string): string {
+  const errorMap: Record<string, string> = {
+    'Invalid login credentials': 'Email o contraseña incorrectos',
+    'Email not confirmed': 'Por favor confirma tu email antes de continuar',
+    'User not found': 'El usuario no existe',
+    'Password too short': 'La contraseña es demasiado corta',
+    'Email address not confirmed': 'Email no confirmado. Revisa tu bandeja de entrada',
+    'User already registered': 'Este email ya está registrado',
+    'Authentication required': 'Autenticación requerida',
+    'Invalid or expired session': 'Sesión inválida o expirada',
+    'Too many requests': 'Demasiados intentos. Intenta más tarde',
+  };
+
+  return errorMap[message] || message;
+}
+
 export const POST: APIRoute = async ({ request, cookies }) => {
   console.log('🔐 [AUTH LOGIN] Request received');
   
@@ -56,8 +73,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         status: error.status,
         name: error.name
       });
+      const translatedError = translateSupabaseError(error.message);
       return new Response(
-        JSON.stringify({ error: error.message }),
+        JSON.stringify({ error: translatedError }),
         { status: 401, headers: { 'Content-Type': 'application/json' } }
       );
     }

@@ -1,6 +1,30 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
+// Translation helper for error messages
+function translateError(message: string): string {
+  const errorMap: Record<string, string> = {
+    'Invalid login credentials': 'Email o contraseña incorrectos',
+    'Email not confirmed': 'Por favor confirma tu email antes de continuar',
+    'User not found': 'El usuario no existe',
+    'Password too short': 'La contraseña es demasiado corta',
+    'Email address not confirmed': 'Email no confirmado. Revisa tu bandeja de entrada',
+    'User already registered': 'Este email ya está registrado',
+    'Authentication required': 'Autenticación requerida',
+    'Invalid or expired session': 'Sesión inválida o expirada',
+    'Too many requests': 'Demasiados intentos. Intenta más tarde',
+    'invalid_grant': 'Email o contraseña incorrectos',
+    'New password should be different from the old password': 'La nueva contraseña debe ser diferente a la anterior.',
+    'Password should be at least': 'La contraseña debe tener al menos 6 caracteres.',
+    'invalid JWT': 'Tu sesión ha expirado.',
+    'expired': 'Tu sesión ha expirado.',
+    'invalid_token': 'Token inválido o expirado.',
+    'not authenticated': 'No estás autenticado.',
+  };
+
+  return errorMap[message] || message;
+}
+
 export default function ResetPasswordForm() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -165,6 +189,8 @@ export default function ResetPasswordForm() {
       } else if (errorMessage.includes('not authenticated') || errorMessage.includes('401')) {
         errorMessage = '⏰ Tu enlace de recuperación no es válido o ha expirado. Por favor solicita uno nuevo.';
         setTokenExpired(true);
+      } else {
+        errorMessage = translateError(errorMessage);
       }
 
       setMessage({

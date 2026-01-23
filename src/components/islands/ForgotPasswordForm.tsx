@@ -1,6 +1,23 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
+// Translation helper for error messages
+function translateError(message: string): string {
+  const errorMap: Record<string, string> = {
+    'Invalid login credentials': 'Email o contraseña incorrectos',
+    'Email not confirmed': 'Por favor confirma tu email antes de continuar',
+    'User not found': 'El usuario no existe',
+    'Password too short': 'La contraseña es demasiado corta',
+    'Email address not confirmed': 'Email no confirmado. Revisa tu bandeja de entrada',
+    'User already registered': 'Este email ya está registrado',
+    'Authentication required': 'Autenticación requerida',
+    'Too many requests': 'Demasiados intentos. Intenta más tarde',
+    'invalid_grant': 'Email o contraseña incorrectos',
+  };
+
+  return errorMap[message] || message;
+}
+
 export default function ForgotPasswordForm() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,9 +44,10 @@ export default function ForgotPasswordForm() {
       // Clear email to prevent accidental double submission
       setEmail('');
     } catch (err: any) {
+      const translatedMessage = translateError(err.message || 'Error al enviar el correo de recuperación.');
       setMessage({
         type: 'error',
-        text: err.message || 'Error al enviar el correo de recuperación.',
+        text: translatedMessage,
       });
     } finally {
       setLoading(false);

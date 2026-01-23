@@ -6,6 +6,25 @@ interface AuthFormProps {
   redirectTo?: string;
 }
 
+// Translation helper for error messages
+function translateError(message: string): string {
+  const errorMap: Record<string, string> = {
+    'Invalid login credentials': 'Email o contraseña incorrectos',
+    'Email not confirmed': 'Por favor confirma tu email antes de continuar',
+    'User not found': 'El usuario no existe',
+    'Password too short': 'La contraseña es demasiado corta',
+    'Email address not confirmed': 'Email no confirmado. Revisa tu bandeja de entrada',
+    'User already registered': 'Este email ya está registrado',
+    'Authentication required': 'Autenticación requerida',
+    'Invalid or expired session': 'Sesión inválida o expirada',
+    'Too many requests': 'Demasiados intentos. Intenta más tarde',
+    'invalid_grant': 'Email o contraseña incorrectos',
+    'Acceso bloqueado por el firewall': 'Acceso bloqueado por el firewall. Contacta al administrador.',
+  };
+
+  return errorMap[message] || message;
+}
+
 export default function AuthForm({ mode, redirectTo = '/cuenta' }: AuthFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -51,7 +70,7 @@ export default function AuthForm({ mode, redirectTo = '/cuenta' }: AuthFormProps
         });
 
         if (signUpError) {
-          setError(signUpError.message);
+          setError(translateError(signUpError.message));
           setLoading(false);
           return;
         }
@@ -146,7 +165,8 @@ export default function AuthForm({ mode, redirectTo = '/cuenta' }: AuthFormProps
 
         if (!response.ok) {
           console.error('🔑 [CLIENT LOGIN] ❌ Login failed:', result.error);
-          setError(result.error || `Error al iniciar sesión (${response.status})`);
+          const translatedError = translateError(result.error || `Error al iniciar sesión (${response.status})`);
+          setError(translatedError);
           setLoading(false);
           return;
         }
