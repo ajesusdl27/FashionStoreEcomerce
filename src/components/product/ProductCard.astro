@@ -28,7 +28,8 @@ const hasOffer = product.is_offer && product.offer_price;
 const displayPrice = hasOffer ? product.offer_price : product.price;
 const totalStock = product.variants?.reduce((sum, v) => sum + v.stock, 0) || 0;
 const isLowStock = totalStock > 0 && totalStock <= 5;
-const availableSizes = product.variants?.filter(v => v.stock > 0).map(v => v.size) || [];
+const sizeOrder = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46'];
+const availableSizes = product.variants?.filter(v => v.stock > 0).map(v => v.size).sort((a, b) => sizeOrder.indexOf(a) - sizeOrder.indexOf(b)) || [];
 
 function calculateDiscount(original: number, offer: number): number {
   return Math.round(((original - offer) / original) * 100);

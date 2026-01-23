@@ -123,6 +123,25 @@ const sortedImages =
 
         <div>
           <label
+            for="sku"
+            class="block text-sm font-medium text-muted-foreground mb-2"
+          >
+            SKU (Auto-generado)
+            <span class="ml-2 text-xs text-muted-foreground/70" title="El SKU se genera automáticamente del UUID del producto">ℹ️</span>
+          </label>
+          <input
+            type="text"
+            id="sku"
+            name="sku"
+            readonly
+            value={product.id.slice(0, 8).toUpperCase()}
+            class="w-full px-4 py-3 bg-muted/50 border border-border rounded-lg text-foreground font-mono cursor-not-allowed"
+            title="Este SKU se genera automáticamente del UUID del producto y no puede modificarse"
+          />
+        </div>
+
+        <div>
+          <label
             for="description"
             class="block text-sm font-medium text-muted-foreground mb-2"
           >

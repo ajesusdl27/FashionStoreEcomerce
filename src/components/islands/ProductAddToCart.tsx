@@ -29,6 +29,9 @@ export default function ProductAddToCart({
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [showStickyBar, setShowStickyBar] = useState(false);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
+  const [height, setHeight] = useState('');
+  const [weight, setWeight] = useState('');
+  const [recommendedSize, setRecommendedSize] = useState<string | null>(null);
 
   // Sort variants by size order
   const sizeOrder = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46'];
@@ -49,6 +52,32 @@ export default function ProductAddToCart({
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Calculate recommended size based on height and weight
+  const calculateSize = () => {
+    const h = parseInt(height);
+    const w = parseInt(weight);
+
+    if (!h || !w || h < 140 || h > 210 || w < 40 || w > 150) {
+      setRecommendedSize('error');
+      return;
+    }
+
+    // Size calculation logic
+    if (w < 60 && h < 165) {
+      setRecommendedSize('XS');
+    } else if (w < 70 && h < 175) {
+      setRecommendedSize('S o M');
+    } else if (w < 75 && h < 180) {
+      setRecommendedSize('M');
+    } else if (w < 85 && h < 185) {
+      setRecommendedSize('L');
+    } else if (w < 95) {
+      setRecommendedSize('XL');
+    } else {
+      setRecommendedSize('XXL');
+    }
+  };
 
   const handleAddToCart = async () => {
     if (!selectedVariant || selectedVariant.stock <= 0) return;
@@ -340,36 +369,71 @@ export default function ProductAddToCart({
                 </>
               ) : (
                 <>
-                  <p className="text-muted-foreground text-sm">
-                    Mide tu cuerpo y compara con las medidas de la tabla. Si estás entre dos tallas, elige la más grande.
+                  <p className="text-muted-foreground text-sm mb-4">
+                    Ingresa tu altura y peso para obtener una recomendación personalizada de talla.
                   </p>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-border">
-                          <th className="py-2 px-3 text-left font-medium text-muted-foreground">Talla</th>
-                          <th className="py-2 px-3 text-left font-medium text-muted-foreground">Pecho (cm)</th>
-                          <th className="py-2 px-3 text-left font-medium text-muted-foreground">Cintura (cm)</th>
-                          <th className="py-2 px-3 text-left font-medium text-muted-foreground">Cadera (cm)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[
-                          ['XS', '82-87', '66-71', '86-91'],
-                          ['S', '88-93', '72-77', '92-97'],
-                          ['M', '94-99', '78-83', '98-103'],
-                          ['L', '100-105', '84-89', '104-109'],
-                          ['XL', '106-111', '90-95', '110-115'],
-                          ['XXL', '112-117', '96-101', '116-121'],
-                        ].map((row, i) => (
-                          <tr key={i} className="border-b border-border/50 hover:bg-muted/50">
-                            {row.map((cell, j) => (
-                              <td key={j} className={`py-2 px-3 ${j === 0 ? 'font-medium' : ''}`}>{cell}</td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  
+                  {/* Size Calculator Form */}
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="height" className="block text-sm font-medium mb-2">
+                          Altura (cm)
+                        </label>
+                        <input
+                          type="number"
+                          id="height"
+                          value={height}
+                          onChange={(e) => { setHeight(e.target.value); setRecommendedSize(null); }}
+                          placeholder="175"
+                          min="140"
+                          max="210"
+                          className="w-full px-3 py-2 bg-card border border-border rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="weight" className="block text-sm font-medium mb-2">
+                          Peso (kg)
+                        </label>
+                        <input
+                          type="number"
+                          id="weight"
+                          value={weight}
+                          onChange={(e) => { setWeight(e.target.value); setRecommendedSize(null); }}
+                          placeholder="70"
+                          min="40"
+                          max="150"
+                          className="w-full px-3 py-2 bg-card border border-border rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={calculateSize}
+                      disabled={!height || !weight}
+                      className="w-full py-2.5 bg-primary text-primary-foreground font-medium rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Calcular mi talla
+                    </button>
+
+                    {/* Recommendation Result */}
+                    {recommendedSize && recommendedSize !== 'error' && (
+                      <div className="bg-primary/10 border border-primary/30 rounded-lg p-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <p className="text-center">
+                          <span className="text-primary font-medium text-lg">✓ Te recomendamos la talla </span>
+                          <span className="text-primary font-bold text-xl">{recommendedSize}</span>
+                          <span className="text-primary font-medium text-lg"> basado en tus datos.</span>
+                        </p>
+                      </div>
+                    )}
+
+                    {recommendedSize === 'error' && (
+                      <div className="bg-accent/10 border border-accent/30 rounded-lg p-4">
+                        <p className="text-accent text-sm text-center">
+                          Por favor, ingresa valores válidos (altura: 140-210cm, peso: 40-150kg)
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </>
               )}
@@ -377,7 +441,7 @@ export default function ProductAddToCart({
               {/* Tips */}
               <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
                 <p className="text-sm">
-                  <span className="text-primary font-medium">💡 Consejo:</span>{' '}
+                  <span className="text-primary font-medium"> Consejo:</span>{' '}
                   Si tienes dudas, contacta con nosotros y te ayudaremos a encontrar tu talla perfecta.
                 </p>
               </div>
