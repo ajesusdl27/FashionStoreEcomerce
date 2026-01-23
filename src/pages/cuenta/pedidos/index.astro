@@ -99,6 +99,13 @@ function getStatusBadge(status: string) {
     shipped: { class: "bg-blue-500/20 text-blue-400", text: "Enviado" },
     delivered: { class: "bg-primary/20 text-primary", text: "Entregado" },
     cancelled: { class: "bg-accent/20 text-accent", text: "Cancelado" },
+    // Estados de devolución
+    return_requested: { class: "bg-amber-500/20 text-amber-400", text: "Dev. Solicitada" },
+    return_approved: { class: "bg-amber-500/20 text-amber-400", text: "Dev. Aprobada" },
+    return_shipped: { class: "bg-purple-500/20 text-purple-400", text: "Dev. Enviada" },
+    return_received: { class: "bg-cyan-500/20 text-cyan-400", text: "Dev. Recibida" },
+    return_completed: { class: "bg-emerald-500/20 text-emerald-400", text: "Reembolsado" },
+    partially_refunded: { class: "bg-amber-500/20 text-amber-400", text: "Reemb. Parcial" },
   };
   return badges[status] || { class: "bg-muted", text: status };
 }
@@ -127,10 +134,20 @@ function getStatusBadge(status: string) {
           onchange="window.location.href = this.value ? `/cuenta/pedidos?status=${this.value}` : '/cuenta/pedidos'"
         >
           <option value="" selected={!statusFilter}>Todos los estados</option>
-          <option value="paid" selected={statusFilter === "paid"}>Pagados</option>
-          <option value="shipped" selected={statusFilter === "shipped"}>Enviados</option>
-          <option value="delivered" selected={statusFilter === "delivered"}>Entregados</option>
-          <option value="cancelled" selected={statusFilter === "cancelled"}>Cancelados</option>
+          <optgroup label="Pedidos">
+            <option value="paid" selected={statusFilter === "paid"}>Pagados</option>
+            <option value="shipped" selected={statusFilter === "shipped"}>Enviados</option>
+            <option value="delivered" selected={statusFilter === "delivered"}>Entregados</option>
+            <option value="cancelled" selected={statusFilter === "cancelled"}>Cancelados</option>
+          </optgroup>
+          <optgroup label="Devoluciones">
+            <option value="return_requested" selected={statusFilter === "return_requested"}>Dev. Solicitada</option>
+            <option value="return_approved" selected={statusFilter === "return_approved"}>Dev. Aprobada</option>
+            <option value="return_shipped" selected={statusFilter === "return_shipped"}>Dev. Enviada</option>
+            <option value="return_received" selected={statusFilter === "return_received"}>Dev. Recibida</option>
+            <option value="return_completed" selected={statusFilter === "return_completed"}>Reembolsado</option>
+            <option value="partially_refunded" selected={statusFilter === "partially_refunded"}>Reemb. Parcial</option>
+          </optgroup>
         </select>
       </div>
     </div>

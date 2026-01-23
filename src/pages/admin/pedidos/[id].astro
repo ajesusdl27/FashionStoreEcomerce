@@ -109,22 +109,48 @@ const statusConfig: Record<
     textClass: "text-red-500",
     icon: XCircle,
   },
+  // Estados de devolución completos
   return_requested: {
     label: "Dev. Solicitada",
-    bgClass: "bg-orange-500/20",
-    textClass: "text-orange-500",
+    bgClass: "bg-amber-500/20",
+    textClass: "text-amber-500",
     icon: RotateCcw,
+  },
+  return_approved: {
+    label: "Dev. Aprobada",
+    bgClass: "bg-amber-500/20",
+    textClass: "text-amber-500",
+    icon: RotateCcw,
+  },
+  return_shipped: {
+    label: "Dev. Enviada",
+    bgClass: "bg-purple-500/20",
+    textClass: "text-purple-500",
+    icon: Truck,
+  },
+  return_received: {
+    label: "Dev. Recibida",
+    bgClass: "bg-cyan-500/20",
+    textClass: "text-cyan-500",
+    icon: Package,
   },
   return_completed: {
     label: "Reembolsado",
-    bgClass: "bg-purple-500/20",
-    textClass: "text-purple-500",
+    bgClass: "bg-emerald-500/20",
+    textClass: "text-emerald-500",
     icon: CheckCircle,
+  },
+  partially_refunded: {
+    label: "Reemb. Parcial",
+    bgClass: "bg-amber-500/20",
+    textClass: "text-amber-500",
+    icon: CreditCard,
   },
 };
 
 const statuses = ["pending", "paid", "shipped", "delivered", "cancelled"];
-const currentStatus = statusConfig[order.status] || statusConfig.pending;
+const currentStatusData = statusConfig[order.status] ?? statusConfig.pending;
+const currentStatus = currentStatusData as NonNullable<typeof currentStatusData>;
 const StatusIcon = currentStatus.icon;
 const isAlreadyShipped = order.status === "shipped" || order.status === "delivered";
 

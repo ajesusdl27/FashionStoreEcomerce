@@ -48,6 +48,26 @@ const navItems = [
   { icon: Package, label: 'Mis Pedidos', href: '/cuenta/pedidos', description: 'Historial de compras' },
   { icon: ShoppingBag, label: 'Explorar Tienda', href: '/productos', description: 'Ver productos' },
 ];
+
+// Status badge mappings
+interface StatusBadge {
+  badgeClass: string;
+  label: string;
+}
+
+const statusBadges: Record<string, StatusBadge> = {
+  pending: { badgeClass: 'bg-yellow-500/20 text-yellow-400', label: 'Pendiente' },
+  paid: { badgeClass: 'bg-emerald-500/20 text-emerald-400', label: 'Pagado' },
+  shipped: { badgeClass: 'bg-blue-500/20 text-blue-400', label: 'Enviado' },
+  delivered: { badgeClass: 'bg-primary/20 text-primary', label: 'Entregado' },
+  cancelled: { badgeClass: 'bg-red-500/20 text-red-400', label: 'Cancelado' },
+  return_requested: { badgeClass: 'bg-amber-500/20 text-amber-400', label: 'Dev. Solicitada' },
+  return_approved: { badgeClass: 'bg-amber-500/20 text-amber-400', label: 'Dev. Aprobada' },
+  return_shipped: { badgeClass: 'bg-purple-500/20 text-purple-400', label: 'Dev. Enviada' },
+  return_received: { badgeClass: 'bg-cyan-500/20 text-cyan-400', label: 'Dev. Recibida' },
+  return_completed: { badgeClass: 'bg-emerald-500/20 text-emerald-400', label: 'Reembolsado' },
+  partially_refunded: { badgeClass: 'bg-amber-500/20 text-amber-400', label: 'Reemb. Parcial' },
+};
 ---
 
 <PublicLayout title="Mi Cuenta - FashionStore">
@@ -199,29 +219,15 @@ const navItems = [
                     </div>
                   </div>
                   <div class="flex items-center gap-4">
-                    <span
-                      class={`badge ${
-                        order.status === "paid"
-                          ? "badge-success"
-                          : order.status === "shipped"
-                            ? "badge-info"
-                            : order.status === "delivered"
-                              ? "badge-primary"
-                              : order.status === "cancelled"
-                                ? "badge-danger"
-                                : "badge-warning"
-                      }`}
-                    >
-                      {order.status === "paid"
-                        ? "Pagado"
-                        : order.status === "shipped"
-                          ? "Enviado"
-                          : order.status === "delivered"
-                            ? "Entregado"
-                            : order.status === "cancelled"
-                              ? "Cancelado"
-                              : "Pendiente"}
-                    </span>
+                    {Object.keys(statusBadges).includes(order.status) ? (
+                      <span class={`badge ${statusBadges[order.status as keyof typeof statusBadges].badgeClass}`}>
+                        {statusBadges[order.status as keyof typeof statusBadges].label}
+                      </span>
+                    ) : (
+                      <span class="badge bg-muted">
+                        {order.status}
+                      </span>
+                    )}
                     <span class="font-bold">
                       {formatPrice(order.total_amount)}
                     </span>

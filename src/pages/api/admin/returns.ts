@@ -1,6 +1,13 @@
 import type { APIRoute } from "astro";
 import { createAuthenticatedClient } from "@/lib/supabase";
-import { sendReturnApproved, sendReturnRejected, sendRefundProcessed } from "@/lib/email";
+import { 
+  sendReturnApprovedEmail, 
+  sendReturnRejectedEmail, 
+  sendReturnReceivedEmail,
+  sendReturnCompletedEmail,
+  type ReturnEmailData 
+} from "@/lib/email";
+import { stripe } from "@/lib/stripe";
 
 export const prerender = false;
 
@@ -165,6 +172,65 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       );
     }
 
+    // Process Stripe refund when completing the return
+    let refundProcessed = false;
+    let refundAmount = 0;
+    
+    if (action === "complete") {
+      try {
+        // Fetch return with order data for Stripe refund
+        const { data: returnForRefund } = await supabase
+          .from("returns")
+          .select(`
+            id,
+            refund_amount,
+            orders:order_id (
+              id,
+              stripe_session_id,
+              total_amount
+            )
+          `)
+          .eq("id", return_id)
+          .single();
+
+        if (returnForRefund?.orders?.stripe_session_id && returnForRefund.refund_amount > 0) {
+          const order = Array.isArray(returnForRefund.orders) 
+            ? returnForRefund.orders[0] 
+            : returnForRefund.orders;
+          
+          if (order?.stripe_session_id) {
+            // Retrieve the checkout session to get payment intent
+            const session = await stripe.checkout.sessions.retrieve(order.stripe_session_id);
+            
+            if (session.payment_intent) {
+              const paymentIntentId = typeof session.payment_intent === 'string' 
+                ? session.payment_intent 
+                : session.payment_intent.id;
+              
+              // Calculate refund amount in cents
+              const refundAmountCents = Math.round(returnForRefund.refund_amount * 100);
+              
+              // Create the refund in Stripe
+              const refund = await stripe.refunds.create({
+                payment_intent: paymentIntentId,
+                amount: refundAmountCents,
+                reason: 'requested_by_customer',
+              });
+              
+              refundProcessed = refund.status === 'succeeded' || refund.status === 'pending';
+              refundAmount = returnForRefund.refund_amount;
+              
+              console.log(`✅ Stripe refund ${refund.id} created for return ${return_id}: ${refundAmount}€`);
+            }
+          }
+        }
+      } catch (stripeError: any) {
+        console.error("❌ Stripe refund error:", stripeError);
+        // Don't fail the request if Stripe refund fails - admin can process manually
+        // But log the error for debugging
+      }
+    }
+
     // Send email notifications based on action
     let emailSent = false;
     try {
@@ -190,36 +256,31 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
         
         if (!order) {
           console.warn("No order data found for return email");
-        } else if (action === "approve") {
-          const result = await sendReturnApproved({
+        } else {
+          // Prepare email data
+          const emailData: ReturnEmailData = {
             returnId: returnData.id,
-            orderId: order.id,
             orderNumber: order.order_number,
             customerName: order.customer_name,
             customerEmail: order.customer_email,
-            returnLabelUrl: return_label_url,
-          });
-          emailSent = result.success;
-        } else if (action === "reject") {
-          const result = await sendReturnRejected({
-            returnId: returnData.id,
-            orderId: order.id,
-            orderNumber: order.order_number,
-            customerName: order.customer_name,
-            customerEmail: order.customer_email,
+            status: action as ReturnEmailData['status'],
+            refundAmount: Number(returnData.refund_amount) || 0,
             rejectionReason: rejection_reason,
-          });
-          emailSent = result.success;
-        } else if (action === "complete") {
-          const result = await sendRefundProcessed({
-            returnId: returnData.id,
-            orderId: order.id,
-            orderNumber: order.order_number,
-            customerName: order.customer_name,
-            customerEmail: order.customer_email,
-            amount: Number(returnData.refund_amount) || 0,
-          });
-          emailSent = result.success;
+          };
+
+          if (action === "approve") {
+            const result = await sendReturnApprovedEmail(emailData);
+            emailSent = result.success;
+          } else if (action === "reject") {
+            const result = await sendReturnRejectedEmail(emailData);
+            emailSent = result.success;
+          } else if (action === "receive") {
+            const result = await sendReturnReceivedEmail(emailData);
+            emailSent = result.success;
+          } else if (action === "complete") {
+            const result = await sendReturnCompletedEmail(emailData);
+            emailSent = result.success;
+          }
         }
       }
     } catch (emailError) {
@@ -227,11 +288,24 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       // Don't fail the request if email fails
     }
 
+    // Build response message with refund info
+    let message = `Devolución ${action === "approve" ? "aprobada" : action === "reject" ? "rechazada" : action === "receive" ? "marcada como recibida" : "completada"}`;
+    
+    if (action === "complete") {
+      if (refundProcessed) {
+        message += ` y reembolso de ${refundAmount.toFixed(2)}€ procesado en Stripe`;
+      } else if (refundAmount > 0) {
+        message += ` (reembolso de ${refundAmount.toFixed(2)}€ pendiente de procesar manualmente)`;
+      }
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 
         emailSent,
-        message: `Devolución ${action === "approve" ? "aprobada" : action === "reject" ? "rechazada" : action === "receive" ? "marcada como recibida" : "completada"}` 
+        refundProcessed,
+        refundAmount,
+        message
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );

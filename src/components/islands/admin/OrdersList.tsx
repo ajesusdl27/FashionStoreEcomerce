@@ -33,7 +33,7 @@ interface OrdersListProps {
   initialStatus: string;
 }
 
-type OrderStatus = 'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled' | 'return_requested' | 'return_completed';
+type OrderStatus = 'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled' | 'return_requested' | 'return_approved' | 'return_shipped' | 'return_received' | 'return_completed' | 'partially_refunded';
 
 const statusConfig: Record<OrderStatus, { 
   label: string; 
@@ -79,17 +79,45 @@ const statusConfig: Record<OrderStatus, {
   },
   return_requested: {
     label: 'Dev. Solicitada',
-    bgClass: 'bg-orange-500/20',
-    textClass: 'text-orange-500',
-    borderColor: 'border-l-orange-500',
-    tabColor: 'bg-orange-500',
+    bgClass: 'bg-amber-500/20',
+    textClass: 'text-amber-500',
+    borderColor: 'border-l-amber-500',
+    tabColor: 'bg-amber-500',
   },
-  return_completed: {
-    label: 'Reembolsado',
+  return_approved: {
+    label: 'Dev. Aprobada',
+    bgClass: 'bg-amber-500/20',
+    textClass: 'text-amber-500',
+    borderColor: 'border-l-amber-500',
+    tabColor: 'bg-amber-500',
+  },
+  return_shipped: {
+    label: 'Dev. Enviada',
     bgClass: 'bg-purple-500/20',
     textClass: 'text-purple-500',
     borderColor: 'border-l-purple-500',
     tabColor: 'bg-purple-500',
+  },
+  return_received: {
+    label: 'Dev. Recibida',
+    bgClass: 'bg-cyan-500/20',
+    textClass: 'text-cyan-500',
+    borderColor: 'border-l-cyan-500',
+    tabColor: 'bg-cyan-500',
+  },
+  return_completed: {
+    label: 'Reembolsado',
+    bgClass: 'bg-emerald-500/20',
+    textClass: 'text-emerald-500',
+    borderColor: 'border-l-emerald-500',
+    tabColor: 'bg-emerald-500',
+  },
+  partially_refunded: {
+    label: 'Reembolso Parcial',
+    bgClass: 'bg-teal-500/20',
+    textClass: 'text-teal-500',
+    borderColor: 'border-l-teal-500',
+    tabColor: 'bg-teal-500',
   },
 };
 
@@ -100,6 +128,7 @@ const statusTabs = [
   { value: 'shipped', label: 'Enviados' },
   { value: 'delivered', label: 'Entregados' },
   { value: 'cancelled', label: 'Cancelados' },
+  { value: 'return_requested', label: 'Devoluciones' },
 ];
 
 export default function OrdersList({ 

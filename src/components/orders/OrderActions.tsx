@@ -49,6 +49,12 @@ export default function OrderActions({
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [existingReturn, setExistingReturn] = useState<any>(null);
+  const [isLoadingReturn, setIsLoadingReturn] = useState(true); // NEW: Track loading state
+  
+  // State for shipping the return
+  const [trackingNumber, setTrackingNumber] = useState('');
+  const [isMarkingShipped, setIsMarkingShipped] = useState(false);
+  const [showTrackingInput, setShowTrackingInput] = useState(false);
   
   // Return form state
   const [selectedItems, setSelectedItems] = useState<{[key: string]: {
@@ -78,22 +84,68 @@ export default function OrderActions({
   // Check for existing return
   useEffect(() => {
     const checkExistingReturn = async () => {
-      const { data } = await supabase
-        .from('returns')
-        .select('id, status')
-        .eq('order_id', orderId)
-        .not('status', 'in', '(rejected,completed)')
-        .maybeSingle();
       
-      if (data) {
-        setExistingReturn(data);
+      try {
+        // Use API endpoint instead of direct Supabase query (client has no auth session)
+        const response = await fetch(`/api/returns/get-by-order?order_id=${orderId}`);
+        const result = await response.json();
+        
+        if (response.ok && result.return) {
+          setExistingReturn(result.return);
+        } else if (result.error) {
+          console.error('Error fetching return:', result.error);
+        }
+      } catch (err) {
+        console.error('❌ Error checking return:', err);
+      } finally {
+        setIsLoadingReturn(false);
       }
     };
     
-    if (orderStatus === 'delivered') {
+    // Check for returns when delivered OR when order has a return status
+    const qualifies = orderStatus === 'delivered' || orderStatus?.startsWith?.('return_');
+    
+    if (qualifies) {
       checkExistingReturn();
+    } else {
+      setIsLoadingReturn(false); // Not checking, so stop loading
     }
   }, [orderId, orderStatus]);
+
+  // Handle marking return as shipped
+  const handleMarkReturnShipped = async () => {
+    if (!existingReturn?.id) return;
+    
+    setIsMarkingShipped(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/returns/ship', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          return_id: existingReturn.id,
+          tracking_number: trackingNumber || null,
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Error al marcar como enviada');
+      }
+      
+      setSuccess('¡Devolución marcada como enviada! Te notificaremos cuando la recibamos.');
+      setExistingReturn({ ...existingReturn, status: 'shipped' });
+      setShowTrackingInput(false);
+      setTrackingNumber('');
+    } catch (err: any) {
+      console.error('Error marking return as shipped:', err);
+      setError(err.message || 'Error al marcar la devolución como enviada');
+    } finally {
+      setIsMarkingShipped(false);
+    }
+  };
 
   const handleCancelOrder = async () => {
     if (!confirm('¿Estás seguro de que deseas cancelar este pedido? Esta acción no se puede deshacer.')) {
@@ -208,16 +260,53 @@ export default function OrderActions({
 
   const isReturnWindowValid = () => {
     if (!deliveredAt) return true; // If no delivery date, allow
-    const delivered = new Date(deliveredAt);
-    const now = new Date();
-    const daysSince = Math.floor((now.getTime() - delivered.getTime()) / (1000 * 60 * 60 * 24));
-    return daysSince <= 30;
+    const deliveryDate = new Date(deliveredAt);
+    const today = new Date();
+    const daysSinceDelivery = Math.floor((today.getTime() - deliveryDate.getTime()) / (1000 * 60 * 60 * 24));
+    return daysSinceDelivery <= 30;
+  };
+
+  const handleMarkShipped = async (returnId: string, tracking?: string) => {
+    setError(null);
+    setSuccess(null);
+    setIsMarkingShipped(true);
+
+    try {
+      const response = await fetch(`/api/returns/${returnId}/mark-shipped`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tracking_number: tracking }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Error al marcar como enviado');
+      }
+
+      setSuccess('✅ Devolución marcada como enviada');
+      setExistingReturn({ ...existingReturn, status: 'shipped' });
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsMarkingShipped(false);
+    }
   };
 
   const canCancel = orderStatus === 'paid';
   const canRequestReturn = orderStatus === 'delivered' && !existingReturn && isReturnWindowValid();
+  const hasExistingReturn = !!existingReturn;
 
-  if (!canCancel && !canRequestReturn && !existingReturn) {
+  // Wait for return check to complete before deciding to hide component
+  if (isLoadingReturn) {
+    return <div className="glass border border-border rounded-2xl p-6 animate-pulse">
+      <div className="h-4 bg-muted rounded w-1/2"></div>
+    </div>;
+  }
+
+  const willRender = canCancel || canRequestReturn || hasExistingReturn;
+
+  if (!willRender) {
     return null;
   }
 
@@ -304,6 +393,86 @@ export default function OrderActions({
                   </svg>
                   <p className="text-xs text-muted-foreground">
                     Incluye el número de pedido en el paquete. El reembolso se procesará en 5-7 días hábiles tras recibir el artículo.
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            {/* Mark as Shipped Button - Only show when approved */}
+            {(() => {
+              const shouldShowButton = existingReturn.status === 'approved';
+              console.log('🔘 Button visibility check:', {
+                returnStatus: existingReturn.status,
+                shouldShowButton,
+                existingReturn
+              });
+              return shouldShowButton;
+            })() && (
+              <div className="bg-muted/30 border-t border-current/10 p-4 space-y-3">
+                {!showTrackingInput ? (
+                  <button
+                    onClick={() => setShowTrackingInput(true)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                    </svg>
+                    He enviado mi paquete
+                  </button>
+                ) : (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">
+                        Número de seguimiento (opcional)
+                      </label>
+                      <input
+                        type="text"
+                        value={trackingNumber}
+                        onChange={(e) => setTrackingNumber(e.target.value)}
+                        placeholder="Ej: 1Z999AA10123456784"
+                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:ring-2 focus:ring-primary focus:border-primary"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setShowTrackingInput(false);
+                          setTrackingNumber('');
+                        }}
+                        className="flex-1 px-4 py-2 bg-muted text-muted-foreground font-medium rounded-lg hover:bg-muted/80 transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleMarkReturnShipped}
+                        disabled={isMarkingShipped}
+                        className="flex-1 px-4 py-2 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+                      >
+                        {isMarkingShipped ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Enviando...
+                          </span>
+                        ) : 'Confirmar envío'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Show shipped status message */}
+            {existingReturn.status === 'shipped' && (
+              <div className="bg-purple-500/10 border-t border-purple-500/20 p-4">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <p className="text-sm text-purple-500 font-medium">
+                    Tu paquete está en camino. Te notificaremos cuando lo recibamos.
                   </p>
                 </div>
               </div>

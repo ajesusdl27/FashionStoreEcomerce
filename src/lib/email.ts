@@ -1,5 +1,12 @@
 import { Resend } from 'resend';
 import { generateOrderConfirmationHTML, generateOrderShippedHTML, type EmailTemplateOptions } from './email-templates';
+import { 
+  generateReturnApprovedHTML, 
+  generateReturnReceivedHTML, 
+  generateReturnCompletedHTML, 
+  generateReturnRejectedHTML,
+  type ReturnEmailData 
+} from './email-templates-returns';
 import { generateTicketPDF } from './pdf-generator';
 import { formatOrderId } from './order-utils';
 import { getContactInfo } from './settings';
@@ -834,6 +841,161 @@ export async function sendOrderCancelled(data: CancellationEmailData): Promise<{
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
     console.error('Exception sending order cancelled email:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+// ==================================================
+// EMAIL FUNCTIONS PARA DEVOLUCIONES
+// ==================================================
+
+// Re-export type for convenience
+export type { ReturnEmailData };
+
+/**
+ * Envía email de devolución aprobada
+ */
+export async function sendReturnApprovedEmail(data: ReturnEmailData): Promise<{ success: boolean; error?: string }> {
+  console.log('📧 [RETURN-EMAIL] Sending return approved email to:', data.customerEmail);
+  
+  if (!resend) {
+    console.warn('📧 [RETURN-EMAIL] Resend not configured - skipping email');
+    return { success: false, error: 'Email service not configured' };
+  }
+
+  try {
+    const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
+    const templateOptions = await getEmailTemplateOptions();
+    const displayId = formatOrderId(data.orderNumber);
+    
+    const { error } = await resend.emails.send({
+      from: fromEmail,
+      to: data.customerEmail,
+      subject: `✓ Devolución aprobada - Pedido ${displayId}`,
+      html: generateReturnApprovedHTML(data, templateOptions),
+    });
+
+    if (error) {
+      console.error('📧 [RETURN-EMAIL] Error sending return approved email:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('📧 [RETURN-EMAIL] ✅ Return approved email sent successfully');
+    return { success: true };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error('📧 [RETURN-EMAIL] Exception:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Envía email de devolución recibida en almacén
+ */
+export async function sendReturnReceivedEmail(data: ReturnEmailData): Promise<{ success: boolean; error?: string }> {
+  console.log('📧 [RETURN-EMAIL] Sending return received email to:', data.customerEmail);
+  
+  if (!resend) {
+    console.warn('📧 [RETURN-EMAIL] Resend not configured - skipping email');
+    return { success: false, error: 'Email service not configured' };
+  }
+
+  try {
+    const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
+    const templateOptions = await getEmailTemplateOptions();
+    const displayId = formatOrderId(data.orderNumber);
+    
+    const { error } = await resend.emails.send({
+      from: fromEmail,
+      to: data.customerEmail,
+      subject: `📦 Hemos recibido tu devolución - Pedido ${displayId}`,
+      html: generateReturnReceivedHTML(data, templateOptions),
+    });
+
+    if (error) {
+      console.error('📧 [RETURN-EMAIL] Error sending return received email:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('📧 [RETURN-EMAIL] ✅ Return received email sent successfully');
+    return { success: true };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error('📧 [RETURN-EMAIL] Exception:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Envía email de reembolso completado
+ */
+export async function sendReturnCompletedEmail(data: ReturnEmailData): Promise<{ success: boolean; error?: string }> {
+  console.log('📧 [RETURN-EMAIL] Sending return completed email to:', data.customerEmail);
+  
+  if (!resend) {
+    console.warn('📧 [RETURN-EMAIL] Resend not configured - skipping email');
+    return { success: false, error: 'Email service not configured' };
+  }
+
+  try {
+    const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
+    const templateOptions = await getEmailTemplateOptions();
+    const displayId = formatOrderId(data.orderNumber);
+    
+    const { error } = await resend.emails.send({
+      from: fromEmail,
+      to: data.customerEmail,
+      subject: `💰 ¡Reembolso procesado! - Pedido ${displayId}`,
+      html: generateReturnCompletedHTML(data, templateOptions),
+    });
+
+    if (error) {
+      console.error('📧 [RETURN-EMAIL] Error sending return completed email:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('📧 [RETURN-EMAIL] ✅ Return completed email sent successfully');
+    return { success: true };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error('📧 [RETURN-EMAIL] Exception:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Envía email de devolución rechazada
+ */
+export async function sendReturnRejectedEmail(data: ReturnEmailData): Promise<{ success: boolean; error?: string }> {
+  console.log('📧 [RETURN-EMAIL] Sending return rejected email to:', data.customerEmail);
+  
+  if (!resend) {
+    console.warn('📧 [RETURN-EMAIL] Resend not configured - skipping email');
+    return { success: false, error: 'Email service not configured' };
+  }
+
+  try {
+    const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
+    const templateOptions = await getEmailTemplateOptions();
+    const displayId = formatOrderId(data.orderNumber);
+    
+    const { error } = await resend.emails.send({
+      from: fromEmail,
+      to: data.customerEmail,
+      subject: `Actualización sobre tu devolución - Pedido ${displayId}`,
+      html: generateReturnRejectedHTML(data, templateOptions),
+    });
+
+    if (error) {
+      console.error('📧 [RETURN-EMAIL] Error sending return rejected email:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('📧 [RETURN-EMAIL] ✅ Return rejected email sent successfully');
+    return { success: true };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error('📧 [RETURN-EMAIL] Exception:', errorMessage);
     return { success: false, error: errorMessage };
   }
 }

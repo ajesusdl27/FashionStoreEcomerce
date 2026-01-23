@@ -84,6 +84,7 @@ const statusCounts = {
   all: returns?.length || 0,
   requested: returns?.filter((r: any) => r.status === "requested").length || 0,
   approved: returns?.filter((r: any) => r.status === "approved").length || 0,
+  shipped: returns?.filter((r: any) => r.status === "shipped").length || 0,
   received: returns?.filter((r: any) => r.status === "received").length || 0,
   completed: returns?.filter((r: any) => r.status === "completed").length || 0,
 };
@@ -136,6 +137,16 @@ const statusCounts = {
         }`}
       >
         Aprobadas ({statusCounts.approved})
+      </a>
+      <a
+        href="/admin/devoluciones?status=shipped"
+        class={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          statusFilter === "shipped"
+            ? "bg-purple-500 text-white"
+            : "bg-purple-500/10 hover:bg-purple-500/20 text-purple-500"
+        }`}
+      >
+        Enviadas ({statusCounts.shipped})
       </a>
       <a
         href="/admin/devoluciones?status=received"

@@ -102,6 +102,39 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
+    // Build map of order items for validation
+    const orderItemsMap = new Map(
+      (order.order_items || []).map((oi: any) => [oi.id, oi])
+    );
+
+    // Validate quantities before creating return
+    for (const item of items) {
+      const orderItem = orderItemsMap.get(item.order_item_id);
+      
+      if (!orderItem) {
+        return new Response(
+          JSON.stringify({ error: `Artículo ${item.order_item_id} no encontrado en el pedido` }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      
+      if (item.quantity <= 0) {
+        return new Response(
+          JSON.stringify({ error: "La cantidad a devolver debe ser mayor que 0" }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      
+      if (item.quantity > orderItem.quantity) {
+        return new Response(
+          JSON.stringify({ 
+            error: `No puedes devolver más de ${orderItem.quantity} unidades del artículo. Has solicitado ${item.quantity}.` 
+          }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // Create the return request
     const { data: newReturn, error: returnError } = await supabase
       .from("returns")
@@ -122,11 +155,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Insert return items with calculated refund_amount
-    const orderItemsMap = new Map(
-      (order.order_items || []).map((oi: any) => [oi.id, oi])
-    );
-    
+    // Insert return items with calculated refund_amount (orderItemsMap already built above)
     let totalEstimatedRefund = 0;
     const returnItems = items.map((item: any) => {
       const orderItem = orderItemsMap.get(item.order_item_id);
