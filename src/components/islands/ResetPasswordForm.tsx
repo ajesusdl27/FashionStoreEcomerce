@@ -12,6 +12,43 @@ export default function ResetPasswordForm() {
   useEffect(() => {
     let mounted = true;
 
+    // Check for error parameters in URL hash
+    const checkUrlErrors = () => {
+      if (typeof window === 'undefined') return;
+      
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      
+      const error = params.get('error');
+      const errorCode = params.get('error_code');
+      const errorDescription = params.get('error_description');
+
+      if (error || errorCode) {
+        console.log('Auth error detected:', { error, errorCode, errorDescription });
+        
+        let errorMessage = errorDescription ? decodeURIComponent(errorDescription) : 'Error en la autenticación';
+        
+        // Translate common error codes
+        if (errorCode === 'otp_expired' || errorCode === 'invalid_otp') {
+          errorMessage = '⏰ Tu enlace de recuperación ha expirado. Los enlaces son válidos por 1 hora. Por favor solicita uno nuevo.';
+        } else if (errorCode === 'access_denied') {
+          errorMessage = '⏰ El enlace no es válido o ha expirado. Por favor solicita uno nuevo.';
+        }
+        
+        setMessage({
+          type: 'error',
+          text: errorMessage,
+        });
+        setTokenExpired(true);
+        setSessionReady(true);
+        
+        // Clean up URL hash
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    };
+
+    checkUrlErrors();
+
     // Listen for PASSWORD_RECOVERY event - this fires when user clicks recovery link
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('ResetPasswordForm auth event:', event);
