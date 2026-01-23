@@ -10,57 +10,87 @@
 // ============================================
 
 /**
- * Valida formato de email según RFC 5322 simplificado
+ * Valida formato de email según RFC 5322 mejorado
+ * Rechaza: a@b.c (sin TLD válido), emails sin punto después @
  */
 export const validateEmail = (email: string): boolean => {
   if (!email) return false;
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email.trim());
+  const trimmed = email.trim().toLowerCase();
+  // RFC 5322 mejorado: requiere TLD de al menos 2 caracteres
+  const emailRegex = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
+  return emailRegex.test(trimmed) && trimmed.length <= 254;
 };
 
 /**
- * Valida código postal español (01001-52999)
+ * Valida código postal español (00000-52999)
  * Los códigos postales españoles tienen 5 dígitos:
- * - Primeros 2 dígitos: provincia (01-52)
+ * - Primeros 2 dígitos: provincia (00-52)
  * - Últimos 3 dígitos: zona dentro de la provincia
+ * Acepta: 00000-00999 (parciales Canarias), 01000-52999 (todo territorio)
  */
 export const validatePostalCode = (code: string): boolean => {
   if (!code) return false;
-  // Acepta códigos de 01000 a 52999
-  return /^(?:0[1-9]|[1-4]\d|5[0-2])\d{3}$/.test(code.trim());
+  const trimmed = code.trim();
+  // Acepta códigos de 00000 a 52999
+  return /^(?:[0-4]\d|5[0-2])\d{3}$/.test(trimmed) && trimmed.length === 5;
 };
 
 /**
  * Valida teléfono español (opcional)
  * Acepta móviles (6xx, 7xx) y fijos (8xx, 9xx)
- * 9 dígitos sin espacios ni guiones
+ * EXACTAMENTE 9 dígitos sin espacios ni guiones
  */
 export const validatePhone = (phone: string): boolean => {
   if (!phone) return true; // Es opcional
-  const cleaned = phone.replace(/[\s\-\.]/g, '');
-  // Móviles: 6xx, 7xx | Fijos: 8xx, 9xx
-  return /^[6789]\d{8}$/.test(cleaned);
+  const cleaned = phone.replace(/[\s\-\.]/g, '').trim();
+  // Móviles: 6xx, 7xx | Fijos: 8xx, 9xx - EXACTAMENTE 9 dígitos
+  return /^[6789]\d{8}$/.test(cleaned) && cleaned.length === 9;
 };
 
 /**
- * Valida nombre (no vacío, mínimo 2 caracteres)
+ * Sanitiza campos de texto (nombre, dirección, ciudad)
+ * Rechaza caracteres especiales peligrosos
+ */
+export const sanitizeTextField = (value: string): string => {
+  if (!value) return '';
+  // Rechaza: < > / \ { } ( ) [ ] ; : ' " & caracteres de control
+  return value
+    .replace(/[<>\/\\{}\\'\"&;:\[\]()]/g, '')
+    .replace(/\s+/g, ' ') // Normaliza espacios múltiples
+    .trim();
+};
+
+/**
+ * Valida que el texto sanitizado sea seguro (sin cambios significativos)
+ */
+export const isTextSafe = (original: string, sanitized: string): boolean => {
+  // Si el texto sanitizado cambió más del 10% de caracteres, rechazar
+  const maxRemovable = Math.ceil(original.length * 0.1);
+  return original.length - sanitized.length <= maxRemovable;
+};
+
+/**
+ * Valida nombre (no vacío, mínimo 2 caracteres, sin caracteres especiales)
  */
 export const validateName = (name: string): boolean => {
-  return name?.trim().length >= 2;
+  const sanitized = sanitizeTextField(name);
+  return sanitized.length >= 2 && isTextSafe(name, sanitized);
 };
 
 /**
- * Valida dirección (no vacía, mínimo 5 caracteres)
+ * Valida dirección (no vacía, mínimo 5 caracteres, sin caracteres especiales)
  */
 export const validateAddress = (address: string): boolean => {
-  return address?.trim().length >= 5;
+  const sanitized = sanitizeTextField(address);
+  return sanitized.length >= 5 && isTextSafe(address, sanitized);
 };
 
 /**
- * Valida ciudad (no vacía, mínimo 2 caracteres)
+ * Valida ciudad (no vacía, mínimo 2 caracteres, sin caracteres especiales)
  */
 export const validateCity = (city: string): boolean => {
-  return city?.trim().length >= 2;
+  const sanitized = sanitizeTextField(city);
+  return sanitized.length >= 2 && isTextSafe(city, sanitized);
 };
 
 // ============================================
@@ -70,22 +100,22 @@ export const validateCity = (city: string): boolean => {
 export const ValidationMessages = {
   customerName: {
     required: 'Por favor, introduce tu nombre completo',
-    invalid: 'El nombre debe tener al menos 2 caracteres',
+    invalid: 'El nombre debe tener al menos 2 caracteres y sin caracteres especiales',
   },
   customerEmail: {
     required: 'Por favor, introduce tu email',
-    invalid: 'Introduce un email válido (ejemplo: tu@email.com)',
+    invalid: 'Introduce un email válido con TLD (ejemplo: tu@email.com)',
   },
   customerPhone: {
-    invalid: 'El teléfono debe tener 9 dígitos (ejemplo: 612345678)',
+    invalid: 'El teléfono debe tener exactamente 9 dígitos (ejemplo: 612345678)',
   },
   shippingAddress: {
     required: 'Por favor, introduce tu dirección de envío',
-    invalid: 'La dirección debe tener al menos 5 caracteres',
+    invalid: 'La dirección debe tener al menos 5 caracteres y sin caracteres especiales',
   },
   shippingCity: {
     required: 'Por favor, introduce tu ciudad',
-    invalid: 'Introduce una ciudad válida',
+    invalid: 'Introduce una ciudad válida sin caracteres especiales',
   },
   shippingPostalCode: {
     required: 'Por favor, introduce tu código postal',
@@ -222,7 +252,7 @@ export const validateCheckoutForm = (data: CheckoutFormData): ValidationResult =
 };
 
 // ============================================
-// UTILIDADES
+// UTILIDADES DE FORMATO
 // ============================================
 
 /**

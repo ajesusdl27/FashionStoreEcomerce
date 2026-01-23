@@ -9,6 +9,7 @@ import {
   cleanPostalCode, 
   cleanPhone,
   validateEmail,
+  sanitizeTextField,
   type FieldName 
 } from '@/lib/validators';
 
@@ -123,6 +124,9 @@ export default function CheckoutForm({
       cleanedValue = cleanPostalCode(value);
     } else if (field === 'customerPhone') {
       cleanedValue = cleanPhone(value);
+    } else if (field === 'customerName' || field === 'shippingAddress' || field === 'shippingCity') {
+      // Sanitize text fields to prevent XSS
+      cleanedValue = sanitizeTextField(value);
     }
     
     setFormData(prev => ({ ...prev, [field]: cleanedValue }));
@@ -479,7 +483,6 @@ export default function CheckoutForm({
                 type="tel"
                 placeholder="612345678"
                 autoComplete="tel"
-                maxLength={9}
                 required={false}
                 helpText="Para contactarte si hay algún problema con el envío"
               />

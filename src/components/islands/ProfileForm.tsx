@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { cleanPhone, cleanPostalCode, sanitizeTextField } from '@/lib/validators';
 
 interface ProfileData {
   full_name: string;
@@ -40,7 +41,18 @@ export default function ProfileForm({ initialData }: Props) {
   }, [initialData]);
 
   const updateField = (field: keyof ProfileData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    let cleanedValue = value;
+    
+    // Apply cleaning/sanitization based on field type
+    if (field === 'phone') {
+      cleanedValue = cleanPhone(value);
+    } else if (field === 'default_postal_code') {
+      cleanedValue = cleanPostalCode(value);
+    } else if (field === 'full_name' || field === 'default_address' || field === 'default_city') {
+      cleanedValue = sanitizeTextField(value);
+    }
+    
+    setFormData(prev => ({ ...prev, [field]: cleanedValue }));
     setMessage(null);
   };
 
