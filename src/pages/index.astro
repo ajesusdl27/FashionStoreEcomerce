@@ -18,6 +18,19 @@ import {
 
 const now = new Date();
 
+// Check for authentication errors in URL and redirect if needed
+const url = new URL(Astro.request.url);
+const hashParams = url.hash.substring(1); // Get hash params
+const params = new URLSearchParams(hashParams);
+
+const error = params.get('error');
+const errorCode = params.get('error_code');
+
+if (error || errorCode === 'otp_expired') {
+  // Redirect to reset password page with error parameters
+  return Astro.redirect(`/cuenta/reset-password#${hashParams}`);
+}
+
 // Fetch store settings for dynamic values
 const settings = await getSettings();
 const shippingConfig = await getShippingConfig();
