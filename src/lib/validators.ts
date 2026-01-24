@@ -52,7 +52,7 @@ export const validatePhone = (phone: string): boolean => {
  * Rechaza caracteres especiales peligrosos
  */
 export const sanitizeTextField = (value: string): string => {
-  if (!value) return '';
+  if (!value || typeof value !== 'string') return '';
   // Rechaza: < > / \ { } ( ) [ ] ; : ' " & caracteres de control
   return value
     .replace(/[<>\/\\{}\\'\"&;:\[\]()]/g, '')

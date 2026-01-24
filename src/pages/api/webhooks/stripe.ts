@@ -280,6 +280,201 @@ export const POST: APIRoute = async ({ request }) => {
       break;
     }
 
+    // ==========================================
+    // MOBILE PAYMENT HANDLERS (Payment Intents)
+    // ==========================================
+    
+    case 'payment_intent.succeeded': {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      const paymentIntentId = paymentIntent.id;
+      
+      console.log(`📱 [WEBHOOK] Payment Intent succeeded: ${paymentIntentId}`);
+      console.log('📱 [WEBHOOK] Metadata:', JSON.stringify(paymentIntent.metadata));
+      
+      // Get order by Payment Intent ID (stored in stripe_session_id with pi_ prefix)
+      const { data: order, error: orderError } = await supabaseAdmin
+        .from('orders')
+        .select('id, status, customer_email, customer_name, order_number')
+        .eq('stripe_session_id', paymentIntentId)
+        .single();
+      
+      if (orderError || !order) {
+        console.error('📱 [WEBHOOK] ❌ Order not found for Payment Intent:', paymentIntentId);
+        console.error('📱 [WEBHOOK] Error:', orderError);
+        break;
+      }
+      
+      const displayId = formatOrderId(order.order_number);
+      console.log(`📱 [WEBHOOK] Found order: ${displayId} (UUID: ${order.id})`);
+      
+      // Idempotency check
+      if (order.status === 'paid') {
+        console.log(`📱 [WEBHOOK] ℹ️ Order ${displayId} already marked as paid - skipping`);
+        break;
+      }
+      
+      // Update order status to paid
+      const { error: updateError } = await supabaseAdmin
+        .from('orders')
+        .update({ status: 'paid' })
+        .eq('id', order.id);
+      
+      if (updateError) {
+        console.error('📱 [WEBHOOK] ❌ Error updating order status:', updateError);
+        break;
+      }
+      
+      console.log(`📱 [WEBHOOK] ✅ Order ${displayId} marked as paid`);
+      
+      // Record coupon usage if present in metadata
+      const couponId = paymentIntent.metadata?.coupon_id;
+      if (couponId && couponId.trim() !== '') {
+        const customerEmail = order.customer_email;
+        
+        const { error: couponError } = await supabase.rpc('use_coupon', {
+          p_coupon_id: couponId,
+          p_customer_email: customerEmail,
+          p_order_id: order.id
+        });
+        
+        if (couponError && couponError.code !== '23505') {
+          console.error('📱 [WEBHOOK] Error recording coupon usage:', couponError);
+        } else {
+          console.log(`📱 [WEBHOOK] ✅ Coupon ${couponId} usage recorded`);
+        }
+      }
+      
+      // Send confirmation email
+      console.log('📱 [WEBHOOK] 📧 Preparing to send confirmation email...');
+      try {
+        // Fetch order items with product details
+        const { data: items, error: itemsError } = await supabaseAdmin
+          .from('order_items')
+          .select(`
+            quantity,
+            price_at_purchase,
+            products:product_id (name),
+            product_variants:variant_id (size)
+          `)
+          .eq('order_id', order.id);
+        
+        if (itemsError) {
+          console.error('📱 [WEBHOOK] Error fetching order items:', itemsError);
+          break;
+        }
+        
+        // Get full order details for email
+        const { data: fullOrder } = await supabaseAdmin
+          .from('orders')
+          .select('*')
+          .eq('id', order.id)
+          .single();
+        
+        // Format items for email
+        const emailItems = (items || []).map(item => {
+          const product = Array.isArray(item.products) ? item.products[0] : item.products;
+          const variant = Array.isArray(item.product_variants) ? item.product_variants[0] : item.product_variants;
+          return {
+            productName: product?.name || 'Producto',
+            size: variant?.size || '-',
+            quantity: item.quantity,
+            price: Number(item.price_at_purchase)
+          };
+        });
+        
+        const emailResult = await sendOrderConfirmation({
+          orderId: order.id,
+          orderNumber: order.order_number,
+          customerName: order.customer_name,
+          customerEmail: order.customer_email,
+          shippingAddress: fullOrder?.shipping_address || '',
+          shippingCity: fullOrder?.shipping_city || '',
+          shippingPostalCode: fullOrder?.shipping_postal_code || '',
+          shippingCountry: fullOrder?.shipping_country || 'España',
+          totalAmount: Number(fullOrder?.total_amount || 0),
+          items: emailItems
+        });
+        
+        if (emailResult.success) {
+          console.log(`📱 [WEBHOOK] ✅ Confirmation email sent to ${order.customer_email}`);
+        } else {
+          console.error('📱 [WEBHOOK] ❌ Failed to send email:', emailResult.error);
+        }
+      } catch (emailError) {
+        console.error('📱 [WEBHOOK] ❌ Exception sending email:', emailError);
+        // Non-critical, order is already paid
+      }
+      
+      break;
+    }
+    
+    case 'payment_intent.payment_failed': {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      const paymentIntentId = paymentIntent.id;
+      const failureMessage = paymentIntent.last_payment_error?.message || 'Unknown error';
+      
+      console.log(`📱 [WEBHOOK] ❌ Payment Intent failed: ${paymentIntentId}`);
+      console.log(`📱 [WEBHOOK] Failure reason: ${failureMessage}`);
+      
+      // Get order by Payment Intent ID
+      const { data: order, error: orderError } = await supabaseAdmin
+        .from('orders')
+        .select('id, status, order_number')
+        .eq('stripe_session_id', paymentIntentId)
+        .single();
+      
+      if (orderError || !order) {
+        console.error('📱 [WEBHOOK] Order not found for failed Payment Intent:', paymentIntentId);
+        break;
+      }
+      
+      const displayId = formatOrderId(order.order_number);
+      console.log(`📱 [WEBHOOK] Found order: ${displayId}`);
+      
+      // Only process if order is still pending
+      if (order.status !== 'pending') {
+        console.log(`📱 [WEBHOOK] ℹ️ Order ${displayId} status is ${order.status} - skipping`);
+        break;
+      }
+      
+      // Get order items to restore stock
+      const { data: orderItems, error: itemsError } = await supabaseAdmin
+        .from('order_items')
+        .select('variant_id, quantity')
+        .eq('order_id', order.id);
+      
+      if (itemsError) {
+        console.error('📱 [WEBHOOK] Error fetching order items:', itemsError);
+      } else {
+        // Restore stock for each item
+        for (const item of orderItems || []) {
+          const { error: restoreError } = await supabase.rpc('restore_stock', {
+            p_variant_id: item.variant_id,
+            p_quantity: item.quantity
+          });
+          
+          if (restoreError) {
+            console.error(`📱 [WEBHOOK] Error restoring stock for variant ${item.variant_id}:`, restoreError);
+          }
+        }
+        console.log(`📱 [WEBHOOK] ✅ Stock restored for order ${displayId}`);
+      }
+      
+      // Update order status to payment_failed
+      const { error: updateError } = await supabaseAdmin
+        .from('orders')
+        .update({ status: 'payment_failed' })
+        .eq('id', order.id);
+      
+      if (updateError) {
+        console.error('📱 [WEBHOOK] Error updating order status:', updateError);
+      } else {
+        console.log(`📱 [WEBHOOK] ✅ Order ${displayId} marked as payment_failed`);
+      }
+      
+      break;
+    }
+
     default:
       console.log(`Unhandled event type: ${event.type}`);
   }
