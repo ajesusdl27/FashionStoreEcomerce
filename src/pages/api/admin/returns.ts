@@ -12,10 +12,17 @@ import { stripe } from "@/lib/stripe";
 export const prerender = false;
 
 // GET: Fetch all returns for admin dashboard
-export const GET: APIRoute = async ({ cookies, url }) => {
+export const GET: APIRoute = async ({ request, cookies, url }) => {
   try {
-    const accessToken = cookies.get("sb-access-token")?.value;
-    const refreshToken = cookies.get("sb-refresh-token")?.value;
+    // Read token from Authorization header (Flutter/mobile) or cookies (web)
+    let accessToken = request.headers.get('authorization')?.replace('Bearer ', '');
+    let refreshToken: string | undefined;
+
+    if (!accessToken) {
+      // Fallback to cookies for web client
+      accessToken = cookies.get("sb-access-token")?.value;
+      refreshToken = cookies.get("sb-refresh-token")?.value;
+    }
 
     if (!accessToken) {
       return new Response(JSON.stringify({ error: "No autorizado" }), {
@@ -115,8 +122,15 @@ export const GET: APIRoute = async ({ cookies, url }) => {
 // PUT: Update return status (approve, reject, receive, complete)
 export const PUT: APIRoute = async ({ request, cookies }) => {
   try {
-    const accessToken = cookies.get("sb-access-token")?.value;
-    const refreshToken = cookies.get("sb-refresh-token")?.value;
+    // Read token from Authorization header (Flutter/mobile) or cookies (web)
+    let accessToken = request.headers.get('authorization')?.replace('Bearer ', '');
+    let refreshToken: string | undefined;
+
+    if (!accessToken) {
+      // Fallback to cookies for web client
+      accessToken = cookies.get("sb-access-token")?.value;
+      refreshToken = cookies.get("sb-refresh-token")?.value;
+    }
 
     if (!accessToken) {
       return new Response(JSON.stringify({ error: "No autorizado" }), {
@@ -322,8 +336,15 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
 // PATCH: Inspect individual return item
 export const PATCH: APIRoute = async ({ request, cookies }) => {
   try {
-    const accessToken = cookies.get("sb-access-token")?.value;
-    const refreshToken = cookies.get("sb-refresh-token")?.value;
+    // Read token from Authorization header (Flutter/mobile) or cookies (web)
+    let accessToken = request.headers.get('authorization')?.replace('Bearer ', '');
+    let refreshToken: string | undefined;
+
+    if (!accessToken) {
+      // Fallback to cookies for web client
+      accessToken = cookies.get("sb-access-token")?.value;
+      refreshToken = cookies.get("sb-refresh-token")?.value;
+    }
 
     if (!accessToken) {
       return new Response(JSON.stringify({ error: "No autorizado" }), {
