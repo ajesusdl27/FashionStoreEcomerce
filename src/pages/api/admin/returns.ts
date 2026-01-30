@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { createAuthenticatedClient } from "@/lib/supabase";
+import { createAuthenticatedClient, supabaseAdmin } from "@/lib/supabase";
 import { validateToken } from "@/lib/auth-utils";
 import { 
   sendReturnApprovedEmail, 
@@ -170,8 +170,9 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Call the RPC function with all parameters explicitly set
-    const { error } = await supabase.rpc("process_return", {
+    // Call the RPC function with service role admin to bypass RLS
+    // (admin validation already done above)
+    const { error } = await supabaseAdmin.rpc("process_return", {
       p_return_id: return_id,
       p_action: action,
       p_notes: notes || null,
@@ -383,8 +384,9 @@ export const PATCH: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Call the RPC function
-    const { error } = await supabase.rpc("inspect_return_item", {
+    // Call the RPC function with service role admin to bypass RLS
+    // (admin validation already done above)
+    const { error } = await supabaseAdmin.rpc("inspect_return_item", {
       p_item_id: item_id,
       p_status: status,
       p_restock: restock || false,
