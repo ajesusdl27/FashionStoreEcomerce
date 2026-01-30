@@ -1488,45 +1488,124 @@ Cada modelo debe:
 
 #### 4.1 Navegación Admin
 
-- [ ] Crear layout admin con bottom navigation o drawer
-- [ ] Proteger rutas admin con guard de rol
-- [ ] Crear `admin_home_screen.dart` con resumen/KPIs
+- [x] **Fase 4.1 completada** ✅ (29/01/2026)
+- [x] Crear layout admin con drawer de navegación
+- [x] Proteger rutas admin con guard de rol (ya existente)
+- [x] Crear `admin_home_screen.dart` con resumen/KPIs
+- [x] Crear `admin_drawer.dart` con navegación completa
+- [x] Crear `kpi_card.dart` widget reutilizable
+- [x] Crear `sales_chart.dart` con fl_chart para gráfico de ventas
+- [x] Crear `dashboard_provider.dart` con métricas reales desde Supabase
+- [x] Implementar grid responsive (1 col móvil / 2 col tablet)
+- [x] Mostrar alertas de stock bajo con datos reales
+- [x] Acciones rápidas a otras secciones admin
+
 
 #### 4.2 Feature Products Management (CRUD)
 
-- [ ] Crear `admin/products_management/` con estructura completa
-- [ ] Crear datasource con operaciones CRUD
-- [ ] Crear providers para:
-  - [ ] Lista de productos (admin ve todos, incluso inactivos)
-  - [ ] Crear producto
-  - [ ] Editar producto
-  - [ ] Eliminar producto (soft delete según `Doc/migrations/033_products_soft_delete.sql`)
-- [ ] Crear `product_form_screen.dart` para crear/editar
-- [ ] Integrar `image_picker` para cámara y galería
-- [ ] Implementar compresión de imagen antes de subir a Supabase Storage
-- [ ] Subir imágenes al bucket `product-images`
+- [x] **Fase 4.2 completada** ✅ (29/01/2026)
+- [x] Crear `admin/products_management/` con estructura completa
+- [x] Crear datasource con operaciones CRUD
+- [x] Crear providers para:
+  - [x] Lista de productos (admin ve todos, incluso inactivos)
+  - [x] Crear producto
+  - [x] Editar producto
+  - [x] Eliminar producto (soft delete según `Doc/migrations/033_products_soft_delete.sql`)
+- [x] Crear `product_form_screen.dart` para crear/editar
+- [x] Integrar `image_picker` para cámara y galería
+- [x] Implementar compresión de imagen antes de subir a Supabase Storage
+- [x] Subir imágenes al bucket `product-images`
 
 #### 4.3 Feature Stock Management
 
-- [ ] Crear pantalla de visualización de inventario
-- [ ] Mostrar alertas de stock bajo
-- [ ] Permitir edición rápida de cantidades por variante
-- [ ] Referenciar RPCs de `Doc/migrations/006_stock_reservation_functions.sql`
+- [x] Crear pantalla de visualización de inventario
+- [x] Mostrar alertas de stock bajo
+- [x] Permitir edición rápida de cantidades por variante
+- [x] Referenciar RPCs de `Doc/migrations/006_stock_reservation_functions.sql`
 
 #### 4.4 Feature Settings (Interruptor de Ofertas)
 
-- [ ] Crear `admin/settings/` con estructura
-- [ ] Crear provider para leer/escribir en tabla `settings`
-- [ ] Crear `settings_screen.dart` con Switch para `offers_enabled`
-- [ ] Al cambiar el Switch:
-  - [ ] Actualizar `settings` en Supabase
-  - [ ] Los clientes conectados reciben el cambio via stream (sin acción adicional)
+- [x] **Fase 4.4 completada** ✅ (29/01/2026)
+
+**Arquitectura de Datos:**
+- [x] Extender `settings/domain/repositories/settings_repository.dart`
+  - Método `Future<Either<Failure, void>> updateSettings(List<SettingModel> settings)`
+- [x] Extender `settings/data/repositories/settings_repository_impl.dart`
+  - Implementar updateSettings con manejo de errores (NetworkFailure, AuthFailure, ValidationFailure)
+- [x] Extender `settings/data/datasources/settings_remote_datasource.dart`
+  - Método `updateSettings` que llama a `PUT /api/admin/configuracion`
+  - Estructura JSON: `{"settings": [{"key": "offers_enabled", "value_bool": true}]}`
+  - Usar cliente autenticado para RLS
+  - Parsear errores de validación
+
+**Provider Admin:**
+- [x] Crear `admin/settings/presentation/providers/admin_settings_provider.dart`
+  - `AdminSettingsNotifier` con `@riverpod`
+  - Método `toggleOffers(bool enabled)` con guardado automático
+  - Método `updateFlashOffersEnd(DateTime? endDate)` con validación de fecha futura
+  - Invalidación de providers realtime tras actualización
+
+**UI Admin:**
+- [x] Crear `admin/settings/presentation/screens/admin_settings_screen.dart`
+  - Switch para `offers_enabled` con guardado automático
+  - DateTimePicker para `flash_offers_end` con validación visual
+  - Toast de confirmación en cada guardado
+  - Estados AsyncValue (loading/error/data)
+  - Card informativa de realtime
+
+**Router:**
+- [x] Actualizar `config/router/app_router.dart`
+  - Reemplazar placeholder con `AdminSettingsScreen()`
+
+#### 4.5 Feature Settings Avanzadas (Configuración Completa)
+
+- [ ] **Fase 4.5 pendiente**
+
+**Objetivo**: Extender panel administrativo con todas las configuraciones de la tienda.
+
+**UI Admin - Pantalla con Tabs:**
+- [ ] Extender `admin_settings_screen.dart` con TabBar
+    [x] Tab 1: "Ofertas" (ya implementado en 4.4)
+  -  [x] Tab 2: "Información de Tienda"
+  -  [x] Tab 3: "Envío"
+  -  [x] Tab 4: "Redes Sociales"
+  -  [x] Tab 5: "Devoluciones"
+  -  [x] Tab 6: "Modo Mantenimiento"
+
+**Tab 2: Información de Tienda**
+- [x] TextFields con guardado automático:
+  - `store_name` (requerido, max 100 chars)
+  - `store_email` (validación email)
+  - `store_phone` (validación teléfono español)
+  - `store_address` (textarea, max 500 chars)
+
+**Tab 3: Envío**
+- [x] NumberField `shipping_cost` (€0.00 - €50.00)
+- [x] NumberField `free_shipping_threshold` (€0.00 - €999.99)
+- [x] Card informativo: "Envío gratis cuando el subtotal supere €{threshold}"
+
+**Tab 4: Redes Sociales**
+- [x] URLs para Instagram, Twitter, TikTok, YouTube
+- [x] Validación de URL opcional
+
+**Tab 5: Devoluciones**
+- [x] NumberField `return_window_days` (1-365 días)
+
+**Tab 6: Modo Mantenimiento**
+- [x] Switch con modal de confirmación crítica
+- [x] TextField `maintenance_message` (solo visible si modo activo)
+
+**Validaciones:**
+- [x] Crear `shared/validators/settings_validators.dart`
+- [x] Whitelist de keys permitidas según endpoint web
 
 #### Referencias del proyecto web:
 - `src/pages/admin/productos/` → UI de gestión de productos
 - `src/pages/admin/configuracion/` → Pantalla de configuración
+- `src/pages/api/admin/configuracion.ts` → Endpoint PUT con ALLOWED_KEYS
 - `src/components/admin/` → Componentes del backoffice
 - `Doc/migrations/003_storage_bucket.sql` → Configuración del bucket de imágenes
+- `Doc/migrations/035_improve_settings_rls.sql` → Políticas RLS admin
 
 ---
 
