@@ -66,6 +66,8 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
         return new Response(JSON.stringify({ error: 'Debes especificar el transportista' }), { 
           status: 400, headers: { 'Content-Type': 'application/json' } 
         });
+      }
+
       console.log('📦 [ADMIN PEDIDOS] Fetching order details for shipment...');
       // Get order details before updating
       const { data: order, error: orderError } = await authClient
@@ -79,6 +81,9 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
         return new Response(JSON.stringify({ error: 'Pedido no encontrado' }), { 
           status: 404, headers: { 'Content-Type': 'application/json' } 
         });
+      }
+
+      console.log('✅ [ADMIN PEDIDOS] Order found:', order.order_number);
       console.log('📦 [ADMIN PEDIDOS] Upserting shipment record...');
       // Insert shipment record
       const { error: shipmentError } = await authClient
