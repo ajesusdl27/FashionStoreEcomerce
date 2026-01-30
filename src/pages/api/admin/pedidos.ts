@@ -114,13 +114,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
         });
       }
 
-      console.log('✅ [ADMIN PEDIDOS] Order status updated'); .eq('id', id);
-
-      if (updateError) {
-        return new Response(JSON.stringify({ error: updateError.message }), { 
-          status: 400, headers: { 'Content-Type': 'application/json' } 
-        });
-      }
+      console.log('✅ [ADMIN PEDIDOS] Order status updated');
 
       // Send shipment email
       const emailResult = await sendOrderShipped({
@@ -136,7 +130,18 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
         shippingPostalCode: order.shipping_postal_code,
         shippingCountry: order.shipping_country
       });
-console.log('📦 [ADMIN PEDIDOS] Updating order status (non-shipped)...');
+
+      if (!emailResult.success) {
+        console.warn('Failed to send shipment email:', emailResult.error);
+        // Don't fail the request if email fails, just log it
+      }
+
+      return new Response(JSON.stringify({ success: true, emailSent: emailResult.success }), { 
+        status: 200, headers: { 'Content-Type': 'application/json' } 
+      });
+    }
+
+    console.log('📦 [ADMIN PEDIDOS] Updating order status (non-shipped)...');
     // For non-shipped status updates, just update the status
     const { error } = await authClient
       .from('orders')
@@ -156,17 +161,6 @@ console.log('📦 [ADMIN PEDIDOS] Updating order status (non-shipped)...');
     });
   } catch (error: any) {
     console.error('❌ [ADMIN PEDIDOS] Unexpected error:', error);
-
-    if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { 
-        status: 400, headers: { 'Content-Type': 'application/json' } 
-      });
-    }
-
-    return new Response(JSON.stringify({ success: true }), { 
-      status: 200, headers: { 'Content-Type': 'application/json' } 
-    });
-  } catch (error: any) {
     return new Response(JSON.stringify({ error: error.message }), { 
       status: 500, headers: { 'Content-Type': 'application/json' } 
     });
