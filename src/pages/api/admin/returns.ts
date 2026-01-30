@@ -122,18 +122,29 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
 // PUT: Update return status (approve, reject, receive, complete)
 export const PUT: APIRoute = async ({ request, cookies }) => {
+  console.log('\n=== [RETURNS API PUT] Starting request ===');
+  console.log('🔑 supabaseAdmin available:', !!supabaseAdmin);
+  console.log('🔑 supabaseAdmin is function:', typeof supabaseAdmin === 'object');
+  
   try {
     // Read token from Authorization header (Flutter/mobile) or cookies (web)
     let accessToken = request.headers.get('authorization')?.replace('Bearer ', '');
     let refreshToken: string | undefined;
+    let tokenSource = 'header';
 
     if (!accessToken) {
       // Fallback to cookies for web client
+      tokenSource = 'cookies';
       accessToken = cookies.get("sb-access-token")?.value;
       refreshToken = cookies.get("sb-refresh-token")?.value;
     }
 
+    console.log('🔐 Token source:', tokenSource);
+    console.log('🔐 Access token present:', !!accessToken);
+    console.log('🔐 Token (first 20):', accessToken?.substring(0, 20));
+
     if (!accessToken) {
+      console.log('❌ No access token');
       return new Response(JSON.stringify({ error: "No autorizado" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
@@ -141,18 +152,26 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     }
 
     // Validate token and check admin status
+    console.log('🔍 Validating token...');
     const user = await validateToken(accessToken);
+    console.log('👤 User:', user?.id);
+    console.log('👤 User metadata:', user?.user_metadata);
+    console.log('👤 Is admin:', user?.user_metadata?.is_admin);
     
     if (!user?.user_metadata?.is_admin) {
+      console.log('❌ User is not admin');
       return new Response(JSON.stringify({ error: "Acceso denegado" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },
       });
     }
 
+    console.log('✅ User is admin, proceeding...');
+
     const supabase = createAuthenticatedClient(accessToken, refreshToken);
 
     const body = await request.json();
+    console.log('📦 Request body:', body);
     const { return_id, action, notes, rejection_reason, return_label_url } = body;
 
     if (!return_id || !action) {
@@ -164,11 +183,21 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
 
     const validActions = ["approve", "reject", "receive", "complete"];
     if (!validActions.includes(action)) {
+      console.log('❌ Invalid action:', action);
       return new Response(
         JSON.stringify({ error: `Acción inválida. Válidas: ${validActions.join(", ")}` }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
+
+    console.log('🔧 Calling RPC process_return with supabaseAdmin...');
+    console.log('🔧 Parameters:', {
+      p_return_id: return_id,
+      p_action: action,
+      p_notes: notes || null,
+      p_rejection_reason: rejection_reason || null,
+      p_return_label_url: return_label_url || null
+    });
 
     // Call the RPC function with service role admin to bypass RLS
     // (admin validation already done above)
@@ -180,13 +209,17 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       p_return_label_url: return_label_url || null
     });
 
+    console.log('📤 RPC result - error:', error);
+
     if (error) {
-      console.error("Error processing return:", error);
+      console.error('❌ Error processing return:', error);
       return new Response(
         JSON.stringify({ error: error.message || "Error al procesar la devolución" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
+
+    console.log('✅ RPC call successful');
 
     // Process Stripe refund when completing the return
     let refundProcessed = false;
