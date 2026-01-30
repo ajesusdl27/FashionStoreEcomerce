@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { createAuthenticatedClient } from '@/lib/supabase';
+import { createAuthenticatedClient, supabaseAdmin } from '@/lib/supabase';
 import { validateToken } from '@/lib/auth-utils';
 import { sendOrderShipped } from '@/lib/email';
 
@@ -85,8 +85,8 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
 
       console.log('✅ [ADMIN PEDIDOS] Order found:', order.order_number);
       console.log('📦 [ADMIN PEDIDOS] Upserting shipment record...');
-      // Insert shipment record
-      const { error: shipmentError } = await authClient
+      // Insert shipment record using service role to bypass RLS
+      const { error: shipmentError } = await supabaseAdmin
         .from('order_shipments')
         .upsert({
           order_id: id,
@@ -106,8 +106,8 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       console.log('✅ [ADMIN PEDIDOS] Shipment record saved');
       console.log('📦 [ADMIN PEDIDOS] Updating order status...');
 
-      // Update order status
-      const { error: updateError } = await authClient
+      // Update order status using service role to bypass RLS
+      const { error: updateError } = await supabaseAdmin
         .from('orders')
         .update({ status })
         .eq('id', id);
@@ -147,8 +147,8 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     }
 
     console.log('📦 [ADMIN PEDIDOS] Updating order status (non-shipped)...');
-    // For non-shipped status updates, just update the status
-    const { error } = await authClient
+    // For non-shipped status updates, use service role to bypass RLS
+    const { error } = await supabaseAdmin
       .from('orders')
       .update({ status })
       .eq('id', id);
