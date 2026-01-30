@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { createAuthenticatedClient } from "@/lib/supabase";
+import { validateToken } from "@/lib/auth-utils";
 import { 
   sendReturnApprovedEmail, 
   sendReturnRejectedEmail, 
@@ -31,17 +32,17 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       });
     }
 
-    const supabase = createAuthenticatedClient(accessToken, refreshToken);
-
-    // Verify admin via user_metadata
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    // Validate token and check admin status
+    const user = await validateToken(accessToken);
     
-    if (userError || !user?.user_metadata?.is_admin) {
+    if (!user?.user_metadata?.is_admin) {
       return new Response(JSON.stringify({ error: "Acceso denegado" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },
       });
     }
+
+    const supabase = createAuthenticatedClient(accessToken, refreshToken);
 
     const status = url.searchParams.get("status");
     const returnId = url.searchParams.get("id");
@@ -139,17 +140,17 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const supabase = createAuthenticatedClient(accessToken, refreshToken);
-
-    // Verify admin via user_metadata
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    // Validate token and check admin status
+    const user = await validateToken(accessToken);
     
-    if (userError || !user?.user_metadata?.is_admin) {
+    if (!user?.user_metadata?.is_admin) {
       return new Response(JSON.stringify({ error: "Acceso denegado" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },
       });
     }
+
+    const supabase = createAuthenticatedClient(accessToken, refreshToken);
 
     const body = await request.json();
     const { return_id, action, notes, rejection_reason, return_label_url } = body;
@@ -353,17 +354,17 @@ export const PATCH: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const supabase = createAuthenticatedClient(accessToken, refreshToken);
-
-    // Verify admin via user_metadata
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    // Validate token and check admin status
+    const user = await validateToken(accessToken);
     
-    if (userError || !user?.user_metadata?.is_admin) {
+    if (!user?.user_metadata?.is_admin) {
       return new Response(JSON.stringify({ error: "Acceso denegado" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },
       });
     }
+
+    const supabase = createAuthenticatedClient(accessToken, refreshToken);
 
     const body = await request.json();
     const { item_id, status, restock, notes } = body;
