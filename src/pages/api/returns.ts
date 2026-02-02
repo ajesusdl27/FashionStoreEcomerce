@@ -1,13 +1,21 @@
 import type { APIRoute } from "astro";
 import { createAuthenticatedClient } from "@/lib/supabase";
 import { sendReturnConfirmation } from "@/lib/email";
+import { validateToken } from "@/lib/auth-utils";
 export const prerender = false;
 
 // POST: Create a return request
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    const accessToken = cookies.get("sb-access-token")?.value;
-    const refreshToken = cookies.get("sb-refresh-token")?.value;
+    // Read token from Authorization header (Flutter/mobile) or cookies (web)
+    let accessToken = request.headers.get('authorization')?.replace('Bearer ', '');
+    let refreshToken: string | undefined;
+
+    if (!accessToken) {
+      // Fallback to cookies for web client
+      accessToken = cookies.get("sb-access-token")?.value;
+      refreshToken = cookies.get("sb-refresh-token")?.value;
+    }
     
     if (!accessToken) {
       return new Response(JSON.stringify({ error: "No autorizado" }), {
@@ -258,10 +266,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 };
 
 // GET: Get returns for the current user
-export const GET: APIRoute = async ({ cookies, url }) => {
+export const GET: APIRoute = async ({ request, cookies, url }) => {
   try {
-    const accessToken = cookies.get("sb-access-token")?.value;
-    const refreshToken = cookies.get("sb-refresh-token")?.value;
+    // Read token from Authorization header (Flutter/mobile) or cookies (web)
+    let accessToken = request.headers.get('authorization')?.replace('Bearer ', '');
+    let refreshToken: string | undefined;
+
+    if (!accessToken) {
+      // Fallback to cookies for web client
+      accessToken = cookies.get("sb-access-token")?.value;
+      refreshToken = cookies.get("sb-refresh-token")?.value;
+    }
     
     if (!accessToken) {
       return new Response(JSON.stringify({ error: "No autorizado" }), {

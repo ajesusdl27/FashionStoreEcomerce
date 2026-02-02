@@ -8,7 +8,6 @@ export default function ThemeToggle() {
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("dark");
   const [mounted, setMounted] = useState(false);
 
-  // Initialize theme from cleanup FOUC script state
   useEffect(() => {
     setMounted(true);
     const savedTheme = localStorage.getItem("theme") as Theme | null;
@@ -19,40 +18,30 @@ export default function ThemeToggle() {
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-
     const updateResolvedTheme = () => {
       const isSystem = theme === "system";
       const resolved = isSystem
-          ? mediaQuery.matches
-            ? "dark"
-            : "light"
-          : (theme as "light" | "dark");
-
+        ? mediaQuery.matches
+          ? "dark"
+          : "light"
+        : (theme as "light" | "dark");
       setResolvedTheme(resolved);
-      
-      // Add transition class before changing theme
       document.documentElement.classList.add("theme-transitioning");
       document.documentElement.classList.toggle("dark", resolved === "dark");
-      
-      // Remove transition class after animation
       setTimeout(() => {
         document.documentElement.classList.remove("theme-transitioning");
       }, 300);
-      
       if (isSystem) {
         localStorage.removeItem("theme");
       } else {
         localStorage.setItem("theme", theme);
       }
     };
-
     updateResolvedTheme();
     mediaQuery.addEventListener("change", updateResolvedTheme);
-
     return () => mediaQuery.removeEventListener("change", updateResolvedTheme);
   }, [theme]);
 
-  // Sync across tabs
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "theme") {
@@ -73,7 +62,6 @@ export default function ThemeToggle() {
   };
 
   if (!mounted) {
-    // Placeholder with 44x44px size to prevent layout shift
     return <button className="w-11 h-11" aria-hidden="true" />;
   }
 

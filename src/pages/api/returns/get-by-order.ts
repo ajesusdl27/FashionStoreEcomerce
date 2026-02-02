@@ -20,8 +20,14 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Validate user authentication
-    const accessToken = cookies.get('sb-access-token')?.value;
+    // Read token from Authorization header (Flutter/mobile) or cookies (web)
+    let accessToken = request.headers.get('authorization')?.replace('Bearer ', '');
+    
+    if (!accessToken) {
+      // Fallback to cookies for web client
+      accessToken = cookies.get('sb-access-token')?.value;
+    }
+    
     if (!accessToken) {
       return new Response(
         JSON.stringify({ error: 'No autenticado' }),

@@ -13,7 +13,7 @@ import { RefreshCw, ShieldCheck, Truck } from "lucide-react";
 
 const { slug } = Astro.params;
 
-// Fetch product with relations
+
 const { data: product, error } = await supabase
   .from("products")
   .select(
@@ -32,7 +32,7 @@ if (error || !product) {
   return Astro.redirect("/productos");
 }
 
-// Sort images by order
+
 const sortedImages =
   product.images?.sort((a: any, b: any) => a.order - b.order) || [];
 const mainImage =
@@ -46,14 +46,14 @@ function calculateDiscount(original: number, offer: number): number {
   return Math.round(((original - offer) / original) * 100);
 }
 
-// Prepare variants for React component
+
 const variantsForReact = (product.variants || []).map((v: any) => ({
   id: v.id,
   size: v.size,
   stock: v.stock,
 }));
 
-// Generate optimized thumbnail URLs for Cloudinary images
+
 const getThumbnailUrl = (url: string) => {
   if (isCloudinaryUrl(url)) {
     return getOptimizedUrl(url, { width: 80, height: 80 });
@@ -61,7 +61,7 @@ const getThumbnailUrl = (url: string) => {
   return url;
 };
 
-// Get shipping and store settings
+
 const shippingConfig = await getShippingConfig();
 const settings = await getSettings();
 
