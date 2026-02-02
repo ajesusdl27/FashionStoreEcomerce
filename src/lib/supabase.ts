@@ -29,9 +29,10 @@ export function getSupabase(): SupabaseClient {
 // Export a getter for backwards compatibility
 export const supabase = getSupabase();
 
-// Helper to create authenticated client with cookies (for SSR)
+// Helper to create authenticated client with access token (for SSR and API calls)
+// Supports both web (with refresh token) and mobile (access token only)
 export function createAuthenticatedClient(accessToken?: string, refreshToken?: string) {
-  if (!accessToken || !refreshToken) {
+  if (!accessToken) {
     return getSupabase();
   }
 
