@@ -1,7 +1,11 @@
 import type { APIRoute } from "astro";
-import { createAuthenticatedClient } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
+import { validateToken } from "@/lib/auth-utils";
 
 export const prerender = false;
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL as string;
+const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY as string;
 
 /**
  * POST /api/returns/ship
@@ -11,12 +15,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Read token from Authorization header (Flutter/mobile) or cookies (web)
     let accessToken = request.headers.get('authorization')?.replace('Bearer ', '');
-    let refreshToken: string | undefined;
 
     if (!accessToken) {
       // Fallback to cookies for web client
       accessToken = cookies.get("sb-access-token")?.value;
-      refreshToken = cookies.get("sb-refresh-token")?.value;
     }
 
     if (!accessToken) {
@@ -26,17 +28,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const supabase = createAuthenticatedClient(accessToken, refreshToken);
-
-    // Verificar usuario autenticado
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !user) {
+    // Validate token and get user
+    const user = await validateToken(accessToken);
+    if (!user) {
       return new Response(JSON.stringify({ error: "Sesión inválida" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
       });
     }
+
+    // Create supabase client with service role
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const body = await request.json();
     const { return_id, tracking_number } = body;
