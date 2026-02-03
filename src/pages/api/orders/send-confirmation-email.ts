@@ -8,10 +8,20 @@ import { sendOrderConfirmation } from '@/lib/email';
  */
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    // 1. Autenticación
-    const accessToken = cookies.get('sb-access-token')?.value;
+    // 1. Autenticación - soportar tanto cookies (web) como Authorization header (móvil)
+    let accessToken = cookies.get('sb-access-token')?.value;
+    
+    // Si no hay token en cookies, buscar en Authorization header (para móvil)
+    if (!accessToken) {
+      const authHeader = request.headers.get('Authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        accessToken = authHeader.substring(7);
+        console.log('📱 Using token from Authorization header');
+      }
+    }
     
     if (!accessToken) {
+      console.error('❌ No authentication token found');
       return new Response(
         JSON.stringify({ error: 'No autenticado' }),
         { status: 401, headers: { 'Content-Type': 'application/json' } }
@@ -28,7 +38,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log('📧 Sending confirmation email for order:', orderId);
+    console.log('📧 Request from mobile app - Order ID:', orderId);
 
     // 3. Obtener datos del pedido con items y productos
     const { data: order, error: orderError } = await supabase
@@ -63,6 +73,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { data: { user } } = await supabase.auth.getUser(accessToken);
     
     if (!user || user.email !== order.customer_email) {
+      console.error('❌ User not authorized:', user?.email, 'vs', order.customer_email);
       return new Response(
         JSON.stringify({ error: 'No autorizado' }),
         { status: 403, headers: { 'Content-Type': 'application/json' } }
@@ -70,7 +81,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // 5. Verificar que el pedido está en estado 'paid' o superior
-    if (!['paid', 'shipped', 'delivered'].includes(order.order_status)) {
+    ifconsole.error('❌ Order not paid:', order.order_status);
+       (!['paid', 'shipped', 'delivered'].includes(order.order_status)) {
       return new Response(
         JSON.stringify({ 
           error: 'El pedido no está en estado pagado',
@@ -95,7 +107,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       postalCode: order.shipping_postal_code,
       phone: order.customer_phone || ''
     };
+console.log('📧 Sending email to:', order.customer_email, 'for order:', order.order_number);
 
+    
     // 7. Enviar email
     const emailResult = await sendOrderConfirmation({
       orderId: order.id,
@@ -108,10 +122,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       shippingCost: 0, // Envío gratis
       total: Number(order.total_amount),
       orderDate: new Date(order.created_at)
-    });
-
-    if (!emailResult.success) {
-      console.error('Error sending email:', emailResult.error);
+    });❌ Error sending email:', emailResult.error);
       return new Response(
         JSON.stringify({ 
           error: 'Error al enviar el correo',
@@ -121,7 +132,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log('✅ Confirmation email sent successfully');
+    console.log('✅ Confirmation email sent successfully to:', order.customer_email);
 
     return new Response(
       JSON.stringify({ 
@@ -130,6 +141,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
+
+  } catch (error) {
+    console.error('💥 
 
   } catch (error) {
     console.error('Error in send-confirmation-email:', error);
