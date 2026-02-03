@@ -81,8 +81,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // 5. Verificar que el pedido está en estado 'paid' o superior
-    ifconsole.error('❌ Order not paid:', order.order_status);
-       (!['paid', 'shipped', 'delivered'].includes(order.order_status)) {
+    if (!['paid', 'shipped', 'delivered'].includes(order.order_status)) {
+      console.error('❌ Order not paid:', order.order_status);
       return new Response(
         JSON.stringify({ 
           error: 'El pedido no está en estado pagado',
