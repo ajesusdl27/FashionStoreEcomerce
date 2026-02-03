@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabase } from '@/lib/supabase';
 
-export const GET: APIRoute = async ({ url, cookies }) => {
+export const GET: APIRoute = async ({ url, cookies, request }) => {
   const orderId = url.searchParams.get('orderId');
 
   if (!orderId) {
@@ -12,11 +12,20 @@ export const GET: APIRoute = async ({ url, cookies }) => {
   }
 
   try {
-    // Verificar autenticación
-    const accessToken = cookies.get('sb-access-token')?.value;
-    const refreshToken = cookies.get('sb-refresh-token')?.value;
+    // Verificar autenticación - soporte para cookies (web) y Authorization header (móvil)
+    let accessToken = cookies.get('sb-access-token')?.value;
+    let refreshToken = cookies.get('sb-refresh-token')?.value;
 
-    if (!accessToken || !refreshToken) {
+    // Si no hay cookie, intentar con Authorization header (para móvil)
+    if (!accessToken) {
+      const authHeader = request.headers.get('authorization');
+      if (authHeader?.startsWith('Bearer ')) {
+        accessToken = authHeader.substring(7);
+        refreshToken = undefined; // Mobile apps don't send refresh token in header
+      }
+    }
+
+    if (!accessToken) {
       return new Response(JSON.stringify({ invoice: null }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }

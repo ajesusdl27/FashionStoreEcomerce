@@ -62,8 +62,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // Verify customer owns this order
-    if (order.customer_id !== user.id) {
+    // Verify customer owns this order (check by customer_id OR email)
+    const ownsOrder = order.customer_id 
+      ? order.customer_id === user.id 
+      : order.customer_email === user.email;
+    
+    if (!ownsOrder) {
       return new Response(JSON.stringify({ error: 'No tienes permiso para cancelar este pedido' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' }
