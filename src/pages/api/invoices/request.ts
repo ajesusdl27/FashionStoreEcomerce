@@ -50,10 +50,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Verificar que el pedido pertenece al usuario (usar admin para bypass RLS)
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
-      .select('id, order_number, customer_email, total_amount, created_at, order_status')
+      .select('id, order_number, customer_email, total_amount, created_at, status')
       .eq('id', orderId)
       .eq('customer_email', user.email)
-      .in('order_status', ['paid', 'shipped', 'delivered'])
+      .in('status', ['paid', 'shipped', 'delivered'])
       .single();
 
     if (orderError || !order) {
