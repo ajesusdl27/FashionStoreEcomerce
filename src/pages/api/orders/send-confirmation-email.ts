@@ -100,14 +100,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       price: Number(item.price_at_purchase)
     }));
 
-    const shippingAddress = {
-      fullName: order.customer_name,
-      address: order.shipping_address,
-      city: order.shipping_city,
-      postalCode: order.shipping_postal_code,
-      phone: order.customer_phone || ''
-    };
-
     console.log('📧 Sending email to:', order.customer_email, 'for order:', order.order_number);
 
     // 7. Enviar email
@@ -116,11 +108,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       orderNumber: order.order_number,
       customerName: order.customer_name,
       customerEmail: order.customer_email,
+      shippingAddress: order.shipping_address,
+      shippingCity: order.shipping_city,
+      shippingPostalCode: order.shipping_postal_code,
+      shippingCountry: order.shipping_country || 'España',
+      totalAmount: Number(order.total_amount),
       items,
-      shippingAddress,
-      subtotal: Number(order.total_amount),
-      shippingCost: 0, // Envío gratis
-      total: Number(order.total_amount),
       orderDate: new Date(order.created_at)
     });
 

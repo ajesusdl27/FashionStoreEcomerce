@@ -32,12 +32,11 @@ export const GET: APIRoute = async ({ url, cookies, request }) => {
       });
     }
 
-    const { data: { user }, error: authError } = await supabase.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken
-    });
+    // Obtener usuario del token (funciona con cookies y Authorization header)
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
 
     if (authError || !user) {
+      console.error('Auth error in invoice check:', authError);
       return new Response(JSON.stringify({ invoice: null }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
