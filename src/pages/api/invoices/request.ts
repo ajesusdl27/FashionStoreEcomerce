@@ -47,8 +47,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // Verificar que el pedido pertenece al usuario
-    const { data: order, error: orderError } = await supabase
+    // Verificar que el pedido pertenece al usuario (usar admin para bypass RLS)
+    const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
       .select('id, order_number, customer_email, total_amount, created_at, order_status')
       .eq('id', orderId)
@@ -57,6 +57,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .single();
 
     if (orderError || !order) {
+      console.error('Order not found:', orderError);
       return new Response(JSON.stringify({ error: 'Pedido no encontrado o no accesible' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' }
