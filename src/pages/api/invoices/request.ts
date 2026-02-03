@@ -5,23 +5,31 @@ import { formatOrderId, formatInvoiceNumber } from '@/lib/order-utils';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    // Verificar autenticación
-    const accessToken = cookies.get('sb-access-token')?.value;
-    const refreshToken = cookies.get('sb-refresh-token')?.value;
+    // Verificar autenticación - soporte para cookies (web) y Authorization header (móvil)
+    let accessToken = cookies.get('sb-access-token')?.value;
+    let refreshToken = cookies.get('sb-refresh-token')?.value;
 
-    if (!accessToken || !refreshToken) {
+    // Si no hay cookie, intentar con Authorization header (para móvil)
+    if (!accessToken) {
+      const authHeader = request.headers.get('authorization');
+      if (authHeader?.startsWith('Bearer ')) {
+        accessToken = authHeader.substring(7);
+        refreshToken = undefined; // Mobile apps don't send refresh token in header
+      }
+    }
+
+    if (!accessToken) {
       return new Response(JSON.stringify({ error: 'No autenticado' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    const { data: { user }, error: authError } = await supabase.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken
-    });
+    // Obtener usuario del token (funciona con cookies y Authorization header)
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
 
     if (authError || !user) {
+      console.error('Auth error in invoice request:', authError);
       return new Response(JSON.stringify({ error: 'Sesión inválida' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' }
