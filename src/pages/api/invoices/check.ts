@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 
 export const GET: APIRoute = async ({ url, cookies, request }) => {
   const orderId = url.searchParams.get('orderId');
@@ -43,8 +43,8 @@ export const GET: APIRoute = async ({ url, cookies, request }) => {
       });
     }
 
-    // Verificar que el pedido pertenece al usuario
-    const { data: order } = await supabase
+    // Verificar que el pedido pertenece al usuario (usar admin para bypass RLS)
+    const { data: order } = await supabaseAdmin
       .from('orders')
       .select('id')
       .eq('id', orderId)
@@ -58,8 +58,8 @@ export const GET: APIRoute = async ({ url, cookies, request }) => {
       });
     }
 
-    // Buscar factura existente
-    const { data: invoice } = await supabase
+    // Buscar factura existente (usar admin para bypass RLS)
+    const { data: invoice } = await supabaseAdmin
       .from('invoices')
       .select('id, invoice_number, pdf_url')
       .eq('order_id', orderId)
