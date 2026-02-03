@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { generateInvoicePDF } from '@/lib/pdf-generator';
 import { formatOrderId, formatInvoiceNumber } from '@/lib/order-utils';
 
@@ -50,10 +50,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Verificar que el pedido pertenece al usuario
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('id, order_number, customer_email, total_amount, created_at, status')
+      .select('id, order_number, customer_email, total_amount, created_at, order_status')
       .eq('id', orderId)
       .eq('customer_email', user.email)
-      .in('status', ['paid', 'shipped', 'delivered'])
+      .in('order_status', ['paid', 'shipped', 'delivered'])
       .single();
 
     if (orderError || !order) {
@@ -66,8 +66,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Format order number for display
     const formattedOrderId = formatOrderId(order.order_number);
 
-    // Verificar si ya existe una factura
-    const { data: existingInvoice } = await supabase
+    // Verificar si ya existe una factura (usar admin para bypass RLS)
+    const { data: existingInvoice } = await supabaseAdmin
       .from('invoices')
       .select('id, invoice_number, pdf_url')
       .eq('order_id', orderId)
@@ -77,7 +77,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (existingInvoice) {
       // Si existe, actualizamos los datos fiscales (por si hubo corrección) y regeneramos
-      const { data: updatedInvoice, error: updateError } = await supabase
+      const { data: updatedInvoice, error: updateError } = await supabaseAdmin
         .from('invoices')
         .update({
           customer_nif: customerNif,
@@ -95,8 +95,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         invoice_number: updatedInvoice.invoice_number
       };
     } else {
-      // Crear factura usando RPC si no existe
-      const { data: invoiceResult, error: invoiceError } = await supabase.rpc('create_invoice', {
+      // Crear factura usando RPC si no existe (usar admin para bypass RLS)
+      const { data: invoiceResult, error: invoiceError } = await supabaseAdmin.rpc('create_invoice', {
         p_order_id: orderId,
         p_customer_nif: customerNif,
         p_customer_fiscal_name: customerFiscalName,
@@ -115,7 +115,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
     
     // Obtener los items del pedido para el PDF
-    const { data: orderItems } = await supabase
+    const { data: orderItems } = await supabaseAdmin
       .from('order_items')
       .select(`
         quantity,
@@ -155,9 +155,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       total
     });
 
-    // Subir PDF a Supabase Storage
+    // Subir PDF a Supabase Storage (usar admin para bypass RLS)
     const fileName = `invoices/${invoiceData.invoice_number}.pdf`;
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabaseAdmin.storage
       .from('documents')
       .upload(fileName, pdfBuffer, {
         contentType: 'application/pdf',
@@ -170,13 +170,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Obtener URL pública
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = supabaseAdmin.storage
       .from('documents')
       .getPublicUrl(fileName);
 
-    // Actualizar factura con URL del PDF
+    // Actualizar factura con URL del PDF (usar admin para bypass RLS)
     if (urlData?.publicUrl) {
-      await supabase
+      await supabaseAdmin
         .from('invoices')
         .update({ pdf_url: urlData.publicUrl })
         .eq('id', invoiceData.invoice_id);
