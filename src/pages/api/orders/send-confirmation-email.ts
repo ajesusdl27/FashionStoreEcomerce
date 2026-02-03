@@ -107,9 +107,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       postalCode: order.shipping_postal_code,
       phone: order.customer_phone || ''
     };
-console.log('📧 Sending email to:', order.customer_email, 'for order:', order.order_number);
 
-    
+    console.log('📧 Sending email to:', order.customer_email, 'for order:', order.order_number);
+
     // 7. Enviar email
     const emailResult = await sendOrderConfirmation({
       orderId: order.id,
@@ -122,7 +122,10 @@ console.log('📧 Sending email to:', order.customer_email, 'for order:', order.
       shippingCost: 0, // Envío gratis
       total: Number(order.total_amount),
       orderDate: new Date(order.created_at)
-    });❌ Error sending email:', emailResult.error);
+    });
+
+    if (!emailResult.success) {
+      console.error('Error sending email:', emailResult.error);
       return new Response(
         JSON.stringify({ 
           error: 'Error al enviar el correo',
@@ -132,7 +135,7 @@ console.log('📧 Sending email to:', order.customer_email, 'for order:', order.
       );
     }
 
-    console.log('✅ Confirmation email sent successfully to:', order.customer_email);
+    console.log('Confirmation email sent successfully to:', order.customer_email);
 
     return new Response(
       JSON.stringify({ 
@@ -141,9 +144,6 @@ console.log('📧 Sending email to:', order.customer_email, 'for order:', order.
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
-
-  } catch (error) {
-    console.error('💥 
 
   } catch (error) {
     console.error('Error in send-confirmation-email:', error);
