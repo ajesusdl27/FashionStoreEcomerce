@@ -2,14 +2,14 @@ import type { APIRoute } from 'astro';
 import { createAuthenticatedClient } from '@/lib/supabase';
 import { validateToken } from '@/lib/auth-utils';
 
-// Helper: Normalize slug for consistency
-function normalizeSlug(slug: string): string {
-  return slug
+// Helper: Generate a slug from text
+function slugify(text: string): string {
+  return text
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
+    .replace(/(^-|-$)/g, '');
 }
 
 // Helper: Check if slug is unique
@@ -29,6 +29,31 @@ async function isSlugUnique(
   
   const { data } = await query.maybeSingle();
   return !data;
+}
+
+// Helper: Generate a unique slug, appending -2, -3... if needed
+async function generateUniqueSlug(
+  authClient: ReturnType<typeof createAuthenticatedClient>,
+  name: string,
+  excludeId?: string
+): Promise<string> {
+  const baseSlug = slugify(name);
+  if (!baseSlug) throw new Error('No se puede generar un slug a partir del nombre proporcionado');
+
+  if (await isSlugUnique(authClient, baseSlug, excludeId)) {
+    return baseSlug;
+  }
+
+  let counter = 2;
+  while (counter <= 100) {
+    const candidate = `${baseSlug}-${counter}`;
+    if (await isSlugUnique(authClient, candidate, excludeId)) {
+      return candidate;
+    }
+    counter++;
+  }
+
+  throw new Error('No se pudo generar un slug único tras 100 intentos');
 }
 
 // CREATE category
@@ -53,7 +78,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const { name, slug, size_type, description, icon_name, color_theme, featured, display_order } = await request.json();
+    const { name, size_type, description, icon_name, color_theme, featured, display_order } = await request.json();
 
     // Validate required fields
     if (!name?.trim()) {
@@ -62,27 +87,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    if (!slug?.trim()) {
-      return new Response(JSON.stringify({ error: 'El slug es obligatorio' }), { 
-        status: 400, headers: { 'Content-Type': 'application/json' } 
-      });
-    }
-
-    // Normalize and validate slug
-    const normalizedSlug = normalizeSlug(slug);
-
-    // Check slug uniqueness
-    if (!(await isSlugUnique(authClient, normalizedSlug))) {
-      return new Response(JSON.stringify({ error: 'Ya existe una categoría con este slug' }), { 
-        status: 400, headers: { 'Content-Type': 'application/json' } 
-      });
-    }
+    // Generate unique slug from name (server-side, ignore any client slug)
+    const slug = await generateUniqueSlug(authClient, name);
 
     const { data, error } = await authClient
       .from('categories')
       .insert({ 
         name: name.trim(), 
-        slug: normalizedSlug, 
+        slug, 
         size_type: size_type || 'clothing',
         description: description?.trim() || null,
         icon_name: icon_name || 'tag',
@@ -131,7 +143,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const { id, name, slug, size_type, description, icon_name, color_theme, featured, display_order } = await request.json();
+    const { id, name, size_type, description, icon_name, color_theme, featured, display_order } = await request.json();
 
     // Validate required fields
     if (!id) {
@@ -146,27 +158,29 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    if (!slug?.trim()) {
-      return new Response(JSON.stringify({ error: 'El slug es obligatorio' }), { 
-        status: 400, headers: { 'Content-Type': 'application/json' } 
+    // Fetch existing category to check if name changed
+    const { data: existingCategory } = await authClient
+      .from('categories')
+      .select('name, slug')
+      .eq('id', id)
+      .single();
+
+    if (!existingCategory) {
+      return new Response(JSON.stringify({ error: 'Categoría no encontrada' }), { 
+        status: 404, headers: { 'Content-Type': 'application/json' } 
       });
     }
 
-    // Normalize and validate slug
-    const normalizedSlug = normalizeSlug(slug);
-
-    // Check slug uniqueness (excluding current category)
-    if (!(await isSlugUnique(authClient, normalizedSlug, id))) {
-      return new Response(JSON.stringify({ error: 'Ya existe otra categoría con este slug' }), { 
-        status: 400, headers: { 'Content-Type': 'application/json' } 
-      });
-    }
+    // Generate new slug only if name changed, otherwise keep existing
+    const slug = name.trim() !== existingCategory.name
+      ? await generateUniqueSlug(authClient, name, id)
+      : existingCategory.slug;
 
     const { error } = await authClient
       .from('categories')
       .update({ 
         name: name.trim(), 
-        slug: normalizedSlug, 
+        slug, 
         size_type,
         description: description?.trim() || null,
         icon_name: icon_name || 'tag',

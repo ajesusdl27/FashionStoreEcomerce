@@ -2,7 +2,17 @@ import type { APIRoute } from 'astro';
 import { createAuthenticatedClient } from '@/lib/supabase';
 import { validateToken } from '@/lib/auth-utils';
 
-// Helper function to validate slug uniqueness
+// Helper: Generate a slug from text
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+// Helper: Check if a slug is unique (excluding a given product id)
 async function isSlugUnique(
   authClient: ReturnType<typeof createAuthenticatedClient>,
   slug: string,
@@ -20,6 +30,31 @@ async function isSlugUnique(
   
   const { data } = await query.maybeSingle();
   return !data;
+}
+
+// Helper: Generate a unique slug, appending -2, -3... if needed
+async function generateUniqueSlug(
+  authClient: ReturnType<typeof createAuthenticatedClient>,
+  name: string,
+  excludeId?: string
+): Promise<string> {
+  const baseSlug = slugify(name);
+  if (!baseSlug) throw new Error('No se puede generar un slug a partir del nombre proporcionado');
+
+  if (await isSlugUnique(authClient, baseSlug, excludeId)) {
+    return baseSlug;
+  }
+
+  let counter = 2;
+  while (counter <= 100) {
+    const candidate = `${baseSlug}-${counter}`;
+    if (await isSlugUnique(authClient, candidate, excludeId)) {
+      return candidate;
+    }
+    counter++;
+  }
+
+  throw new Error('No se pudo generar un slug único tras 100 intentos');
 }
 
 // Helper function to validate offer price
@@ -62,14 +97,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const { product, variants, images } = await request.json();
 
-    // Validate unique slug
-    const slugUnique = await isSlugUnique(authClient, product.slug);
-    if (!slugUnique) {
-      return new Response(JSON.stringify({ error: 'Ya existe un producto con este slug. Por favor, elige un slug diferente.' }), { 
+    // Generate unique slug from product name (server-side, ignore any client slug)
+    if (!product.name?.trim()) {
+      return new Response(JSON.stringify({ error: 'El nombre del producto es obligatorio' }), { 
         status: 400, 
         headers: { 'Content-Type': 'application/json' } 
       });
     }
+    const slug = await generateUniqueSlug(authClient, product.name);
+    product.slug = slug;
 
     // Validate offer price
     const offerPriceError = validateOfferPrice(product);
@@ -167,13 +203,25 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
 
     const { id, product, variants, images } = await request.json();
 
-    // Validate unique slug (excluding current product)
-    const slugUnique = await isSlugUnique(authClient, product.slug, id);
-    if (!slugUnique) {
-      return new Response(JSON.stringify({ error: 'Ya existe otro producto con este slug. Por favor, elige un slug diferente.' }), { 
-        status: 400, 
+    // Fetch existing product to check if name changed
+    const { data: existingProduct } = await authClient
+      .from('products')
+      .select('name, slug')
+      .eq('id', id)
+      .single();
+
+    if (!existingProduct) {
+      return new Response(JSON.stringify({ error: 'Producto no encontrado' }), { 
+        status: 404, 
         headers: { 'Content-Type': 'application/json' } 
       });
+    }
+
+    // Generate new slug only if name changed, otherwise keep existing
+    if (product.name && product.name.trim() !== existingProduct.name) {
+      product.slug = await generateUniqueSlug(authClient, product.name, id);
+    } else {
+      product.slug = existingProduct.slug;
     }
 
     // Validate offer price
