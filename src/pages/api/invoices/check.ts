@@ -61,7 +61,7 @@ export const GET: APIRoute = async ({ url, cookies, request }) => {
     // Buscar factura existente (usar admin para bypass RLS)
     const { data: invoice } = await supabaseAdmin
       .from('invoices')
-      .select('id, invoice_number, pdf_url')
+      .select('id, order_id, invoice_number, customer_nif, customer_fiscal_name, customer_fiscal_address, subtotal, tax_rate, tax_amount, total, pdf_url, created_at')
       .eq('order_id', orderId)
       .single();
 
