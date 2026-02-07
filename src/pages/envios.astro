@@ -49,8 +49,8 @@ const returnWindowDays = await getSetting('returnWindowDays');
           <h2 class="font-heading text-2xl">Política de Envíos</h2>
         </div>
 
-        <div class="grid md:grid-cols-3 gap-4 mb-6">
-          <div class="p-5 rounded-xl bg-muted/30 border border-border hover:border-primary/30 transition-colors">
+        <div class="mb-6">
+          <div class="p-5 rounded-xl bg-muted/30 border border-border hover:border-primary/30 transition-colors max-w-md">
             <div class="flex items-center gap-2 mb-3">
               <Truck className="w-5 h-5 text-primary" />
               <h3 class="font-bold">Envío Estándar</h3>
@@ -62,34 +62,6 @@ const returnWindowDays = await getSetting('returnWindowDays');
             <div class="flex items-center gap-1 text-sm">
               <Clock className="w-4 h-4 text-muted-foreground" />
               <span>3-5 días laborables</span>
-            </div>
-          </div>
-          <div class="p-5 rounded-xl bg-muted/30 border border-border hover:border-primary/30 transition-colors">
-            <div class="flex items-center gap-2 mb-3">
-              <Truck className="w-5 h-5 text-blue-500" />
-              <h3 class="font-bold">Envío Express</h3>
-            </div>
-            <p class="text-2xl font-display text-blue-500 mb-1">9,99 €</p>
-            <p class="text-sm text-muted-foreground mb-3">
-              Para los que no pueden esperar
-            </p>
-            <div class="flex items-center gap-1 text-sm">
-              <Clock className="w-4 h-4 text-muted-foreground" />
-              <span>24-48 horas</span>
-            </div>
-          </div>
-          <div class="p-5 rounded-xl bg-muted/30 border border-border hover:border-primary/30 transition-colors">
-            <div class="flex items-center gap-2 mb-3">
-              <Globe className="w-5 h-5 text-purple-500" />
-              <h3 class="font-bold">Internacional</h3>
-            </div>
-            <p class="text-2xl font-display text-purple-500 mb-1">14,99 €</p>
-            <p class="text-sm text-muted-foreground mb-3">
-              Europa y zonas seleccionadas
-            </p>
-            <div class="flex items-center gap-1 text-sm">
-              <Clock className="w-4 h-4 text-muted-foreground" />
-              <span>5-10 días laborables</span>
             </div>
           </div>
         </div>
