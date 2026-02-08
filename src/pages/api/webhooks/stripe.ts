@@ -82,6 +82,20 @@ export const POST: APIRoute = async ({ request }) => {
           console.log(`🔔 [WEBHOOK] ✅ Order ${displayId} marked as paid`);
           isNewPayment = true;
         }
+
+        // Update total_amount with Stripe's actual charged amount (reflects coupon discount)
+        if (session.amount_total != null) {
+          const stripeFinalAmount = session.amount_total / 100;
+          const { error: totalError } = await supabaseAdmin
+            .from('orders')
+            .update({ total_amount: stripeFinalAmount })
+            .eq('id', orderId);
+          if (totalError) {
+            console.error('🔔 [WEBHOOK] ❌ Error updating total_amount:', totalError);
+          } else {
+            console.log(`🔔 [WEBHOOK] ✅ Order total_amount updated to ${stripeFinalAmount} (Stripe amount_total)`);
+          }
+        }
       } else {
         console.log(`🔔 [WEBHOOK] ℹ️ Order ${displayId} already marked as paid - checking side effects`);
       }
@@ -180,6 +194,35 @@ export const POST: APIRoute = async ({ request }) => {
               price: Number(item.price_at_purchase)
             };
           });
+
+          // Get coupon data directly from Stripe session (more reliable than DB lookups)
+          let couponData: { couponCode: string; discountAmount: number } | undefined;
+          if (couponId && couponId.trim() !== '') {
+            // Get discount amount from Stripe session (source of truth)
+            const stripeDiscount = session.total_details?.amount_discount
+              ? session.total_details.amount_discount / 100
+              : Number(session.metadata?.coupon_discount || 0);
+            // Get coupon code from metadata, or lookup from coupons table directly
+            let code = session.metadata?.coupon_code || '';
+            if (!code) {
+              try {
+                const { data: couponRow } = await supabaseAdmin
+                  .from('coupons')
+                  .select('code')
+                  .eq('id', couponId)
+                  .single();
+                code = couponRow?.code || '';
+              } catch (e) { /* fallback: no code */ }
+            }
+            if (code && stripeDiscount > 0) {
+              couponData = { couponCode: code, discountAmount: stripeDiscount };
+            }
+          }
+          
+          // Use Stripe's amount_total as source of truth for the final charged amount
+          const emailTotalAmount = session.amount_total != null
+            ? session.amount_total / 100
+            : Number(order.total_amount);
           
           // Send confirmation email
           const emailResult = await sendOrderConfirmation({
@@ -191,8 +234,9 @@ export const POST: APIRoute = async ({ request }) => {
             shippingCity: order.shipping_city,
             shippingPostalCode: order.shipping_postal_code,
             shippingCountry: order.shipping_country || 'España',
-            totalAmount: Number(order.total_amount),
-            items: emailItems
+            totalAmount: emailTotalAmount,
+            items: emailItems,
+            ...(couponData || {}),
           });
           
           if (emailResult.success) {
@@ -401,6 +445,31 @@ export const POST: APIRoute = async ({ request }) => {
             price: Number(item.price_at_purchase)
           };
         });
+
+        // Get coupon data directly from metadata + coupons table (more reliable than coupon_usages)
+        let couponData2: { couponCode: string; discountAmount: number } | undefined;
+        if (couponId && couponId.trim() !== '') {
+          const metaDiscount = Number(paymentIntent.metadata?.coupon_discount || 0);
+          let code = paymentIntent.metadata?.coupon_code || '';
+          if (!code) {
+            try {
+              const { data: couponRow } = await supabaseAdmin
+                .from('coupons')
+                .select('code')
+                .eq('id', couponId)
+                .single();
+              code = couponRow?.code || '';
+            } catch (e) { /* fallback: no code */ }
+          }
+          if (code && metaDiscount > 0) {
+            couponData2 = { couponCode: code, discountAmount: metaDiscount };
+          }
+        }
+        
+        // Use Stripe payment amount as source of truth
+        const piTotalAmount = paymentIntent.amount != null
+          ? paymentIntent.amount / 100
+          : Number(fullOrder?.total_amount || 0);
         
         const emailResult = await sendOrderConfirmation({
           orderId: order.id,
@@ -411,8 +480,9 @@ export const POST: APIRoute = async ({ request }) => {
           shippingCity: fullOrder?.shipping_city || '',
           shippingPostalCode: fullOrder?.shipping_postal_code || '',
           shippingCountry: fullOrder?.shipping_country || 'España',
-          totalAmount: Number(fullOrder?.total_amount || 0),
-          items: emailItems
+          totalAmount: piTotalAmount,
+          items: emailItems,
+          ...(couponData2 || {}),
         });
         
         if (emailResult.success) {

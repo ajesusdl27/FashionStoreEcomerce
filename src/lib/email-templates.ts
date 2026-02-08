@@ -89,17 +89,30 @@ export function generateOrderConfirmationHTML(
                 ${itemsHTML}
                 ${(function() {
                   const subtotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-                  const shippingCost = order.totalAmount - subtotal;
+                  const discount = order.discountAmount || 0;
+                  // Shipping = total + discount - subtotal (discount must be added back to get original total)
+                  const shippingCost = order.totalAmount + discount - subtotal;
+                  let rows = '';
                   
-                  if (shippingCost > 0.01) { // Use small epsilon for float comparison
-                    return `
+                  if (shippingCost > 0.01) {
+                    rows += `
                     <tr>
-                      <td colspan="2" style="padding: 12px; border-bottom: 2px solid #0a0a0a; text-align: right; color: #666;">Envío</td>
-                      <td style="padding: 12px; border-bottom: 2px solid #0a0a0a; text-align: right; color: #666;">${formatPrice(shippingCost)}</td>
+                      <td colspan="2" style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: right; color: #666;">Envío</td>
+                      <td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: right; color: #666;">${formatPrice(shippingCost)}</td>
                     </tr>
                     `;
                   }
-                  return '';
+                  
+                  if (discount > 0) {
+                    rows += `
+                    <tr>
+                      <td colspan="2" style="padding: 12px; border-bottom: 2px solid #0a0a0a; text-align: right; color: #16a34a; font-weight: bold;">Descuento${order.couponCode ? ` (${order.couponCode})` : ''}</td>
+                      <td style="padding: 12px; border-bottom: 2px solid #0a0a0a; text-align: right; color: #16a34a; font-weight: bold;">-${formatPrice(discount)}</td>
+                    </tr>
+                    `;
+                  }
+                  
+                  return rows;
                 })()}
                 <tr style="background-color: #0a0a0a;">
                   <td colspan="2" style="padding: 15px; color: #fff; font-weight: bold;">Total</td>

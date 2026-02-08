@@ -12,6 +12,7 @@ const sessionId = Astro.url.searchParams.get("session_id");
 let order = null;
 let orderItems: any[] = [];
 let emailSent = false;
+let couponInfo: { code: string; discountAmount: number } | null = null;
 
 if (sessionId) {
   try {
@@ -45,6 +46,15 @@ if (sessionId) {
         );
       } else {
         console.log("Order status updated to paid via success page");
+      }
+
+      // Update total_amount with Stripe's actual charged amount (reflects coupon discount)
+      if (session.amount_total != null && session.metadata?.order_id) {
+        const stripeFinalAmount = session.amount_total / 100;
+        await supabaseAdmin
+          .from("orders")
+          .update({ total_amount: stripeFinalAmount })
+          .eq("id", session.metadata.order_id);
       }
 
       // Record coupon usage if present (backup for webhook)
@@ -123,6 +133,35 @@ if (sessionId) {
 
         orderItems = items || [];
 
+        // Query coupon info for this order
+        try {
+          const { data: couponUsage } = await supabaseAdmin
+            .from('coupon_usages')
+            .select('coupons:coupon_id (code, discount_type, discount_value)')
+            .eq('order_id', order.id)
+            .limit(1)
+            .single();
+
+          if (couponUsage?.coupons) {
+            const coupon = Array.isArray(couponUsage.coupons) ? couponUsage.coupons[0] : couponUsage.coupons;
+            if (coupon) {
+              // Use Stripe's actual discount from session, fallback to coupon value
+              const stripeDiscount = session.total_details?.amount_discount
+                ? session.total_details.amount_discount / 100
+                : Number(session.metadata?.coupon_discount || 0);
+              const discount = stripeDiscount > 0 ? stripeDiscount : (
+                coupon.discount_type === 'fixed' ? coupon.discount_value :
+                coupon.discount_type === 'percentage' ? Math.round(
+                  orderItems.reduce((s: number, it: any) => s + (Number(it.price_at_purchase) * it.quantity), 0) * coupon.discount_value
+                ) / 100 : 0
+              );
+              couponInfo = { code: coupon.code, discountAmount: discount };
+            }
+          }
+        } catch (e) {
+          // No coupon used, continue
+        }
+
         // Send confirmation email if webhook didn't already do it
         // (check if order was already paid before we updated it)
         console.log(
@@ -155,6 +194,7 @@ if (sessionId) {
               shippingCountry: order.shipping_country || "España",
               totalAmount: Number(order.total_amount),
               items: emailItems,
+              ...(couponInfo ? { couponCode: couponInfo.code, discountAmount: couponInfo.discountAmount } : {}),
             });
 
             emailSent = result.success;
@@ -276,6 +316,17 @@ function formatDate(date: string): string {
                 ))}
               </div>
             </div>
+
+            {couponInfo && couponInfo.discountAmount > 0 && (
+              <div class="flex justify-between text-sm py-2 text-emerald-600">
+                <span>
+                  Descuento (cupón <span class="font-mono font-medium">{couponInfo.code}</span>)
+                </span>
+                <span class="font-medium">
+                  -{formatPrice(couponInfo.discountAmount)}
+                </span>
+              </div>
+            )}
 
             <div class="pt-4 border-t border-border flex justify-between text-lg font-bold">
               <span>Total</span>

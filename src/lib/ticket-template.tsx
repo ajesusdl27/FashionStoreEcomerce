@@ -179,6 +179,8 @@ export interface TicketData {
   }[];
   totalAmount: number;
   shippingCost?: number; // Optional, will calculate from items if not provided
+  couponCode?: string;
+  discountAmount?: number;
   companyName: string;
   companyNif: string;
   companyAddress: string;
@@ -204,7 +206,7 @@ export const TicketTemplate: React.FC<{ data: TicketData }> = ({ data }) => {
           </View>
           <View style={{ alignItems: 'flex-end' }}>
             <Text style={styles.ticketLabel}>Ticket de Compra</Text>
-            <Text style={styles.ticketNumber}>Pedido #{shortOrderId}</Text>
+            <Text style={styles.ticketNumber}>Pedido {shortOrderId}</Text>
             <Text style={{ fontSize: 9, color: '#888888', marginTop: 4 }}>
               {data.orderDate}
             </Text>
@@ -264,7 +266,9 @@ export const TicketTemplate: React.FC<{ data: TicketData }> = ({ data }) => {
             // Calculate subtotal from items
             const subtotal = data.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
             // Calculate shipping (difference between total and subtotal)
-            const shippingCost = data.shippingCost !== undefined ? data.shippingCost : (data.totalAmount - subtotal);
+            const discount = data.discountAmount || 0;
+            // Shipping = total + discount - subtotal (discount added back to recover original pre-discount total)
+            const shippingCost = data.shippingCost !== undefined ? data.shippingCost : (data.totalAmount + discount - subtotal);
             // Base imponible (sin IVA)
             const baseImponible = data.totalAmount / 1.21;
             // IVA total
@@ -280,6 +284,12 @@ export const TicketTemplate: React.FC<{ data: TicketData }> = ({ data }) => {
                   <View style={styles.totalRow}>
                     <Text style={styles.totalLabel}>Gastos de envío:</Text>
                     <Text style={styles.totalValue}>{formatCurrency(shippingCost)}</Text>
+                  </View>
+                )}
+                {data.discountAmount && data.discountAmount > 0 && (
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>Descuento{data.couponCode ? ` (${data.couponCode})` : ''}:</Text>
+                    <Text style={[styles.totalValue, { color: '#16a34a' }]}>-{formatCurrency(data.discountAmount)}</Text>
                   </View>
                 )}
                 <View style={[styles.totalRow, { borderTopWidth: 1, borderTopColor: '#eeeeee', paddingTop: 8, marginTop: 4 }]}>

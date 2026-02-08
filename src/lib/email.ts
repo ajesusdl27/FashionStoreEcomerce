@@ -75,6 +75,8 @@ export interface OrderEmailData {
   }[];
   orderDate?: Date; // Añadido para el ticket
   reason?: string; // Añadido para cancelaciones
+  couponCode?: string;
+  discountAmount?: number;
 }
 
 // Tipo simplificado para emails de cancelación
@@ -129,6 +131,8 @@ export async function sendOrderConfirmation(order: OrderEmailData): Promise<{ su
         shippingCountry: order.shippingCountry,
         items: order.items,
         totalAmount: order.totalAmount,
+        couponCode: order.couponCode,
+        discountAmount: order.discountAmount,
       });
       console.log('📧 [EMAIL] ✅ Ticket PDF generated successfully');
     } catch (pdfError) {

@@ -70,9 +70,8 @@ export default function HeaderSearch() {
       return;
     }
 
-    setIsSearching(true);
-    
     debounceTimer.current = setTimeout(async () => {
+      setIsSearching(true);
       try {
         const { data, error } = await supabase
           .from('products')

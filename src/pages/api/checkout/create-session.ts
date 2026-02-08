@@ -241,7 +241,9 @@ export const POST: APIRoute = async ({ request, url, locals, cookies }) => {
           order_number: orderNumber.toString(),
           order_slug: formattedOrderId,
           // Always include coupon_id in metadata, even if empty string for consistency
-          coupon_id: validatedCoupon?.id || ''
+          coupon_id: validatedCoupon?.id || '',
+          coupon_code: couponCode || '',
+          coupon_discount: validatedCoupon?.calculatedDiscount?.toString() || '0'
         },
         locale: 'es',
         billing_address_collection: 'auto'

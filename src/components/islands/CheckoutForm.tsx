@@ -13,6 +13,96 @@ import {
   type FieldName 
 } from '@/lib/validators';
 
+// Extracted outside CheckoutForm to prevent React re-mounting on every render
+interface FormInputProps {
+  id: string;
+  label: string;
+  field: FieldName;
+  type?: string;
+  placeholder: string;
+  autoComplete?: string;
+  maxLength?: number;
+  required?: boolean;
+  helpText?: string;
+  formData: Record<string, string>;
+  fieldErrors: Partial<Record<FieldName, string>>;
+  touchedFields: Set<FieldName>;
+  updateField: (field: FieldName, value: string) => void;
+  handleBlur: (field: FieldName) => void;
+}
+
+function FormInput({
+  id,
+  label,
+  field,
+  type = 'text',
+  placeholder,
+  autoComplete,
+  maxLength,
+  required = true,
+  helpText,
+  formData,
+  fieldErrors,
+  touchedFields,
+  updateField,
+  handleBlur,
+}: FormInputProps) {
+  const hasError = touchedFields.has(field) && fieldErrors[field];
+  const isValid = touchedFields.has(field) && !fieldErrors[field] && formData[field];
+
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium mb-2">
+        {label} {required && <span className="text-accent">*</span>}
+      </label>
+      <div className="relative">
+        <input
+          type={type}
+          id={id}
+          value={formData[field]}
+          onChange={(e) => updateField(field, e.target.value)}
+          onBlur={() => handleBlur(field)}
+          className={`w-full px-4 py-3 bg-background border rounded-lg outline-none transition-all pr-10 ${
+            hasError
+              ? 'border-accent focus:border-accent focus:ring-1 focus:ring-accent'
+              : isValid
+                ? 'border-green-500 focus:border-green-500 focus:ring-1 focus:ring-green-500'
+                : 'border-border focus:border-primary focus:ring-1 focus:ring-primary'
+          }`}
+          placeholder={placeholder}
+          autoComplete={autoComplete}
+          maxLength={maxLength}
+        />
+        {/* Status icon */}
+        {touchedFields.has(field) && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            {hasError ? (
+              <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            ) : isValid ? (
+              <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+              </svg>
+            ) : null}
+          </div>
+        )}
+      </div>
+      {hasError && (
+        <p className="mt-1 text-xs text-accent flex items-center gap-1">
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+          {fieldErrors[field]}
+        </p>
+      )}
+      {helpText && !hasError && (
+        <p className="mt-1 text-xs text-muted-foreground">{helpText}</p>
+      )}
+    </div>
+  );
+}
+
 interface FormData {
   customerName: string;
   customerEmail: string;
@@ -289,84 +379,6 @@ export default function CheckoutForm({
     }
   };
 
-  // Input component with error state
-  const FormInput = ({ 
-    id, 
-    label, 
-    field, 
-    type = 'text', 
-    placeholder, 
-    autoComplete,
-    maxLength,
-    required = true,
-    helpText
-  }: {
-    id: string;
-    label: string;
-    field: FieldName;
-    type?: string;
-    placeholder: string;
-    autoComplete?: string;
-    maxLength?: number;
-    required?: boolean;
-    helpText?: string;
-  }) => {
-    const hasError = touchedFields.has(field) && fieldErrors[field];
-    const isValid = touchedFields.has(field) && !fieldErrors[field] && formData[field];
-    
-    return (
-      <div>
-        <label htmlFor={id} className="block text-sm font-medium mb-2">
-          {label} {required && <span className="text-accent">*</span>}
-        </label>
-        <div className="relative">
-          <input
-            type={type}
-            id={id}
-            value={formData[field]}
-            onChange={(e) => updateField(field, e.target.value)}
-            onBlur={() => handleBlur(field)}
-            className={`w-full px-4 py-3 bg-background border rounded-lg outline-none transition-all pr-10 ${
-              hasError 
-                ? 'border-accent focus:border-accent focus:ring-1 focus:ring-accent' 
-                : isValid
-                  ? 'border-green-500 focus:border-green-500 focus:ring-1 focus:ring-green-500'
-                  : 'border-border focus:border-primary focus:ring-1 focus:ring-primary'
-            }`}
-            placeholder={placeholder}
-            autoComplete={autoComplete}
-            maxLength={maxLength}
-          />
-          {/* Status icon */}
-          {touchedFields.has(field) && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              {hasError ? (
-                <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              ) : isValid ? (
-                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-              ) : null}
-            </div>
-          )}
-        </div>
-        {hasError && (
-          <p className="mt-1 text-xs text-accent flex items-center gap-1">
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-            {fieldErrors[field]}
-          </p>
-        )}
-        {helpText && !hasError && (
-          <p className="mt-1 text-xs text-muted-foreground">{helpText}</p>
-        )}
-      </div>
-    );
-  };
-
   // Loading skeleton
   if (isInitializing) {
     return (
@@ -464,6 +476,11 @@ export default function CheckoutForm({
                 field="customerName"
                 placeholder="Juan García López"
                 autoComplete="name"
+                formData={formData}
+                fieldErrors={fieldErrors}
+                touchedFields={touchedFields}
+                updateField={updateField}
+                handleBlur={handleBlur}
               />
 
               <FormInput
@@ -474,6 +491,11 @@ export default function CheckoutForm({
                 placeholder="juan.garcia@gmail.com"
                 autoComplete="email"
                 helpText="Recibirás la confirmación del pedido en este email"
+                formData={formData}
+                fieldErrors={fieldErrors}
+                touchedFields={touchedFields}
+                updateField={updateField}
+                handleBlur={handleBlur}
               />
 
               <FormInput
@@ -485,6 +507,11 @@ export default function CheckoutForm({
                 autoComplete="tel"
                 required={false}
                 helpText="Para contactarte si hay algún problema con el envío"
+                formData={formData}
+                fieldErrors={fieldErrors}
+                touchedFields={touchedFields}
+                updateField={updateField}
+                handleBlur={handleBlur}
               />
             </div>
           )}
@@ -499,6 +526,11 @@ export default function CheckoutForm({
                 field="shippingAddress"
                 placeholder="Calle Gran Vía 45, 2º B"
                 autoComplete="street-address"
+                formData={formData}
+                fieldErrors={fieldErrors}
+                touchedFields={touchedFields}
+                updateField={updateField}
+                handleBlur={handleBlur}
               />
 
               <div className="grid grid-cols-2 gap-4">
@@ -508,6 +540,11 @@ export default function CheckoutForm({
                   field="shippingCity"
                   placeholder="Madrid"
                   autoComplete="address-level2"
+                  formData={formData}
+                  fieldErrors={fieldErrors}
+                  touchedFields={touchedFields}
+                  updateField={updateField}
+                  handleBlur={handleBlur}
                 />
 
                 <FormInput
@@ -518,6 +555,11 @@ export default function CheckoutForm({
                   autoComplete="postal-code"
                   maxLength={5}
                   helpText="5 dígitos"
+                  formData={formData}
+                  fieldErrors={fieldErrors}
+                  touchedFields={touchedFields}
+                  updateField={updateField}
+                  handleBlur={handleBlur}
                 />
               </div>
               

@@ -82,8 +82,8 @@ const settings = await getSettings();
 
         <!-- Actions -->
         <div class="flex items-center gap-2">
-          <!-- Search (React Island) - idle loading for non-critical -->
-          <HeaderSearch client:idle />
+          <!-- Search (React Island) - load immediately for interactive input -->
+          <HeaderSearch client:load />
 
           <!-- Theme Toggle - load immediately as it affects FOUC -->
           <ThemeToggle client:load />

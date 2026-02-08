@@ -126,6 +126,35 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       `)
       .eq('order_id', orderId);
 
+    // Buscar cupón usado en este pedido (JOIN coupon_usages + coupons)
+    let couponCode: string | undefined;
+    let discountAmount: number | undefined;
+    try {
+      const { data: couponUsage } = await supabaseAdmin
+        .from('coupon_usages')
+        .select('coupons:coupon_id (code, discount_type, discount_value)')
+        .eq('order_id', orderId)
+        .limit(1)
+        .single();
+
+      if (couponUsage?.coupons) {
+        const coupon = Array.isArray(couponUsage.coupons) ? couponUsage.coupons[0] : couponUsage.coupons;
+        if (coupon) {
+          couponCode = coupon.code;
+          // Calculate discount from coupon parameters
+          const itemsSubtotal = (orderItems || []).reduce((sum: number, item: any) => 
+            sum + (Number(item.price_at_purchase) * item.quantity), 0);
+          if (coupon.discount_type === 'fixed') {
+            discountAmount = coupon.discount_value;
+          } else if (coupon.discount_type === 'percentage') {
+            discountAmount = Math.round(itemsSubtotal * coupon.discount_value) / 100;
+          }
+        }
+      }
+    } catch (e) {
+      // No coupon used, continue without discount info
+    }
+
     // Calcular importes
     const total = Number(order.total_amount);
     const subtotal = Math.round((total / 1.21) * 100) / 100;
@@ -153,7 +182,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       subtotal,
       taxRate: 21,
       taxAmount,
-      total
+      total,
+      couponCode,
+      discountAmount,
     });
 
     // Subir PDF a Supabase Storage (usar admin para bypass RLS)
