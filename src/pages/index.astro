@@ -326,6 +326,11 @@ const heroCoupon   = heroPromotion ? normalizeCoupon(heroPromotion.coupons) : nu
             <div class="flex items-center gap-3 bg-card/80 backdrop-blur-sm border border-accent/30 rounded-xl px-5 py-3 shadow-lg shadow-accent/10">
               <span class="text-sm text-muted-foreground">Termina en:</span>
               <div class="flex items-center gap-2" id="countdown-timer">
+                <div class="flex flex-col items-center" id="days-container">
+                  <span class="text-2xl font-bold text-accent tabular-nums" id="days">00</span>
+                  <span class="text-[10px] text-muted-foreground uppercase">días</span>
+                </div>
+                <span class="text-accent font-bold" id="days-separator">:</span>
                 <div class="flex flex-col items-center">
                   <span class="text-2xl font-bold text-accent tabular-nums" id="hours">00</span>
                   <span class="text-[10px] text-muted-foreground uppercase">hrs</span>
@@ -441,14 +446,30 @@ const heroCoupon   = heroPromotion ? normalizeCoupon(heroPromotion.coupons) : nu
         return;
       }
       
-      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
       
+      const daysEl = document.getElementById('days');
+      const daysContainer = document.getElementById('days-container');
+      const daysSeparator = document.getElementById('days-separator');
       const hoursEl = document.getElementById('hours');
       const minutesEl = document.getElementById('minutes');
       const secondsEl = document.getElementById('seconds');
       
+      // Show/hide days section based on whether there are days remaining
+      if (daysContainer && daysSeparator) {
+        if (days > 0) {
+          daysContainer.style.display = 'flex';
+          daysSeparator.style.display = 'inline';
+        } else {
+          daysContainer.style.display = 'none';
+          daysSeparator.style.display = 'none';
+        }
+      }
+      
+      if (daysEl) daysEl.textContent = days.toString().padStart(2, '0');
       if (hoursEl) hoursEl.textContent = hours.toString().padStart(2, '0');
       if (minutesEl) minutesEl.textContent = minutes.toString().padStart(2, '0');
       if (secondsEl) secondsEl.textContent = seconds.toString().padStart(2, '0');
