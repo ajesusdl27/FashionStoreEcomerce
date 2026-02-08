@@ -1,0 +1,109 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { createAuthenticatedClient } from "@/lib/supabase";
+import { getSettings } from "@/lib/settings";
+import InventoryManager from "@/components/islands/admin/InventoryManager";
+
+// Auth
+const accessToken = Astro.cookies.get("sb-access-token")?.value;
+const refreshToken = Astro.cookies.get("sb-refresh-token")?.value;
+const authClient = createAuthenticatedClient(accessToken, refreshToken);
+
+// Get settings for threshold
+const settings = await getSettings();
+const lowStockThreshold = settings.lowStockThreshold;
+
+// Parallel queries
+const [
+  { data: variantsData },
+  { data: categories },
+] = await Promise.all([
+  // All active product variants with product info and first image
+  authClient
+    .from("product_variants")
+    .select(`
+      id,
+      size,
+      stock,
+      product:products!inner(
+        id,
+        name,
+        price,
+        category:categories(id, name)
+      )
+    `)
+    .is("product.deleted_at", null)
+    .eq("product.active", true)
+    .order("stock", { ascending: true }),
+
+  // Categories for filter
+  authClient
+    .from("categories")
+    .select("id, name")
+    .order("name"),
+]);
+
+// Transform data for the component
+const variants = (variantsData || []).map((v: any) => ({
+  id: v.id,
+  size: v.size,
+  stock: v.stock,
+  product: {
+    id: v.product.id,
+    name: v.product.name,
+    price: v.product.price,
+    category: v.product.category,
+  },
+}));
+
+// Calculate metrics
+const totalSkus = variants.length;
+const outOfStock = variants.filter((v: any) => v.stock === 0).length;
+const lowStock = variants.filter((v: any) => v.stock > 0 && v.stock <= lowStockThreshold).length;
+const inventoryValue = variants.reduce((sum: number, v: any) => sum + (v.stock * v.product.price), 0);
+
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(amount);
+};
+---
+
+<AdminLayout title="Inventario">
+  <div class="max-w-7xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-foreground">Control de Inventario</h1>
+        <p class="text-muted-foreground">
+          Gestiona el stock de todos tus productos y tallas
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <a
+          href="/admin/configuracion"
+          class="flex items-center gap-2 px-4 py-2 text-sm border border-border rounded-lg hover:bg-muted transition-colors"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          Umbral: {lowStockThreshold} uds
+        </a>
+        <a
+          href="/admin/productos/nuevo"
+          class="admin-btn-primary"
+        >
+          + Nuevo Producto
+        </a>
+      </div>
+    </div>
+
+    <!-- Inventory Manager (React Island) -->
+    <InventoryManager
+      client:load
+      initialVariants={variants}
+      categories={categories || []}
+      lowStockThreshold={lowStockThreshold}
+      metrics={{ totalSkus, outOfStock, lowStock, inventoryValue }}
+    />
+  </div>
+</AdminLayout>

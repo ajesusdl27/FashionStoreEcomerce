@@ -7,6 +7,7 @@ interface InlineStockEditorProps {
   productName: string;
   size: string;
   currentStock: number;
+  threshold?: number;
   onUpdate?: (variantId: string, newStock: number) => void;
 }
 
@@ -16,6 +17,7 @@ export default function InlineStockEditor({
   productName,
   size,
   currentStock,
+  threshold = 5,
   onUpdate,
 }: InlineStockEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -130,7 +132,7 @@ export default function InlineStockEditor({
   return (
     <div className="flex items-center gap-2">
       <span
-        className={`badge ${currentStock === 0 ? 'badge-danger' : currentStock < 5 ? 'badge-warning' : 'badge-success'}`}
+        className={`badge ${currentStock === 0 ? 'badge-danger' : currentStock < threshold ? 'badge-warning' : 'badge-success'}`}
       >
         {currentStock === 0 ? 'Sin stock' : `${currentStock} uds`}
       </span>

@@ -60,7 +60,6 @@ const getSettingBool = (key: string) => {
     <span class="inline-flex items-center gap-2">
       <AlertTriangle className="w-5 h-5" />
       Tienes cambios sin guardar
-      <span class="text-sm opacity-80">(Ctrl+S para guardar)</span>
     </span>
   </div>
 
@@ -118,12 +117,7 @@ const getSettingBool = (key: string) => {
         <h1 class="font-display text-3xl text-primary">Configuración</h1>
         <p class="text-muted-foreground mt-1">Ajustes generales de la tienda</p>
       </div>
-      <div class="flex items-center gap-2 text-sm text-muted-foreground">
-        <kbd class="px-2 py-1 bg-muted rounded text-xs font-mono">Ctrl</kbd>
-        <span>+</span>
-        <kbd class="px-2 py-1 bg-muted rounded text-xs font-mono">S</kbd>
-        <span class="hidden sm:inline">para guardar</span>
-      </div>
+      <div class="flex items-center gap-2 text-sm text-muted-foreground"></div>
     </div>
 
     <!-- Settings -->
@@ -649,6 +643,49 @@ const getSettingBool = (key: string) => {
         </div>
       </div>
 
+      <!-- Inventory Section -->
+      <div class="admin-card space-y-4">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center"
+          >
+            <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+          </div>
+          <h2 class="font-heading text-lg">Inventario</h2>
+        </div>
+
+        <div>
+          <div class="flex items-center gap-2 mb-2">
+            <label
+              for="low_stock_threshold"
+              class="block text-sm font-medium text-muted-foreground"
+            >
+              Umbral de stock bajo
+            </label>
+          </div>
+          <div class="relative max-w-xs">
+            <input
+              type="number"
+              id="low_stock_threshold"
+              name="low_stock_threshold"
+              min="1"
+              max="999"
+              value={getSettingValue("low_stock_threshold", "5")}
+              class="w-full px-4 py-3 pr-20 bg-card border border-border rounded-lg text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary setting-input"
+            />
+            <span
+              class="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
+              >unidades</span
+            >
+          </div>
+          <p class="text-xs text-muted-foreground mt-2">
+            Los productos con stock por debajo de este número aparecerán como "bajo stock" en las alertas del dashboard y el panel de inventario.
+          </p>
+        </div>
+      </div>
+
       <!-- Maintenance Mode Section -->
       <div class="admin-card space-y-4 border-yellow-500/20">
         <div class="flex items-center gap-3">
@@ -1132,6 +1169,12 @@ const getSettingBool = (key: string) => {
             key: "return_window_days",
             value_number:
               parseInt(formData.get("return_window_days") as string) || 30,
+          },
+          // Inventory settings
+          {
+            key: "low_stock_threshold",
+            value_number:
+              parseInt(formData.get("low_stock_threshold") as string) || 5,
           },
           // Social settings
           {

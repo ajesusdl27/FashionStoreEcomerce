@@ -56,6 +56,9 @@ export interface StoreSettings {
   // Sistema
   maintenanceMode: boolean;
   maintenanceMessage: string;
+  
+  // Inventario
+  lowStockThreshold: number;
 }
 
 interface SettingRow {
@@ -112,6 +115,9 @@ const DEFAULTS: StoreSettings = {
   // Sistema
   maintenanceMode: false,
   maintenanceMessage: 'Estamos realizando mejoras. Volvemos pronto.',
+  
+  // Inventario
+  lowStockThreshold: 5,
 };
 
 // ============================================
@@ -310,6 +316,9 @@ function mapSettingsFromCache(cache: Map<string, SettingRow>): StoreSettings {
     // Sistema
     maintenanceMode: getBoolValue(cache, 'maintenance_mode', DEFAULTS.maintenanceMode),
     maintenanceMessage: getTextValue(cache, 'maintenance_message', DEFAULTS.maintenanceMessage),
+    
+    // Inventario
+    lowStockThreshold: getNumberValue(cache, 'low_stock_threshold', DEFAULTS.lowStockThreshold),
   };
 }
 

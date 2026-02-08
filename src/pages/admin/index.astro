@@ -8,6 +8,7 @@ import {
   getSalesLast7Days,
 } from "@/lib/analytics";
 import { formatPrice } from "@/lib/formatters";
+import { getSettings } from "@/lib/settings";
 
 // React Island Components
 import KPICard from "@/components/islands/KPICard";
@@ -35,6 +36,10 @@ import {
 const accessToken = Astro.cookies.get("sb-access-token")?.value;
 const refreshToken = Astro.cookies.get("sb-refresh-token")?.value;
 const authClient = createAuthenticatedClient(accessToken, refreshToken);
+
+// Get dynamic low stock threshold from settings
+const storeSettings = await getSettings();
+const lowStockThreshold = storeSettings.lowStockThreshold;
 
 // ✅ FIX 1: Timezone handling for Spain (manual UTC conversion)
 // Spain is UTC+1 (winter) or UTC+2 (summer - DST)
@@ -123,7 +128,7 @@ const [
       "partially_refunded",
     ]),
 
-  // Low stock products (variants with stock < 5)
+  // Low stock products (variants with stock < dynamic threshold)
   authClient
     .from("product_variants")
     .select(
@@ -134,7 +139,7 @@ const [
       product:products(id, name)
     `,
     )
-    .lt("stock", 5)
+    .lt("stock", lowStockThreshold)
     .order("stock", { ascending: true })
     .limit(8),
 
@@ -507,10 +512,10 @@ const salesSparkline = analytics?.sales7Days?.map((d: any) => d.total || 0) || [
             }
           </div>
           <a
-            href="/admin/productos?status=low-stock"
+            href="/admin/inventario"
             class="text-sm text-primary hover:underline flex items-center gap-1"
           >
-            Gestionar
+            Ver inventario
             <ChevronRight className="w-4 h-4" />
           </a>
         </div>
@@ -539,6 +544,7 @@ const salesSparkline = analytics?.sales7Days?.map((d: any) => d.total || 0) || [
                       productName={variant.product?.name}
                       size={variant.size}
                       currentStock={variant.stock}
+                      threshold={lowStockThreshold}
                     />
                   </div>
                 </div>

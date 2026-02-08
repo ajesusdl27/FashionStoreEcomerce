@@ -55,6 +55,8 @@ const ALLOWED_KEYS = new Set([
   'store_logo', 'store_favicon',
   // Sistema
   'maintenance_mode', 'maintenance_message',
+  // Inventario
+  'low_stock_threshold',
 ]);
 
 // ============================================
