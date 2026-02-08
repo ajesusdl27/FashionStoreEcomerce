@@ -27,6 +27,7 @@ const { data: products } = await supabase
     variants:product_variants(id, size, stock)
   `
   )
+  .is('deleted_at', null)
   .eq("category_id", category.id)
   .eq("active", true)
   .order("created_at", { ascending: false });

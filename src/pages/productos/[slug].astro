@@ -24,6 +24,7 @@ const { data: product, error } = await supabase
     variants:product_variants(id, size, stock)
   `
   )
+  .is('deleted_at', null)
   .eq("slug", slug)
   .eq("active", true)
   .single();

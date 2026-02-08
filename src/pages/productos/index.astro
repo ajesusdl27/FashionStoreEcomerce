@@ -25,6 +25,7 @@ let query = supabase
     variants:product_variants(id, size, stock)
   `
   )
+  .is('deleted_at', null)
   .eq("active", true);
 
 // Apply search filter

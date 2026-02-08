@@ -76,6 +76,7 @@ export default function HeaderSearch() {
         const { data, error } = await supabase
           .from('products')
           .select('id, name, slug, price, offer_price, images:product_images(image_url)')
+          .is('deleted_at', null)
           .eq('active', true)
           .or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
           .limit(5);

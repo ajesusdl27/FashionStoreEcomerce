@@ -39,6 +39,7 @@ const { data: featuredProducts } = await supabase
     variants:product_variants(id, size, stock)
   `
   )
+  .is('deleted_at', null)
   .eq("active", true)
   .order("created_at", { ascending: false })
   .limit(8);
@@ -53,6 +54,7 @@ const { data: offerProducts } = await supabase
     variants:product_variants(id, size, stock)
   `
   )
+  .is('deleted_at', null)
   .eq("active", true)
   .eq("is_offer", true)
   .limit(4);
