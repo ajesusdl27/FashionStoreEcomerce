@@ -234,37 +234,217 @@ export async function getBestSellingProduct(client: SupabaseClient): Promise<Bes
 
 /**
  * Obtener ventas de los últimos 7 días para gráfico
+ * FIXED: Single query instead of 7 sequential queries (N+1 fix)
  */
 export async function getSalesLast7Days(client: SupabaseClient): Promise<DailySales[]> {
   const now = new Date();
-  const days: DailySales[] = [];
-  
+  const rangeStart = getSpainMidnightUTC(subDays(now, 6));
+  const rangeEnd = new Date(getSpainMidnightUTC(now));
+  rangeEnd.setUTCHours(rangeEnd.getUTCHours() + 24);
+
+  const { data } = await client
+    .from('orders')
+    .select('total_amount, refunded_amount, created_at')
+    .in('status', ['paid', 'shipped', 'delivered', 'return_completed', 'partially_refunded'])
+    .gte('created_at', rangeStart.toISOString())
+    .lt('created_at', rangeEnd.toISOString());
+
+  // Build a map of day boundaries for grouping
+  const dayBuckets: Map<string, { revenue: number; count: number }> = new Map();
+  const dayMeta: { key: string; date: Date }[] = [];
+
   for (let i = 6; i >= 0; i--) {
     const date = subDays(now, i);
-    const dayStart = getSpainMidnightUTC(date);
-    const dayEnd = new Date(dayStart);
-    dayEnd.setUTCHours(dayEnd.getUTCHours() + 24);
-
-    const { data } = await client
-      .from('orders')
-      .select('total_amount, refunded_amount')
-      .in('status', ['paid', 'shipped', 'delivered', 'return_completed', 'partially_refunded'])
-      .gte('created_at', dayStart.toISOString())
-      .lt('created_at', dayEnd.toISOString());
-
-    const dailyRevenue = data?.reduce((sum, order) => {
-      const orderTotal = Number(order.total_amount) || 0;
-      const refunded = Number(order.refunded_amount) || 0;
-      return sum + (orderTotal - refunded);
-    }, 0) || 0;
-
-    days.push({
-      date: format(date, 'yyyy-MM-dd'),
-      label: format(date, 'EEE d', { locale: es }),
-      revenue: dailyRevenue,
-      orderCount: data?.length || 0
-    });
+    const key = format(date, 'yyyy-MM-dd');
+    dayBuckets.set(key, { revenue: 0, count: 0 });
+    dayMeta.push({ key, date });
   }
 
-  return days;
+  // Assign each order to its day bucket using Spain timezone
+  (data || []).forEach(order => {
+    const orderDate = new Date(order.created_at);
+    // Convert to Spain date string for bucketing
+    const spainDateStr = orderDate.toLocaleDateString('en-CA', { timeZone: 'Europe/Madrid' }); // YYYY-MM-DD
+    const bucket = dayBuckets.get(spainDateStr);
+    if (bucket) {
+      const orderTotal = Number(order.total_amount) || 0;
+      const refunded = Number(order.refunded_amount) || 0;
+      bucket.revenue += (orderTotal - refunded);
+      bucket.count++;
+    }
+  });
+
+  return dayMeta.map(({ key, date }) => {
+    const bucket = dayBuckets.get(key)!;
+    return {
+      date: key,
+      label: format(date, 'EEE d', { locale: es }),
+      revenue: bucket.revenue,
+      orderCount: bucket.count,
+    };
+  });
+}
+
+// ============================================
+// EXTENDED ANALYTICS FOR DASHBOARD V2
+// ============================================
+
+export interface DashboardExtendedMetrics {
+  /** Average order value for current month */
+  aov: number;
+  /** Returns overview */
+  returns: {
+    total: number;
+    pending: number;
+    totalRefunded: number;
+    rate: number;
+  };
+  /** Active coupons info */
+  coupons: {
+    activeCount: number;
+    usagesThisMonth: number;
+    totalDiscount: number;
+  };
+  /** Shipments in transit */
+  shipmentsInTransit: number;
+  /** Active promotions count */
+  activePromotions: number;
+  /** Order status distribution */
+  orderStatusDistribution: Record<string, number>;
+  /** Revenue by category (top 5) */
+  revenueByCategory: { name: string; revenue: number }[];
+}
+
+/**
+ * Get extended dashboard metrics in a single parallelized call.
+ * Surfaces data from tables not previously shown on the dashboard.
+ */
+export async function getDashboardExtendedMetrics(
+  client: SupabaseClient,
+  monthlyOrderCount: number,
+  monthlyRevenue: number,
+): Promise<DashboardExtendedMetrics> {
+  const now = new Date();
+  const monthStart = startOfMonth(getSpainMidnightUTC(now));
+
+  const [
+    { data: returnsData },
+    { count: totalOrdersCount },
+    { data: activeCoupons },
+    { data: couponUsagesData },
+    { count: shipmentsInTransit },
+    { count: activePromotions },
+    { data: allOrderStatuses },
+    { data: orderItemsData },
+  ] = await Promise.all([
+    // Returns overview
+    client
+      .from('returns')
+      .select('id, status, refund_amount'),
+
+    // Total orders count (for return rate)
+    client
+      .from('orders')
+      .select('*', { count: 'exact', head: true }),
+
+    // Active coupons
+    client
+      .from('coupons')
+      .select('id, code, current_uses, discount_value, discount_type')
+      .eq('is_active', true),
+
+    // Coupon usages this month
+    client
+      .from('coupon_usages')
+      .select('id, coupon_id')
+      .gte('used_at', monthStart.toISOString()),
+
+    // Shipments in transit (shipped but not delivered)
+    client
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'shipped'),
+
+    // Active promotions
+    client
+      .from('promotions')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true)
+      .lte('start_date', now.toISOString())
+      .gte('end_date', now.toISOString()),
+
+    // All orders for status distribution (last 30 days)
+    client
+      .from('orders')
+      .select('status')
+      .gte('created_at', subDays(now, 30).toISOString()),
+
+    // Order items this month with product+category for revenue breakdown
+    client
+      .from('order_items')
+      .select(`
+        quantity,
+        price_at_purchase,
+        product:products(
+          category:categories(name)
+        )
+      `)
+      .gte('created_at', monthStart.toISOString()),
+  ]);
+
+  // Returns aggregation
+  const returns = (returnsData || []);
+  const returnsPending = returns.filter((r: any) => ['requested', 'approved'].includes(r.status)).length;
+  const totalRefunded = returns
+    .filter((r: any) => r.status === 'completed' && r.refund_amount)
+    .reduce((sum: number, r: any) => sum + (Number(r.refund_amount) || 0), 0);
+  const returnRate = totalOrdersCount && totalOrdersCount > 0
+    ? (returns.length / totalOrdersCount) * 100
+    : 0;
+
+  // Coupons
+  const couponUsagesCount = couponUsagesData?.length || 0;
+  const totalCouponDiscount = (activeCoupons || []).reduce((sum: number, c: any) => {
+    return sum + (Number(c.current_uses) * Number(c.discount_value || 0));
+  }, 0);
+
+  // Order status distribution
+  const statusDist: Record<string, number> = {};
+  (allOrderStatuses || []).forEach((o: any) => {
+    statusDist[o.status] = (statusDist[o.status] || 0) + 1;
+  });
+
+  // Revenue by category
+  const catRevenue: Record<string, number> = {};
+  (orderItemsData || []).forEach((item: any) => {
+    const catName = item.product?.category?.name || 'Sin categoría';
+    const revenue = Number(item.quantity) * Number(item.price_at_purchase || 0);
+    catRevenue[catName] = (catRevenue[catName] || 0) + revenue;
+  });
+  const revenueByCategory = Object.entries(catRevenue)
+    .map(([name, revenue]) => ({ name, revenue }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 6);
+
+  // AOV
+  const aov = monthlyOrderCount > 0 ? monthlyRevenue / monthlyOrderCount : 0;
+
+  return {
+    aov,
+    returns: {
+      total: returns.length,
+      pending: returnsPending,
+      totalRefunded,
+      rate: Math.round(returnRate * 10) / 10,
+    },
+    coupons: {
+      activeCount: activeCoupons?.length || 0,
+      usagesThisMonth: couponUsagesCount,
+      totalDiscount: totalCouponDiscount,
+    },
+    shipmentsInTransit: shipmentsInTransit || 0,
+    activePromotions: activePromotions || 0,
+    orderStatusDistribution: statusDist,
+    revenueByCategory,
+  };
 }

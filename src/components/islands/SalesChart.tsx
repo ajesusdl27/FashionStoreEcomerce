@@ -10,7 +10,7 @@ import {
   Legend,
   Filler
 } from 'chart.js';
-import { Bar } from 'react-chartjs-2';
+import { Chart } from 'react-chartjs-2';
 
 ChartJS.register(
   CategoryScale,
@@ -33,13 +33,27 @@ interface SalesData {
 
 interface SalesChartProps {
   data: SalesData[];
+  /** Show a moving average trend line */
+  showTrend?: boolean;
+}
+
+/**
+ * Compute a simple moving average (window=3) for trend overlay
+ */
+function movingAverage(values: number[], window = 3): (number | null)[] {
+  return values.map((_, i) => {
+    if (i < window - 1) return null;
+    let sum = 0;
+    for (let j = i - window + 1; j <= i; j++) sum += values[j];
+    return sum / window;
+  });
 }
 
 /**
  * Sales Chart Component
- * Interactive bar chart showing daily sales for the last 7 days
+ * Interactive bar chart showing daily sales with optional trend line overlay
  */
-export default function SalesChart({ data }: SalesChartProps) {
+export default function SalesChart({ data, showTrend = true }: SalesChartProps) {
   // Handle empty or null data
   if (!data || data.length === 0) {
     return (
@@ -49,18 +63,37 @@ export default function SalesChart({ data }: SalesChartProps) {
     );
   }
 
+  const revenues = data.map(d => d.revenue);
+  const trendValues = showTrend ? movingAverage(revenues) : [];
+
   const chartData = {
     labels: data.map(d => d.label),
     datasets: [
       {
+        type: 'bar' as const,
         label: 'Ventas (€)',
-        data: data.map(d => d.revenue),
+        data: revenues,
         backgroundColor: 'rgba(204, 255, 0, 0.2)',
         borderColor: 'rgba(204, 255, 0, 1)',
         borderWidth: 2,
         borderRadius: 8,
-        barThickness: 40
-      }
+        barThickness: 40,
+        order: 2,
+      },
+      ...(showTrend ? [{
+        type: 'line' as const,
+        label: 'Tendencia',
+        data: trendValues,
+        borderColor: 'rgba(59, 130, 246, 0.8)',
+        backgroundColor: 'rgba(59, 130, 246, 0.05)',
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.4,
+        fill: true,
+        spanGaps: true,
+        order: 1,
+      }] : []),
     ]
   };
 
@@ -129,7 +162,7 @@ export default function SalesChart({ data }: SalesChartProps) {
 
   return (
     <div className="h-64 sm:h-80">
-      <Bar data={chartData} options={options} />
+      <Chart type="bar" data={chartData} options={options} />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
   getPendingOrders,
   getBestSellingProduct,
   getSalesLast7Days,
+  getDashboardExtendedMetrics,
 } from "@/lib/analytics";
 import { formatPrice } from "@/lib/formatters";
 import { getSettings } from "@/lib/settings";
@@ -13,16 +14,13 @@ import { getSettings } from "@/lib/settings";
 // React Island Components
 import KPICard from "@/components/islands/KPICard";
 import SalesChart from "@/components/islands/SalesChart";
+import DoughnutChart from "@/components/islands/DoughnutChart";
+import DashboardRefreshButton from "@/components/islands/DashboardRefreshButton";
 import InlineStockEditor from "@/components/islands/admin/InlineStockEditor";
+import ReturnsWidget from "@/components/islands/admin/ReturnsWidget";
 import {
   Star,
-  TrendingUp,
-  TrendingDown,
   ShoppingBag,
-  DollarSign,
-  Package,
-  FolderOpen,
-  Users,
   ChevronRight,
   AlertTriangle,
   CheckCircle,
@@ -30,6 +28,11 @@ import {
   FileText,
   Settings,
   Mail,
+  RotateCcw,
+  Ticket,
+  Truck,
+  Package,
+  Tag,
 } from "lucide-react";
 
 // Get authenticated client for RLS compliance
@@ -41,14 +44,12 @@ const authClient = createAuthenticatedClient(accessToken, refreshToken);
 const storeSettings = await getSettings();
 const lowStockThreshold = storeSettings.lowStockThreshold;
 
-// ✅ FIX 1: Timezone handling for Spain (manual UTC conversion)
-// Spain is UTC+1 (winter) or UTC+2 (summer - DST)
-// Database stores everything in UTC, so we need to convert "today in Spain" to UTC range
+// Server render timestamp for refresh button
+const renderTime = new Date().toISOString();
 
+// Timezone handling for Spain
 function getSpainMidnightUTC(): Date {
   const now = new Date();
-
-  // Get current time in Spain using Intl API
   const spainTimeStr = now.toLocaleString("en-US", {
     timeZone: "Europe/Madrid",
     year: "numeric",
@@ -59,138 +60,75 @@ function getSpainMidnightUTC(): Date {
     second: "2-digit",
     hour12: false,
   });
-
-  // Parse it back to create a Date object at Spain's current time
-  const [datePart, _timePart] = spainTimeStr.split(", ");
+  const [datePart] = spainTimeStr.split(", ");
   const parts = datePart?.split("/") ?? [];
   const [month = "01", day = "01", year = "2024"] = parts;
   const spainDate = new Date(`${year}-${month}-${day}T00:00:00Z`);
-
-  // This gives us midnight in Spain, represented in UTC
-  // We need to adjust by Spain's current offset
   const spainOffset = new Date()
-    .toLocaleString("en-US", {
-      timeZone: "Europe/Madrid",
-      timeZoneName: "short",
-    })
-    .includes("GMT+2")
-    ? 2
-    : 1; // DST detection
-
-  spainDate.setUTCHours(0 - spainOffset); // Subtract offset to get UTC time
+    .toLocaleString("en-US", { timeZone: "Europe/Madrid", timeZoneName: "short" })
+    .includes("GMT+2") ? 2 : 1;
+  spainDate.setUTCHours(0 - spainOffset);
   return spainDate;
 }
 
 const todaySpainMidnight = getSpainMidnightUTC();
 const todayUTC = todaySpainMidnight.toISOString();
-
 const yesterdaySpainMidnight = new Date(todaySpainMidnight);
 yesterdaySpainMidnight.setUTCDate(yesterdaySpainMidnight.getUTCDate() - 1);
 const yesterdayUTC = yesterdaySpainMidnight.toISOString();
 
-// ✅ FIX 2: Paralelizar queries (de 800ms a ~120ms)
+// === Parallelized first-pass queries ===
 const [
   { count: ordersToday },
   { count: ordersYesterday },
-  { data: revenueData },
   { data: lowStockVariants },
   { data: recentOrders },
-  { count: productsCount },
-  { count: categoriesCount },
-  { count: subscribersCount },
+  { data: rawReturns },
 ] = await Promise.all([
-  // Orders today
-  authClient
-    .from("orders")
-    .select("*", { count: "exact", head: true })
-    .gte("created_at", todayUTC),
-
-  // Orders yesterday (for comparison)
-  authClient
-    .from("orders")
-    .select("*", { count: "exact", head: true })
-    .gte("created_at", yesterdayUTC)
-    .lt("created_at", todayUTC),
-
-  // Revenue (paid + shipped + delivered + return-related orders)
-  authClient
-    .from("orders")
-    .select("total_amount, refunded_amount")
-    .in("status", [
-      "paid",
-      "shipped",
-      "delivered",
-      "return_requested",
-      "return_approved",
-      "return_shipped",
-      "return_received",
-      "return_completed",
-      "partially_refunded",
-    ]),
-
-  // Low stock products (variants with stock < dynamic threshold)
-  authClient
-    .from("product_variants")
-    .select(
-      `
-      id,
-      size,
-      stock,
-      product:products(id, name)
-    `,
-    )
+  authClient.from("orders").select("*", { count: "exact", head: true }).gte("created_at", todayUTC),
+  authClient.from("orders").select("*", { count: "exact", head: true }).gte("created_at", yesterdayUTC).lt("created_at", todayUTC),
+  authClient.from("product_variants")
+    .select(`id, size, stock, product:products(id, name)`)
     .lt("stock", lowStockThreshold)
     .order("stock", { ascending: true })
     .limit(8),
-
-  // Recent orders
-  authClient
-    .from("orders")
-    .select("*")
+  authClient.from("orders").select("*").order("created_at", { ascending: false }).limit(5),
+  authClient.from("returns")
+    .select(`id, status, refund_amount, created_at, order:orders(id, customer_name)`)
     .order("created_at", { ascending: false })
     .limit(5),
-
-  // Products count
-  authClient.from("products").select("*", { count: "exact", head: true }),
-
-  // Categories count
-  authClient.from("categories").select("*", { count: "exact", head: true }),
-
-  // Newsletter subscribers count
-  authClient
-    .from("newsletter_subscribers")
-    .select("*", { count: "exact", head: true })
-    .eq("is_active", true),
 ]);
 
-const totalRevenue =
-  revenueData?.reduce((sum, order) => {
-    const orderTotal = Number(order.total_amount) || 0;
-    const refunded = Number(order.refunded_amount) || 0;
-    return sum + (orderTotal - refunded);
-  }, 0) || 0;
+// Normalize Supabase joined returns (order comes as array)
+const recentReturns = (rawReturns || []).map((r: any) => ({
+  ...r,
+  order: Array.isArray(r.order) ? r.order[0] || null : r.order,
+}));
 
-// ✅ NEW: Fetch analytics data for new KPIs
-let analytics = null;
+// === Analytics fetch ===
+let analytics: any = null;
+let extendedMetrics: any = null;
 try {
-  const [monthlyRevenue, pendingOrders, bestSelling, sales7Days] =
-    await Promise.all([
-      getMonthlyRevenue(authClient),
-      getPendingOrders(authClient),
-      getBestSellingProduct(authClient),
-      getSalesLast7Days(authClient),
-    ]);
+  const [monthlyRevenue, pendingOrders, bestSelling, sales7Days] = await Promise.all([
+    getMonthlyRevenue(authClient),
+    getPendingOrders(authClient),
+    getBestSellingProduct(authClient),
+    getSalesLast7Days(authClient),
+  ]);
 
-  analytics = {
-    monthlyRevenue,
-    pendingOrders,
-    bestSelling,
-    sales7Days,
-  };
+  analytics = { monthlyRevenue, pendingOrders, bestSelling, sales7Days };
+
+  // Extended metrics (uses monthly data for AOV calculation)
+  extendedMetrics = await getDashboardExtendedMetrics(
+    authClient,
+    monthlyRevenue.orderCount,
+    monthlyRevenue.total,
+  );
 } catch (error) {
   console.error("Analytics error:", error);
 }
 
+// === Helpers ===
 const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString("es-ES", {
     day: "2-digit",
@@ -214,10 +152,8 @@ const statusConfig: Record<string, { label: string; class: string }> = {
   partially_refunded: { label: "Reemb. Parcial", class: "badge-warning" },
 };
 
-// Calculate trend
 const ordersTrend = (ordersToday || 0) - (ordersYesterday || 0);
 
-// Check if order is urgent (pending/paid for more than 2 days)
 const isOrderUrgent = (order: any) => {
   if (!['pending', 'paid'].includes(order.status)) return false;
   const orderDate = new Date(order.created_at);
@@ -226,406 +162,449 @@ const isOrderUrgent = (order: any) => {
   return orderDate < twoDaysAgo;
 };
 
-// Get sales sparkline data from analytics
-const salesSparkline = analytics?.sales7Days?.map((d: any) => d.total || 0) || [];
+const salesSparkline = analytics?.sales7Days?.map((d: any) => d.revenue || 0) || [];
+
+// Status distribution labels for doughnut
+const statusLabels: Record<string, string> = {
+  pending: "Pendiente",
+  paid: "Pagado",
+  shipped: "Enviado",
+  delivered: "Entregado",
+  cancelled: "Cancelado",
+  return_requested: "Dev. Solicitada",
+  return_completed: "Reembolsado",
+  partially_refunded: "Reemb. Parcial",
+};
+
+const statusColors: Record<string, string> = {
+  pending: "rgba(234, 179, 8, 0.8)",
+  paid: "rgba(34, 197, 94, 0.8)",
+  shipped: "rgba(59, 130, 246, 0.8)",
+  delivered: "rgba(22, 163, 74, 0.8)",
+  cancelled: "rgba(239, 68, 68, 0.8)",
+  return_requested: "rgba(249, 115, 22, 0.8)",
+  return_completed: "rgba(168, 85, 247, 0.8)",
+  partially_refunded: "rgba(236, 72, 153, 0.8)",
+};
+
+// Build doughnut data from status distribution (only paid, cancelled, refunded)
+const orderStatuses = extendedMetrics?.orderStatusDistribution || {};
+const doughnutKeys = ["paid", "cancelled", "return_completed"].filter(k => (orderStatuses[k] || 0) > 0);
+const doughnutLabels = doughnutKeys.map(s => statusLabels[s] || s);
+const doughnutData = doughnutKeys.map(s => orderStatuses[s] as number);
+const doughnutColors = doughnutKeys.map(s => statusColors[s] || "rgba(161, 161, 170, 0.8)");
+
+// Revenue by category doughnut
+const catLabels = extendedMetrics?.revenueByCategory?.map((c: any) => c.name) || [];
+const catData = extendedMetrics?.revenueByCategory?.map((c: any) => c.revenue) || [];
+
+// Contextual quick actions
+const urgentOrders = recentOrders?.filter((o: any) => isOrderUrgent(o)) || [];
+const pendingReturnsCount = extendedMetrics?.returns?.pending || 0;
+const outOfStockCount = lowStockVariants?.filter((v: any) => v.stock === 0).length || 0;
 ---
 
 <AdminLayout title="Dashboard">
-  <div class="space-y-8">
-    {/* ===== NEW ANALYTICS SECTION ===== */}
-    {
-      analytics && (
-        <>
-          {/* Analytics KPI Cards */}
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Ventas del Mes */}
-            <KPICard
-              client:load
-              title="Ventas del Mes"
-              value={formatPrice(analytics.monthlyRevenue.total)}
-              trend={analytics.monthlyRevenue.trend}
-              trendLabel="vs mes anterior"
-              subtitle={`De ${analytics.monthlyRevenue.orderCount} pedido${analytics.monthlyRevenue.orderCount !== 1 ? "s" : ""}`}
-              colorClass="text-green-600 dark:text-green-400"
-              iconName="money"
-              sparklineData={salesSparkline}
-              href="/admin/pedidos"
-            />
+  <div class="space-y-6">
+    {/* ===== HEADER WITH REFRESH ===== */}
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-foreground">Dashboard</h1>
+        <p class="text-sm text-muted-foreground">Resumen operativo de tu tienda</p>
+      </div>
+      <DashboardRefreshButton client:load renderTime={renderTime} />
+    </div>
 
-            {/* Pedidos Pendientes */}
-            <KPICard
-              client:load
-              title="Por Procesar"
-              value={analytics.pendingOrders.total}
-              subtitle={
-                analytics.pendingOrders.total === 0
-                  ? "¡Todo al día!"
-                  : `${analytics.pendingOrders.paid} listos para enviar`
-              }
-              colorClass="text-amber-600 dark:text-amber-400"
-              iconName="clock"
-              href="/admin/pedidos?status=paid"
-              urgent={analytics.pendingOrders.total > 5}
-            />
+    {/* ===== HERO KPI CARDS (4-col) ===== */}
+    {analytics && (
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Ventas del Mes */}
+        <KPICard
+          client:load
+          title="Ventas del Mes"
+          value={formatPrice(analytics.monthlyRevenue.total)}
+          trend={analytics.monthlyRevenue.trend}
+          trendLabel="vs mes anterior"
+          subtitle={`${analytics.monthlyRevenue.orderCount} pedido${analytics.monthlyRevenue.orderCount !== 1 ? "s" : ""}`}
+          colorClass="text-green-600 dark:text-green-400"
+          iconName="money"
+          sparklineData={salesSparkline}
+          href="/admin/pedidos"
+        />
 
-            {/* Producto Más Vendido */}
-            {analytics.bestSelling ? (
-              <KPICard
-                client:load
-                title="Más Vendido"
-                value={analytics.bestSelling.product.name}
-                subtitle={`${analytics.bestSelling.totalQuantity} uds vendidas`}
-                colorClass="text-primary"
-                iconName="star"
-                href={`/admin/productos/${analytics.bestSelling.product.id}`}
-              />
-            ) : (
-              <div class="stat-card group">
-                <div>
-                  <p class="stat-label">Más Vendido</p>
-                  <p class="text-sm text-muted-foreground mt-2">
-                    Aún no hay ventas este mes
-                  </p>
-                </div>
-                <div class="stat-icon bg-primary/10 group-hover:bg-primary/20 transition-colors text-primary">
-                  <Star className="w-7 h-7" />
-                </div>
+        {/* Pedidos Hoy */}
+        <KPICard
+          client:load
+          title="Pedidos Hoy"
+          value={ordersToday || 0}
+          trend={ordersTrend}
+          trendLabel="vs ayer"
+          subtitle="recibidos hoy"
+          colorClass="text-primary"
+          iconName="orders"
+          href="/admin/pedidos"
+        />
+
+        {/* AOV */}
+        <KPICard
+          client:load
+          title="Ticket Medio"
+          value={extendedMetrics ? formatPrice(extendedMetrics.aov) : "—"}
+          subtitle="valor medio por pedido"
+          colorClass="text-blue-600 dark:text-blue-400"
+          iconName="chart"
+        />
+
+        {/* Pendientes */}
+        <KPICard
+          client:load
+          title="Por Procesar"
+          value={analytics.pendingOrders.total}
+          subtitle={analytics.pendingOrders.total === 0 ? "¡Todo al día!" : `${analytics.pendingOrders.paid} listos para enviar`}
+          colorClass="text-amber-600 dark:text-amber-400"
+          iconName="clock"
+          href="/admin/pedidos?status=paid"
+          urgent={analytics.pendingOrders.total > 5}
+        />
+      </div>
+    )}
+
+    {/* ===== CHARTS SECTION (2/3 + 1/3) ===== */}
+    {analytics && (
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Sales Chart — 2 cols */}
+        <div class="lg:col-span-2 admin-card">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="font-heading text-lg text-foreground">Ventas de la Semana</h2>
+              <p class="text-sm text-muted-foreground">Ingresos diarios + tendencia</p>
+            </div>
+            {analytics.bestSelling && (
+              <div class="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+                <Star className="w-4 h-4 text-primary" />
+                <span>Top: <a href={`/admin/productos/${analytics.bestSelling.product.id}`} class="text-primary hover:underline">{analytics.bestSelling.product.name}</a></span>
               </div>
             )}
           </div>
+          <SalesChart client:load data={analytics.sales7Days} showTrend={true} />
+        </div>
 
-          {/* Sales Chart */}
-          <div class="admin-card">
-            <div class="flex items-center justify-between mb-6">
-              <div>
-                <h2 class="font-heading text-xl text-foreground">
-                  Ventas de la Semana
-                </h2>
-                <p class="text-sm text-muted-foreground mt-1">
-                  Tu evolución diaria de ingresos
-                </p>
-              </div>
-            </div>
-            <SalesChart client:load data={analytics.sales7Days} />
-          </div>
-        </>
-      )
-    }
-
-    {/* ===== END ANALYTICS SECTION ===== */}
-
-    <!-- Stats Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
-      <!-- Orders Today -->
-      <div class="stat-card group">
-        <div>
-          <p class="stat-label">Pedidos Hoy</p>
-          <p class="stat-value text-foreground">{ordersToday || 0}</p>
-          {
-            ordersTrend !== 0 && (
-              <p
-                class={`text-xs mt-1 flex items-center gap-1 ${ordersTrend > 0 ? "text-green-400" : "text-red-400"}`}
-              >
-                {ordersTrend > 0 ? (
-                  <TrendingUp className="w-3 h-3" />
-                ) : (
-                  <TrendingDown className="w-3 h-3" />
-                )}
-                {Math.abs(ordersTrend)} vs ayer
-              </p>
-            )
-          }
-        </div>
-        <div
-          class="stat-icon bg-primary/10 group-hover:bg-primary/20 transition-colors"
-        >
-          <ShoppingBag className="w-7 h-7 text-primary" />
-        </div>
-      </div>
-
-      <!-- Total Revenue -->
-      <div class="stat-card group">
-        <div>
-          <p class="stat-label">Ingresos Totales</p>
-          <p class="stat-value text-green-600 dark:text-green-400">
-            {formatPrice(totalRevenue)}
-          </p>
-          <p class="text-xs text-muted-foreground mt-1">
-            {revenueData?.length || 0} pedidos pagados
-          </p>
-        </div>
-        <div
-          class="stat-icon bg-green-500/10 group-hover:bg-green-500/20 transition-colors"
-        >
-          <DollarSign className="w-7 h-7 text-green-600 dark:text-green-400" />
-        </div>
-      </div>
-
-      <!-- Total Products -->
-      <div class="stat-card group">
-        <div>
-          <p class="stat-label">Productos</p>
-          <p class="stat-value text-blue-600 dark:text-blue-400">
-            {productsCount || 0}
-          </p>
-          <p class="text-xs text-muted-foreground mt-1">en catálogo</p>
-        </div>
-        <div
-          class="stat-icon bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors"
-        >
-          <Package className="w-7 h-7 text-blue-600 dark:text-blue-400" />
-        </div>
-      </div>
-
-      <!-- Categories -->
-      <div class="stat-card group">
-        <div>
-          <p class="stat-label">Categorías</p>
-          <p class="stat-value text-purple-600 dark:text-purple-400">
-            {categoriesCount || 0}
-          </p>
-          <p class="text-xs text-muted-foreground mt-1">activas</p>
-        </div>
-        <div
-          class="stat-icon bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors"
-        >
-          <FolderOpen
-            className="w-7 h-7 text-purple-600 dark:text-purple-400"
+        {/* Order Status Doughnut — 1 col */}
+        <div class="admin-card">
+          <h2 class="font-heading text-lg text-foreground mb-1">Pedidos (30 días)</h2>
+          <p class="text-sm text-muted-foreground mb-4">Pagados · Cancelados · Reembolsados</p>
+          <DoughnutChart
+            client:load
+            labels={doughnutLabels}
+            data={doughnutData}
+            colors={doughnutColors}
+            height={280}
           />
         </div>
       </div>
+    )}
 
-      <!-- Newsletter Subscribers -->
-      <div class="stat-card group">
-        <div>
-          <p class="stat-label">Suscriptores</p>
-          <p class="stat-value text-amber-600 dark:text-amber-400">
-            {subscribersCount || 0}
-          </p>
-          <p class="text-xs text-muted-foreground mt-1">newsletter</p>
+    {/* ===== OPERATIONAL METRICS ROW ===== */}
+    {extendedMetrics && (
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {/* Returns */}
+        <a href="/admin/devoluciones" class="stat-card group cursor-pointer">
+          <div>
+            <p class="stat-label">Devoluciones</p>
+            <p class={`stat-value ${extendedMetrics.returns.pending > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'}`}>
+              {extendedMetrics.returns.pending}
+              <span class="text-sm font-normal text-muted-foreground ml-1">pend.</span>
+            </p>
+            <p class="text-xs text-muted-foreground mt-1">
+              Tasa: {extendedMetrics.returns.rate}%
+            </p>
+          </div>
+          <div class="stat-icon bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
+            <RotateCcw className="w-7 h-7 text-amber-500" />
+          </div>
+        </a>
+
+        {/* Coupons */}
+        <a href="/admin/cupones" class="stat-card group cursor-pointer">
+          <div>
+            <p class="stat-label">Cupones Activos</p>
+            <p class="stat-value text-purple-600 dark:text-purple-400">
+              {extendedMetrics.coupons.activeCount}
+            </p>
+            <p class="text-xs text-muted-foreground mt-1">
+              {extendedMetrics.coupons.usagesThisMonth} usos este mes
+            </p>
+          </div>
+          <div class="stat-icon bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
+            <Ticket className="w-7 h-7 text-purple-600 dark:text-purple-400" />
+          </div>
+        </a>
+
+        {/* Shipments in Transit */}
+        <a href="/admin/pedidos?status=shipped" class="stat-card group cursor-pointer">
+          <div>
+            <p class="stat-label">En Tránsito</p>
+            <p class="stat-value text-blue-600 dark:text-blue-400">
+              {extendedMetrics.shipmentsInTransit}
+            </p>
+            <p class="text-xs text-muted-foreground mt-1">envíos pendientes</p>
+          </div>
+          <div class="stat-icon bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
+            <Truck className="w-7 h-7 text-blue-600 dark:text-blue-400" />
+          </div>
+        </a>
+
+        {/* Active Promotions */}
+        <a href="/admin/promociones" class="stat-card group cursor-pointer">
+          <div>
+            <p class="stat-label">Promociones Activas</p>
+            <p class="stat-value text-pink-600 dark:text-pink-400">
+              {extendedMetrics.activePromotions}
+            </p>
+            <p class="text-xs text-muted-foreground mt-1">en vigor ahora</p>
+          </div>
+          <div class="stat-icon bg-pink-500/10 group-hover:bg-pink-500/20 transition-colors">
+            <Tag className="w-7 h-7 text-pink-600 dark:text-pink-400" />
+          </div>
+        </a>
+      </div>
+    )}
+
+    {/* ===== THREE COLUMN WIDGETS ===== */}
+    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+      {/* Recent Orders */}
+      <div class="admin-card">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-heading text-lg text-foreground">Pedidos Recientes</h2>
+          <a href="/admin/pedidos" class="text-sm text-primary hover:underline flex items-center gap-1">
+            Ver todos <ChevronRight className="w-4 h-4" />
+          </a>
         </div>
-        <div
-          class="stat-icon bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors"
-        >
-          <Users className="w-7 h-7 text-amber-400" />
+        {recentOrders && recentOrders.length > 0 ? (
+          <div class="space-y-2">
+            {recentOrders.map((order: any) => {
+              const urgent = isOrderUrgent(order);
+              return (
+                <a
+                  href={`/admin/pedidos/${order.id}`}
+                  class={`flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors border border-transparent hover:border-border group ${urgent ? 'border-l-2 border-l-amber-500 bg-amber-500/5' : ''}`}
+                >
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                      {urgent && <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse" title="Urgente" />}
+                      <p class="text-sm font-medium text-foreground group-hover:text-primary transition-colors truncate">
+                        {order.customer_name}
+                      </p>
+                    </div>
+                    <div class="flex items-center gap-2 mt-0.5">
+                      <span class={`badge text-[10px] ${statusConfig[order.status]?.class || 'badge-muted'}`}>
+                        {statusConfig[order.status]?.label || order.status}
+                      </span>
+                      <span class="text-[10px] text-muted-foreground">{formatDate(order.created_at)}</span>
+                    </div>
+                  </div>
+                  <span class="text-sm font-medium tabular-nums ml-2">{formatPrice(order.total_amount)}</span>
+                </a>
+              );
+            })}
+          </div>
+        ) : (
+          <div class="text-center py-8 text-muted-foreground">
+            <ShoppingBag className="w-10 h-10 mx-auto mb-2 opacity-30" />
+            <p class="text-sm">No hay pedidos todavía</p>
+          </div>
+        )}
+      </div>
+
+      {/* Low Stock Alert */}
+      <div class="admin-card">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <h2 class="font-heading text-lg text-foreground">Stock Bajo</h2>
+            {lowStockVariants && lowStockVariants.length > 0 && (
+              <span class="badge badge-danger">{lowStockVariants.length}</span>
+            )}
+          </div>
+          <a href="/admin/inventario" class="text-sm text-primary hover:underline flex items-center gap-1">
+            Ver inventario <ChevronRight className="w-4 h-4" />
+          </a>
         </div>
+        {lowStockVariants && lowStockVariants.length > 0 ? (
+          <div class="space-y-2">
+            {lowStockVariants.map((variant: any) => (
+              <div class="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors border border-transparent hover:border-border group">
+                <div class="flex-1 min-w-0">
+                  <a href={`/admin/productos/${variant.product?.id}`} class="text-sm font-medium text-foreground hover:text-primary transition-colors truncate block">
+                    {variant.product?.name}
+                  </a>
+                  <p class="text-xs text-muted-foreground">Talla: {variant.size}</p>
+                </div>
+                <InlineStockEditor
+                  client:load
+                  variantId={variant.id}
+                  productId={variant.product?.id}
+                  productName={variant.product?.name}
+                  size={variant.size}
+                  currentStock={variant.stock}
+                  threshold={lowStockThreshold}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div class="text-center py-8 text-muted-foreground">
+            <CheckCircle className="w-10 h-10 mx-auto mb-2 text-green-400 opacity-50" />
+            <p class="text-sm">Todo el stock está bien</p>
+          </div>
+        )}
+      </div>
+
+      {/* Returns Widget */}
+      <div class="admin-card">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-heading text-lg text-foreground">Devoluciones</h2>
+          <a href="/admin/devoluciones" class="text-sm text-primary hover:underline flex items-center gap-1">
+            Ver todas <ChevronRight className="w-4 h-4" />
+          </a>
+        </div>
+        <ReturnsWidget
+          client:load
+          returns={recentReturns || []}
+          pendingCount={extendedMetrics?.returns?.pending || 0}
+          totalRefunded={extendedMetrics?.returns?.totalRefunded || 0}
+          returnRate={extendedMetrics?.returns?.rate || 0}
+        />
       </div>
     </div>
 
-    <!-- Two Column Layout -->
-    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-      <!-- Recent Orders -->
-      <div class="admin-card">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="font-heading text-lg text-foreground">
-            Pedidos Recientes
-          </h2>
-          <a
-            href="/admin/pedidos"
-            class="text-sm text-primary hover:underline flex items-center gap-1"
-          >
-            Ver todos
-            <svg
-              class="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 5l7 7-7 7"></path>
-            </svg>
-          </a>
+    {/* ===== REVENUE BY CATEGORY (when data available) ===== */}
+    {catLabels.length > 0 && (
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="admin-card">
+          <h2 class="font-heading text-lg text-foreground mb-1">Revenue por Categoría</h2>
+          <p class="text-sm text-muted-foreground mb-4">Ingresos del mes por tipo de producto</p>
+          <DoughnutChart
+            client:load
+            labels={catLabels}
+            data={catData}
+            height={260}
+            isCurrency={true}
+          />
         </div>
 
-        {
-          recentOrders && recentOrders.length > 0 ? (
-            <div class="overflow-x-auto -mx-6">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>Cliente</th>
-                    <th>Total</th>
-                    <th>Estado</th>
-                    <th class="text-right">Fecha</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentOrders.map((order) => {
-                    const urgent = isOrderUrgent(order);
-                    return (
-                      <tr class={urgent ? "bg-amber-500/5 border-l-2 border-l-amber-500" : ""}>
-                        <td>
-                          <div class="flex items-center gap-2">
-                            {urgent && (
-                              <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse" title="Pedido urgente - más de 2 días sin procesar" />
-                            )}
-                            <a
-                              href={`/admin/pedidos/${order.id}`}
-                              class="font-medium hover:text-primary transition-colors"
-                            >
-                              {order.customer_name}
-                            </a>
-                          </div>
-                        </td>
-                        <td class="tabular-nums font-medium">
-                          {formatPrice(order.total_amount)}
-                        </td>
-                        <td>
-                          <span
-                            class={`badge ${statusConfig[order.status]?.class || "badge-muted"}`}
-                          >
-                            {statusConfig[order.status]?.label || order.status}
-                          </span>
-                        </td>
-                        <td class="text-right text-muted-foreground text-sm">
-                          {formatDate(order.created_at)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div class="text-center py-8 text-muted-foreground">
-              <AlertTriangle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No hay pedidos todavía</p>
-            </div>
-          )
-        }
-      </div>
-
-      <!-- Low Stock Alert -->
-      <div class="admin-card">
-        <div class="flex items-center justify-between mb-6">
-          <div class="flex items-center gap-3">
-            <h2 class="font-heading text-lg text-foreground">Stock Bajo</h2>
-            {
-              lowStockVariants && lowStockVariants.length > 0 && (
-                <span class="badge badge-danger">
-                  {lowStockVariants.length}
-                </span>
-              )
-            }
-          </div>
-          <a
-            href="/admin/inventario"
-            class="text-sm text-primary hover:underline flex items-center gap-1"
-          >
-            Ver inventario
-            <ChevronRight className="w-4 h-4" />
-          </a>
-        </div>
-
-        {
-          lowStockVariants && lowStockVariants.length > 0 ? (
-            <div class="space-y-3">
-              {lowStockVariants.map((variant: any) => (
-                <div class="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors border border-transparent hover:border-border group">
-                  <div class="flex-1 min-w-0">
-                    <a 
-                      href={`/admin/productos/${variant.product?.id}`}
-                      class="font-medium text-foreground hover:text-primary transition-colors"
-                    >
-                      {variant.product?.name}
-                    </a>
-                    <p class="text-sm text-muted-foreground">
-                      Talla: {variant.size}
-                    </p>
+        {/* Category breakdown list */}
+        <div class="admin-card">
+          <h2 class="font-heading text-lg text-foreground mb-1">Desglose por Categoría</h2>
+          <p class="text-sm text-muted-foreground mb-4">Ranking de categorías por ingresos</p>
+          <div class="space-y-3">
+            {extendedMetrics?.revenueByCategory?.map((cat: any) => {
+              const maxRevenue = extendedMetrics.revenueByCategory[0]?.revenue || 1;
+              const pct = Math.round((cat.revenue / maxRevenue) * 100);
+              return (
+                <div class="space-y-1">
+                  <div class="flex items-center justify-between text-sm">
+                    <span class="font-medium text-foreground">{cat.name}</span>
+                    <span class="tabular-nums text-muted-foreground">{formatPrice(cat.revenue)}</span>
                   </div>
-                  <div class="flex items-center gap-3">
-                    <InlineStockEditor
-                      client:load
-                      variantId={variant.id}
-                      productId={variant.product?.id}
-                      productName={variant.product?.name}
-                      size={variant.size}
-                      currentStock={variant.stock}
-                      threshold={lowStockThreshold}
+                  <div class="h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      class="h-full rounded-full bg-primary/70 transition-all"
+                      style={`width: ${pct}%`}
                     />
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div class="text-center py-8 text-muted-foreground">
-              <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-400 opacity-50" />
-              <p>Todo el stock está bien</p>
-            </div>
-          )
-        }
+              );
+            })}
+            {(!extendedMetrics?.revenueByCategory || extendedMetrics.revenueByCategory.length === 0) && (
+              <p class="text-sm text-muted-foreground text-center py-4">No hay datos de ventas por categoría</p>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+    )}
 
-    <!-- Quick Actions -->
+    {/* ===== CONTEXTUAL QUICK ACTIONS ===== */}
     <div class="admin-card">
-      <h2 class="font-heading text-lg text-foreground mb-6">
-        Acciones Rápidas
-      </h2>
-      <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
-        <a
-          href="/admin/productos/nuevo"
-          class="flex flex-col items-center gap-3 p-6 rounded-xl bg-muted/30 border border-border hover:border-primary/50 hover:bg-primary/5 transition-all group"
-        >
-          <div
-            class="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform"
-          >
-            <Plus className="w-7 h-7 text-primary" />
+      <h2 class="font-heading text-lg text-foreground mb-4">Acciones</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+        {/* Contextual: urgent orders */}
+        {urgentOrders.length > 0 && (
+          <a href="/admin/pedidos?status=paid" class="flex items-center gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:border-amber-500/40 transition-all group">
+            <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+            </div>
+            <div>
+              <p class="text-sm font-medium text-foreground">{urgentOrders.length} pedido{urgentOrders.length !== 1 ? 's' : ''} urgente{urgentOrders.length !== 1 ? 's' : ''}</p>
+              <p class="text-xs text-muted-foreground">Más de 2 días sin procesar</p>
+            </div>
+          </a>
+        )}
+
+        {/* Contextual: pending returns */}
+        {pendingReturnsCount > 0 && (
+          <a href="/admin/devoluciones" class="flex items-center gap-3 p-4 rounded-xl bg-orange-500/10 border border-orange-500/20 hover:border-orange-500/40 transition-all group">
+            <div class="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              <RotateCcw className="w-5 h-5 text-orange-500" />
+            </div>
+            <div>
+              <p class="text-sm font-medium text-foreground">Revisar {pendingReturnsCount} devolución{pendingReturnsCount !== 1 ? 'es' : ''}</p>
+              <p class="text-xs text-muted-foreground">Pendientes de gestión</p>
+            </div>
+          </a>
+        )}
+
+        {/* Contextual: out of stock */}
+        {outOfStockCount > 0 && (
+          <a href="/admin/inventario" class="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20 hover:border-red-500/40 transition-all group">
+            <div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              <Package className="w-5 h-5 text-red-500" />
+            </div>
+            <div>
+              <p class="text-sm font-medium text-foreground">{outOfStockCount} producto{outOfStockCount !== 1 ? 's' : ''} agotado{outOfStockCount !== 1 ? 's' : ''}</p>
+              <p class="text-xs text-muted-foreground">Stock a 0 unidades</p>
+            </div>
+          </a>
+        )}
+
+        {/* Fixed actions */}
+        <a href="/admin/productos/nuevo" class="flex items-center gap-3 p-4 rounded-xl bg-muted/30 border border-border hover:border-primary/40 hover:bg-primary/5 transition-all group">
+          <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+            <Plus className="w-5 h-5 text-primary" />
           </div>
-          <span class="text-sm font-medium">Nuevo Producto</span>
+          <div>
+            <p class="text-sm font-medium text-foreground">Nuevo Producto</p>
+            <p class="text-xs text-muted-foreground">Añadir al catálogo</p>
+          </div>
         </a>
 
-        <a
-          href="/admin/categorias"
-          class="flex flex-col items-center gap-3 p-6 rounded-xl bg-muted/30 border border-border hover:border-purple-500/50 hover:bg-purple-500/5 transition-all group"
-        >
-          <div
-            class="w-14 h-14 rounded-xl bg-purple-500/10 flex items-center justify-center group-hover:scale-110 transition-transform"
-          >
-            <FolderOpen
-              className="w-7 h-7 text-purple-600 dark:text-purple-400"
-            />
+        <a href="/admin/pedidos" class="flex items-center gap-3 p-4 rounded-xl bg-muted/30 border border-border hover:border-blue-500/40 hover:bg-blue-500/5 transition-all group">
+          <div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+            <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           </div>
-          <span class="text-sm font-medium">Categorías</span>
+          <div>
+            <p class="text-sm font-medium text-foreground">Ver Pedidos</p>
+            <p class="text-xs text-muted-foreground">Gestionar pedidos</p>
+          </div>
         </a>
 
-        <a
-          href="/admin/pedidos"
-          class="flex flex-col items-center gap-3 p-6 rounded-xl bg-muted/30 border border-border hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group"
-        >
-          <div
-            class="w-14 h-14 rounded-xl bg-blue-500/10 flex items-center justify-center group-hover:scale-110 transition-transform"
-          >
-            <FileText className="w-7 h-7 text-blue-600 dark:text-blue-400" />
+        <a href="/admin/configuracion" class="flex items-center gap-3 p-4 rounded-xl bg-muted/30 border border-border hover:border-green-500/40 hover:bg-green-500/5 transition-all group">
+          <div class="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+            <Settings className="w-5 h-5 text-green-600 dark:text-green-400" />
           </div>
-          <span class="text-sm font-medium">Ver Pedidos</span>
+          <div>
+            <p class="text-sm font-medium text-foreground">Configuración</p>
+            <p class="text-xs text-muted-foreground">Ajustes de la tienda</p>
+          </div>
         </a>
 
-        <a
-          href="/admin/configuracion"
-          class="flex flex-col items-center gap-3 p-6 rounded-xl bg-muted/30 border border-border hover:border-green-500/50 hover:bg-green-500/5 transition-all group"
-        >
-          <div
-            class="w-14 h-14 rounded-xl bg-green-500/10 flex items-center justify-center group-hover:scale-110 transition-transform"
-          >
-            <Settings className="w-7 h-7 text-green-600 dark:text-green-400" />
+        <a href="/admin/newsletter" class="flex items-center gap-3 p-4 rounded-xl bg-muted/30 border border-border hover:border-amber-500/40 hover:bg-amber-500/5 transition-all group">
+          <div class="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+            <Mail className="w-5 h-5 text-amber-600 dark:text-amber-400" />
           </div>
-          <span class="text-sm font-medium">Configuración</span>
-        </a>
-
-        <a
-          href="/admin/newsletter"
-          class="flex flex-col items-center gap-3 p-6 rounded-xl bg-muted/30 border border-border hover:border-amber-500/50 hover:bg-amber-500/5 transition-all group"
-        >
-          <div
-            class="w-14 h-14 rounded-xl bg-amber-500/10 flex items-center justify-center group-hover:scale-110 transition-transform"
-          >
-            <Mail className="w-7 h-7 text-amber-600 dark:text-amber-400" />
+          <div>
+            <p class="text-sm font-medium text-foreground">Newsletter</p>
+            <p class="text-xs text-muted-foreground">Campañas de email</p>
           </div>
-          <span class="text-sm font-medium">Newsletter</span>
         </a>
       </div>
     </div>

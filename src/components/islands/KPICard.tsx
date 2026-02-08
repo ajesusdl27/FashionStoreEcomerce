@@ -1,6 +1,6 @@
-import { TrendingUp, TrendingDown, DollarSign, Clock, Star, ShoppingBag, Package, Users, Sparkles } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Clock, Star, ShoppingBag, Package, Users, Sparkles, RotateCcw, Ticket, Truck, Percent, BarChart3 } from "lucide-react";
 
-type IconName = 'money' | 'clock' | 'star' | 'orders' | 'products' | 'users' | 'sparkles';
+type IconName = 'money' | 'clock' | 'star' | 'orders' | 'products' | 'users' | 'sparkles' | 'return' | 'coupon' | 'truck' | 'percent' | 'chart';
 
 interface KPICardProps {
   title: string;
@@ -26,6 +26,11 @@ const icons: Record<IconName, React.ReactNode> = {
   products: <Package className="w-7 h-7" />,
   users: <Users className="w-7 h-7" />,
   sparkles: <Sparkles className="w-7 h-7" />,
+  return: <RotateCcw className="w-7 h-7" />,
+  coupon: <Ticket className="w-7 h-7" />,
+  truck: <Truck className="w-7 h-7" />,
+  percent: <Percent className="w-7 h-7" />,
+  chart: <BarChart3 className="w-7 h-7" />,
 };
 
 /**
