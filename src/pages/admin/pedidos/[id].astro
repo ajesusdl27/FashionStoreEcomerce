@@ -549,10 +549,10 @@ if (order.status === 'cancelled') {
           {/* Tracking Fields - only for NEW shipments */}
           <div
             id="tracking-fields"
-            class="hidden space-y-3 mb-4 p-4 bg-zinc-800/50 rounded-lg border border-zinc-700"
+            class="hidden space-y-3 mb-4 p-4 bg-card rounded-lg border border-border"
           >
             <h3
-              class="text-sm font-semibold text-blue-400 flex items-center gap-2"
+              class="text-sm font-semibold text-primary flex items-center gap-2"
             >
               <svg
                 class="w-4 h-4"
@@ -570,7 +570,7 @@ if (order.status === 'cancelled') {
               Datos de Envío
             </h3>
             <div>
-              <label class="block text-sm text-zinc-400 mb-1"
+              <label class="block text-sm text-muted-foreground mb-1"
                 >Transportista *</label
               >
               <select id="carrier-select" class="admin-select w-full">
@@ -587,7 +587,7 @@ if (order.status === 'cancelled') {
               </select>
             </div>
             <div>
-              <label class="block text-sm text-zinc-400 mb-1"
+              <label class="block text-sm text-muted-foreground mb-1"
                 >Número de seguimiento</label
               >
               <input
@@ -598,7 +598,7 @@ if (order.status === 'cancelled') {
               />
             </div>
             <div>
-              <label class="block text-sm text-zinc-400 mb-1"
+              <label class="block text-sm text-muted-foreground mb-1"
                 >URL de seguimiento</label
               >
               <input
@@ -607,7 +607,7 @@ if (order.status === 'cancelled') {
                 class="admin-input w-full"
                 placeholder="https://..."
               />
-              <p class="text-xs text-zinc-500 mt-1">
+              <p class="text-xs text-muted-foreground mt-1">
                 Enlace directo al seguimiento del paquete
               </p>
             </div>
@@ -660,6 +660,41 @@ if (order.status === 'cancelled') {
   </div>
 
   <script define:vars={{ orderId: order.id, isAlreadyShipped }}>
+    // Patrones de URL de seguimiento para transportistas
+    const CARRIER_PATTERNS = {
+      'SEUR': (trackingNumber) => 
+        `https://www.seur.com/laben/seguimiento.do?segDistribucionWeb.codigo=${trackingNumber}`,
+      'MRW': (trackingNumber) => 
+        `https://www.mrw.es/seguimiento_envios/MRW_resultados_consultas.asp?modo=nacional&envio=${trackingNumber}`,
+      'GLS': (trackingNumber) => 
+        `https://www.gls-spain.es/es/seguimiento-de-envios/?match=${trackingNumber}`,
+      'Correos': (trackingNumber) => 
+        `https://www.correos.es/es/es/herramientas/localizador/envios?text=${trackingNumber}`,
+      'Correos Express': (trackingNumber) => 
+        `https://www.correosexpress.com/web/correosexpress/seguimiento?envio=${trackingNumber}`,
+      'DHL': (trackingNumber) => 
+        `https://www.dhl.com/es-es/home/tracking.html?tracking-id=${trackingNumber}`,
+      'UPS': (trackingNumber) => 
+        `https://www.ups.com/track?tracknum=${trackingNumber}`,
+      'FedEx': (trackingNumber) => 
+        `https://www.fedex.com/fedextrack/?trknbr=${trackingNumber}`,
+      'Nacex': (trackingNumber) => 
+        `https://www.nacex.es/irCliente.do?method=buscarEnvio&codigoEnvio=${trackingNumber}`,
+      'CTT Express': (trackingNumber) => 
+        `https://www.cttexpresso.pt/feapl_2/app/open/cttexpresso/objectSearch/objectSearch.jspx?objects=${trackingNumber}`
+    };
+
+    function generateTrackingUrl(carrier, trackingNumber) {
+      if (!carrier || !trackingNumber || carrier === 'Otro') {
+        return null;
+      }
+      const cleanTracking = trackingNumber.trim();
+      if (!cleanTracking || !CARRIER_PATTERNS[carrier]) {
+        return null;
+      }
+      return CARRIER_PATTERNS[carrier](cleanTracking);
+    }
+
     const statusSelect = document.getElementById("status-select");
     const updateBtn = document.getElementById("update-status");
     const messageDiv = document.getElementById("status-message");
@@ -721,6 +756,28 @@ if (order.status === 'cancelled') {
     // Initialize visibility
     updateTrackingVisibility();
     statusSelect?.addEventListener("change", updateTrackingVisibility);
+
+    // Auto-complete tracking URL based on carrier and tracking number
+    function autoCompleteTrackingUrl() {
+      const carrier = carrierSelect?.value;
+      const trackingNum = trackingNumber?.value?.trim();
+      
+      // Skip auto-complete if carrier is "Otro" (custom) or fields are empty
+      if (!carrier || carrier === "Otro" || !trackingNum) {
+        return;
+      }
+
+      // Generate tracking URL using the utility function
+      const generatedUrl = generateTrackingUrl(carrier, trackingNum);
+      
+      if (generatedUrl && trackingUrl) {
+        trackingUrl.value = generatedUrl;
+      }
+    }
+
+    // Add event listeners for auto-completion
+    carrierSelect?.addEventListener("change", autoCompleteTrackingUrl);
+    trackingNumber?.addEventListener("input", autoCompleteTrackingUrl);
 
     // Quick ship button
     quickShipBtn?.addEventListener("click", () => {
