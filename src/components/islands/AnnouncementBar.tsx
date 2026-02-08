@@ -10,7 +10,7 @@ interface AnnouncementBarProps {
 }
 
 export default function AnnouncementBar({
-  message: initialMessage = "🚚 Envío GRATIS en pedidos superiores a 50€",
+  message: initialMessage = "Envío GRATIS en pedidos superiores a 50€",
 }: AnnouncementBarProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);

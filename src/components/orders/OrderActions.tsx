@@ -361,7 +361,7 @@ export default function OrderActions({
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {existingReturn.status === 'requested' 
-                      ? 'Esperando aprobación del administrador'
+                      ? 'Esperando aprobación'
                       : existingReturn.status === 'approved'
                       ? 'Envía el paquete a la dirección indicada'
                       : 'Tu solicitud está en proceso'}
