@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Flame
 } from "lucide-react";
+import { resolveStyleConfig, getTextColorClass, getTextAlignClass, getContentPositionClasses, getOverlayClasses, normalizeCoupon } from '@/lib/types/promotion';
 
 const now = new Date();
 
@@ -96,36 +97,13 @@ const heroPromotion = allPromotions?.find(p =>
     Array.isArray(p.locations) && p.locations.includes('home_hero')
 );
 
-// Promotion Styles Helper
-const getPromoStyles = (styleConfig: any) => {
-    // Extended color support
-    const getTextColor = (color?: string) => {
-        switch (color) {
-            case 'black': return 'text-black';
-            case 'gold': return 'text-amber-400';
-            case 'red': return 'text-red-500';
-            case 'gray': return 'text-gray-300';
-            default: return 'text-white';
-        }
-    };
-    
-    const textColor = getTextColor(styleConfig?.text_color);
-    const textAlign = styleConfig?.text_align === 'center' 
-        ? 'text-center items-center' 
-        : styleConfig?.text_align === 'right' 
-        ? 'text-right items-end' 
-        : 'text-left items-start';
-    
-    // Gradient for readability - dark overlay for light text, light for dark text
-    const needsDarkOverlay = !styleConfig?.text_color || styleConfig?.text_color === 'white' || styleConfig?.text_color === 'gold' || styleConfig?.text_color === 'gray';
-    const gradient = needsDarkOverlay
-        ? 'bg-gradient-to-b from-black/60 via-transparent to-black/60'
-        : 'bg-gradient-to-r from-white/90 via-white/50 to-transparent';
-
-    return { textColor, textAlign, gradient };
-};
-
-const promoStyles = heroPromotion ? getPromoStyles(heroPromotion.style_config) : null;
+// Resolve style_config with defaults and compute overlay / text classes
+const heroStyle = heroPromotion ? resolveStyleConfig(heroPromotion.style_config) : null;
+const heroTextColor = heroStyle ? getTextColorClass(heroStyle.text_color) : '';
+const heroTextAlign = heroStyle ? getTextAlignClass(heroStyle.text_align) : '';
+const heroPosition = heroStyle ? getContentPositionClasses(heroStyle.overlay_position) : '';
+const heroOverlay  = heroStyle ? getOverlayClasses(heroStyle, 'hero') : '';
+const heroCoupon   = heroPromotion ? normalizeCoupon(heroPromotion.coupons) : null;
 ---
 
 <PublicLayout title="Inicio">
@@ -150,35 +128,31 @@ const promoStyles = heroPromotion ? getPromoStyles(heroPromotion.style_config) :
                     loading="eager"
                 />
             </picture>
-            {/* Intelligent Gradient Overlay - Enhanced for readability */}
-            <div class={`absolute inset-0 ${
-                promoStyles?.textColor.includes('white') 
-                ? 'bg-gradient-to-t from-black/80 via-black/40 to-transparent sm:bg-gradient-to-r sm:from-black/70 sm:via-black/30 sm:to-transparent' 
-                : 'bg-gradient-to-t from-white/90 via-white/50 to-transparent sm:bg-gradient-to-r sm:from-white/90 sm:via-white/60 sm:to-white/10'
-            }`}></div>
+            {/* Intelligent Gradient Overlay — driven by style_config */}
+            <div class={`absolute inset-0 ${heroOverlay}`}></div>
         </div>
 
-        {/* Content Container */}
-        <div class="relative z-10 container mx-auto px-6 md:px-12 h-full flex flex-col justify-center">
-            <div class={`max-w-4xl flex flex-col ${promoStyles?.textAlign}`}>
+        {/* Content Container — overlay_position drives horizontal placement */}
+        <div class={`relative z-10 container mx-auto px-6 md:px-12 h-full flex flex-col justify-center ${heroPosition}`}>
+            <div class={`max-w-4xl flex flex-col ${heroTextAlign}`}>
                 
                 {/* Badge / Overline */}
                 <div class="overflow-hidden mb-4 sm:mb-6">
                      <span class={`inline-block animate-fade-up px-3 py-1 text-xs sm:text-sm font-bold tracking-[0.2em] uppercase border-l-2 ${
-                        promoStyles?.textColor.includes('white') ? 'border-primary text-zinc-300' : 'border-black text-zinc-600'
+                        heroTextColor.includes('white') ? 'border-primary text-zinc-300' : 'border-black text-zinc-600'
                      }`}>
                         Temporada {new Date().getFullYear()}
                      </span>
                 </div>
 
                 {/* Main Title - Responsive sizing fixed */}
-                <h1 class={`font-display text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tighter mb-4 sm:mb-6 leading-[0.9] animate-fade-up-delay-1 ${promoStyles?.textColor} drop-shadow-2xl`}>
+                <h1 class={`font-display text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tighter mb-4 sm:mb-6 leading-[0.9] animate-fade-up-delay-1 ${heroTextColor} drop-shadow-2xl`}>
                     {heroPromotion.title}
                 </h1>
                 
                 {/* Description */}
                 {heroPromotion.description && (
-                    <p class={`text-base sm:text-xl md:text-2xl font-light mb-8 sm:mb-10 max-w-xl animate-fade-up-delay-2 ${promoStyles?.textColor} opacity-90 leading-relaxed`}>
+                    <p class={`text-base sm:text-xl md:text-2xl font-light mb-8 sm:mb-10 max-w-xl animate-fade-up-delay-2 ${heroTextColor} opacity-90 leading-relaxed`}>
                         {heroPromotion.description}
                     </p>
                 )}
@@ -195,19 +169,19 @@ const promoStyles = heroPromotion ? getPromoStyles(heroPromotion.style_config) :
                         </span>
                     </a>
 
-                    {heroPromotion.coupon_id && heroPromotion.coupons && (
-                        <div class="relative group cursor-pointer w-full sm:w-auto" onclick={`navigator.clipboard.writeText('${heroPromotion.coupons.code}'); alert('¡Código copiado!');`}>
+                    {heroPromotion.coupon_id && heroCoupon && (
+                        <div class="relative group cursor-pointer w-full sm:w-auto" onclick={`navigator.clipboard.writeText('${heroCoupon.code}').then(() => { const t = document.createElement('div'); t.className = 'fixed bottom-6 right-6 p-4 bg-green-500/90 text-white rounded-lg shadow-xl flex items-center gap-3 z-50 animate-fade-in'; t.innerHTML = '<span class=\"font-medium\">¡Cupón ${heroCoupon.code} copiado!</span>'; document.body.appendChild(t); setTimeout(() => t.remove(), 3000); });`}>
                              {/* Glass effect container */}
                              <div class={`relative flex items-center justify-between sm:justify-start gap-4 bg-white/10 backdrop-blur-md border border-white/20 px-5 py-3.5 rounded-lg hover:bg-white/20 transition-all shadow-lg hover:shadow-xl group-active:scale-95`}>
                                 <div class="flex flex-col items-start">
                                     <span class="text-[10px] uppercase tracking-widest text-primary font-bold mb-0.5">Cupón Descuento</span>
-                                    <span class={`font-mono text-xl font-bold tracking-wider ${promoStyles?.textColor}`}>
-                                        {heroPromotion.coupons.code}
+                                    <span class={`font-mono text-xl font-bold tracking-wider ${heroTextColor}`}>
+                                        {heroCoupon.code}
                                     </span>
                                 </div>
                                 <div class="flex items-center gap-3">
-                                    <div class={`h-8 w-[1px] bg-current opacity-20 ${promoStyles?.textColor}`}></div>
-                                    <Copy className={`w-5 h-5 ${promoStyles?.textColor} opacity-70 group-hover:opacity-100 transition-all`} />
+                                    <div class={`h-8 w-[1px] bg-current opacity-20 ${heroTextColor}`}></div>
+                                    <Copy className={`w-5 h-5 ${heroTextColor} opacity-70 group-hover:opacity-100 transition-all`} />
                                 </div>
                              </div>
                         </div>

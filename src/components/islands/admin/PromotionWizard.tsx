@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useId } from 'react';
 import { PROMOTION_TEMPLATES, LOCATION_LABELS, type PromotionTemplate } from '@/lib/promotionTemplates';
+import { resolveStyleConfig, getTextColorClass, getTextAlignClass, getContentPositionClasses, getOverlayClasses, type PromotionStyleConfig } from '@/lib/types/promotion';
 import { 
   Clipboard, 
   Image as ImageIcon, 
@@ -7,7 +8,9 @@ import {
   Calendar as CalendarIcon, 
   Trash2, 
   Check, 
-  Sparkles
+  Sparkles,
+  Eye,
+  EyeOff
 } from "lucide-react";
 
 // Types
@@ -23,13 +26,7 @@ interface PromotionData {
   coupon_id: string | null;
   locations: string[];
   priority: number;
-  style_config: {
-    text_color: 'white' | 'black';
-    text_align: 'left' | 'center' | 'right';
-    overlay_enabled: boolean;
-    overlay_position: 'left' | 'center' | 'right' | 'full';
-    overlay_opacity: number;
-  };
+  style_config: PromotionStyleConfig;
   start_date: string;
   end_date: string;
   template_id?: string;
@@ -44,12 +41,20 @@ interface Category {
 interface Coupon {
   id: string;
   code: string;
+  discount_type?: string;
+  discount_value?: number;
 }
 
 interface PromotionWizardProps {
   categories: Category[];
   coupons: Coupon[];
   existingDraft?: any;
+  /** If provided, the wizard opens in edit mode pre-filled with this data */
+  initialData?: any;
+  /** 'create' (default) or 'edit' */
+  mode?: 'create' | 'edit';
+  /** Promotion ID (required in edit mode) */
+  promotionId?: string;
 }
 
 const defaultPromotionData: PromotionData = {
@@ -68,11 +73,19 @@ const defaultPromotionData: PromotionData = {
     text_align: 'left',
     overlay_enabled: true,
     overlay_position: 'left',
-    overlay_opacity: 50
+    overlay_opacity: 60,
   },
-  start_date: new Date().toISOString().slice(0, 16),
+  start_date: (() => { const now = new Date(); return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16); })(),
   end_date: ''
 };
+
+/** Convert DB ISO string to datetime-local input value */
+function formatDateForInput(dateString: string | null): string {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return localDate.toISOString().slice(0, 16);
+}
 
 // Image Drop Zone Component for upload
 interface ImageDropZoneProps {
@@ -229,9 +242,34 @@ function ImageDropZone({ imageUrl, onImageChange, placeholder }: ImageDropZonePr
   );
 }
 
-export default function PromotionWizard({ categories, coupons, existingDraft }: PromotionWizardProps) {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [data, setData] = useState<PromotionData>(defaultPromotionData);
+export default function PromotionWizard({ categories, coupons, existingDraft, initialData, mode = 'create', promotionId }: PromotionWizardProps) {
+  const isEditMode = mode === 'edit';
+  const [currentStep, setCurrentStep] = useState(isEditMode ? 2 : 1);
+  const [data, setData] = useState<PromotionData>(() => {
+    if (initialData) {
+      // When editing, merge server data into our shape
+      const resolved = resolveStyleConfig(initialData.style_config);
+      return {
+        ...defaultPromotionData,
+        title: initialData.title || '',
+        description: initialData.description || '',
+        image_url: initialData.image_url || '',
+        mobile_image_url: initialData.mobile_image_url || '',
+        cta_text: initialData.cta_text || 'Ver más',
+        cta_link: initialData.cta_link || '/productos',
+        cta_link_type: initialData.cta_link?.startsWith('/ofertas') ? 'offers' as const
+          : initialData.cta_link?.startsWith('/categoria') ? 'category' as const
+          : 'products' as const,
+        coupon_id: initialData.coupon_id || null,
+        locations: Array.isArray(initialData.locations) ? initialData.locations : ['home_hero'],
+        priority: initialData.priority ?? 10,
+        style_config: resolved,
+        start_date: initialData.start_date ? formatDateForInput(initialData.start_date) : defaultPromotionData.start_date,
+        end_date: initialData.end_date ? formatDateForInput(initialData.end_date) : '',
+      };
+    }
+    return defaultPromotionData;
+  });
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -241,15 +279,16 @@ export default function PromotionWizard({ categories, coupons, existingDraft }: 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedDataRef = useRef<string>('');
 
-  // Load draft on mount
+  // Load draft on mount (only in create mode)
   useEffect(() => {
-    if (existingDraft?.promotion_data) {
+    if (!isEditMode && existingDraft?.promotion_data) {
       setShowDraftRecovery(true);
     }
   }, [existingDraft]);
 
-  // Auto-save every 30 seconds
+  // Auto-save every 30 seconds (create mode only)
   useEffect(() => {
+    if (isEditMode) return;
     const currentDataStr = JSON.stringify(data);
     
     if (currentDataStr !== lastSavedDataRef.current && data.title) {
@@ -371,40 +410,58 @@ export default function PromotionWizard({ categories, coupons, existingDraft }: 
   };
 
   const handleSubmit = async () => {
+    // Re-validate all steps before submitting
+    const step2Valid = validateStep(2);
+    if (!step2Valid) { setCurrentStep(2); return; }
+    const step3Valid = validateStep(3);
+    if (!step3Valid) { setCurrentStep(3); return; }
     if (!validateStep(4)) return;
+
+    // Cancel any pending auto-save to prevent race condition with deleteDraft
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
     
     setIsSubmitting(true);
+
+    const payload: Record<string, any> = {
+      title: data.title,
+      description: data.description,
+      image_url: data.image_url,
+      mobile_image_url: data.mobile_image_url || null,
+      cta_text: data.cta_text,
+      cta_link: data.cta_link,
+      coupon_id: data.coupon_id,
+      locations: data.locations,
+      priority: data.priority,
+      style_config: data.style_config,
+      start_date: data.start_date || new Date().toISOString(),
+      end_date: data.end_date || null
+    };
+
+    // In edit mode, include the id and use PUT
+    if (isEditMode && promotionId) {
+      payload.id = promotionId;
+    }
     
     try {
       const response = await fetch('/api/admin/promociones', {
-        method: 'POST',
+        method: isEditMode ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: data.title,
-          description: data.description,
-          image_url: data.image_url,
-          mobile_image_url: data.mobile_image_url || null,
-          cta_text: data.cta_text,
-          cta_link: data.cta_link,
-          coupon_id: data.coupon_id,
-          locations: data.locations,
-          priority: data.priority,
-          style_config: data.style_config,
-          start_date: data.start_date || new Date().toISOString(),
-          end_date: data.end_date || null
-        })
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {
-        await deleteDraft();
+        if (!isEditMode) await deleteDraft();
         sessionStorage.setItem('toast', JSON.stringify({
           type: 'success',
-          message: '¡Promoción creada correctamente!'
+          message: isEditMode ? '¡Promoción actualizada correctamente!' : '¡Promoción creada correctamente!'
         }));
         window.location.href = '/admin/promociones';
       } else {
         const error = await response.json();
-        setErrors({ submit: error.error || 'Error al crear la promoción' });
+        setErrors({ submit: error.error || (isEditMode ? 'Error al actualizar la promoción' : 'Error al crear la promoción') });
       }
     } catch (error) {
       setErrors({ submit: 'Error de conexión' });
@@ -459,27 +516,27 @@ export default function PromotionWizard({ categories, coupons, existingDraft }: 
       {/* Progress Steps */}
       <div className="mb-8">
         <div className="flex justify-between items-center">
-          {steps.map((step, idx) => (
+          {steps.filter(s => isEditMode ? s.number > 1 : true).map((step, idx, arr) => (
             <React.Fragment key={step.number}>
               <div className="flex flex-col items-center">
                 <button
-                  onClick={() => step.number < currentStep && setCurrentStep(step.number)}
-                  disabled={step.number > currentStep}
+                  onClick={() => isEditMode ? setCurrentStep(step.number) : (step.number < currentStep && setCurrentStep(step.number))}
+                  disabled={!isEditMode && step.number > currentStep}
                   className={`w-12 h-12 rounded-full flex items-center justify-center text-lg transition-all ${
                     step.number === currentStep
                       ? 'bg-primary text-primary-foreground scale-110'
-                      : step.number < currentStep
+                      : step.number < currentStep || isEditMode
                       ? 'bg-primary/20 text-primary cursor-pointer hover:bg-primary/30'
                       : 'bg-muted text-muted-foreground'
                   }`}
                 >
-                  {step.number < currentStep ? '✓' : step.icon}
+                  {!isEditMode && step.number < currentStep ? '✓' : step.icon}
                 </button>
                 <span className={`text-xs mt-2 ${step.number === currentStep ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                   {step.title}
                 </span>
               </div>
-              {idx < steps.length - 1 && (
+              {idx < arr.length - 1 && (
                 <div className={`flex-1 h-1 mx-2 rounded ${step.number < currentStep ? 'bg-primary' : 'bg-muted'}`} />
               )}
             </React.Fragment>
@@ -633,29 +690,27 @@ export default function PromotionWizard({ categories, coupons, existingDraft }: 
                 {/* Text Color */}
                 <div>
                   <label className="block text-xs text-muted-foreground mb-2">Color del texto</label>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => updateStyleConfig({ text_color: 'white' })}
-                      className={`flex items-center gap-2 px-4 py-2 rounded border transition-all ${
-                        data.style_config.text_color === 'white'
-                          ? 'border-primary bg-primary/10'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <span className="w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center text-xs text-black">Aa</span>
-                      Blanco
-                    </button>
-                    <button
-                      onClick={() => updateStyleConfig({ text_color: 'black' })}
-                      className={`flex items-center gap-2 px-4 py-2 rounded border transition-all ${
-                        data.style_config.text_color === 'black'
-                          ? 'border-primary bg-primary/10'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <span className="w-6 h-6 rounded-full bg-black border border-gray-600 flex items-center justify-center text-xs text-white">Aa</span>
-                      Negro
-                    </button>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { value: 'white' as const, label: 'Blanco', bg: 'bg-white', text: 'text-black', border: 'border-gray-300' },
+                      { value: 'black' as const, label: 'Negro', bg: 'bg-black', text: 'text-white', border: 'border-gray-600' },
+                      { value: 'gold' as const, label: 'Dorado', bg: 'bg-amber-400', text: 'text-black', border: 'border-amber-500' },
+                      { value: 'red' as const, label: 'Rojo', bg: 'bg-red-500', text: 'text-white', border: 'border-red-600' },
+                      { value: 'gray' as const, label: 'Gris', bg: 'bg-gray-300', text: 'text-black', border: 'border-gray-400' },
+                    ].map(color => (
+                      <button
+                        key={color.value}
+                        onClick={() => updateStyleConfig({ text_color: color.value })}
+                        className={`flex items-center gap-2 px-3 py-2 rounded border transition-all ${
+                          data.style_config.text_color === color.value
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <span className={`w-6 h-6 rounded-full ${color.bg} border ${color.border} flex items-center justify-center text-xs ${color.text}`}>Aa</span>
+                        {color.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -678,35 +733,75 @@ export default function PromotionWizard({ categories, coupons, existingDraft }: 
                     ))}
                   </div>
                 </div>
+              </div>
 
-                {/* Overlay */}
-                <div className="sm:col-span-2">
-                  <label className="flex items-center gap-2 mb-2">
-                    <input
-                      type="checkbox"
-                      checked={data.style_config.overlay_enabled}
-                      onChange={(e) => updateStyleConfig({ overlay_enabled: e.target.checked })}
-                      className="w-4 h-4 rounded"
-                    />
-                    <span className="text-sm">Añadir capa oscura para mejorar legibilidad</span>
-                  </label>
-                  
-                  {data.style_config.overlay_enabled && (
-                    <div className="ml-6 mt-2">
-                      <label className="block text-xs text-muted-foreground mb-2">
-                        Opacidad: {data.style_config.overlay_opacity}%
-                      </label>
+              {/* Overlay Controls */}
+              <div className="mt-6 pt-4 border-t border-border/50">
+                <div className="flex items-center justify-between mb-4">
+                  <label className="block text-xs text-muted-foreground">Overlay de legibilidad</label>
+                  <button
+                    onClick={() => updateStyleConfig({ overlay_enabled: !data.style_config.overlay_enabled })}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                      data.style_config.overlay_enabled
+                        ? 'bg-primary/15 text-primary border border-primary/30'
+                        : 'bg-muted text-muted-foreground border border-border'
+                    }`}
+                  >
+                    {data.style_config.overlay_enabled ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                    {data.style_config.overlay_enabled ? 'Activado' : 'Desactivado'}
+                  </button>
+                </div>
+
+                {data.style_config.overlay_enabled && (
+                  <div className="space-y-4 animate-in fade-in">
+                    {/* Overlay Position */}
+                    <div>
+                      <label className="block text-xs text-muted-foreground mb-2">Posición del overlay</label>
+                      <div className="flex gap-2">
+                        {([
+                          { value: 'left' as const, label: '← Izq', icon: '◧' },
+                          { value: 'center' as const, label: 'Centro', icon: '◉' },
+                          { value: 'right' as const, label: 'Der →', icon: '◨' },
+                          { value: 'full' as const, label: 'Completo', icon: '■' },
+                        ]).map(pos => (
+                          <button
+                            key={pos.value}
+                            onClick={() => updateStyleConfig({ overlay_position: pos.value })}
+                            className={`flex-1 flex flex-col items-center gap-1 px-2 py-2 rounded border text-xs transition-all ${
+                              data.style_config.overlay_position === pos.value
+                                ? 'border-primary bg-primary/10 text-foreground'
+                                : 'border-border hover:border-primary/50 text-muted-foreground'
+                            }`}
+                          >
+                            <span className="text-base">{pos.icon}</span>
+                            {pos.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Overlay Opacity */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-xs text-muted-foreground">Opacidad del overlay</label>
+                        <span className="text-xs font-mono text-muted-foreground">{data.style_config.overlay_opacity}%</span>
+                      </div>
                       <input
                         type="range"
-                        min="20"
-                        max="80"
+                        min="0"
+                        max="100"
+                        step="5"
                         value={data.style_config.overlay_opacity}
                         onChange={(e) => updateStyleConfig({ overlay_opacity: parseInt(e.target.value) })}
-                        className="w-full max-w-xs"
+                        className="w-full accent-primary"
                       />
+                      <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                        <span>Transparente</span>
+                        <span>Opaco</span>
+                      </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -827,7 +922,9 @@ export default function PromotionWizard({ categories, coupons, existingDraft }: 
                 >
                   <option value="">Sin cupón</option>
                   {coupons.map(coupon => (
-                    <option key={coupon.id} value={coupon.id}>{coupon.code}</option>
+                    <option key={coupon.id} value={coupon.id}>
+                      {coupon.code}{coupon.discount_type ? ` - ${coupon.discount_type === 'percentage' ? `${coupon.discount_value}%` : `${coupon.discount_value}€`}` : ''}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -938,9 +1035,9 @@ export default function PromotionWizard({ categories, coupons, existingDraft }: 
           <button
             type="button"
             onClick={prevStep}
-            disabled={currentStep === 1}
+            disabled={currentStep === 1 || (isEditMode && currentStep === 2)}
             className={`px-6 py-2 rounded-lg border border-border hover:bg-muted transition-colors ${
-              currentStep === 1 ? 'opacity-50 cursor-not-allowed' : ''
+              (currentStep === 1 || (isEditMode && currentStep === 2)) ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
             ← Anterior
@@ -961,13 +1058,15 @@ export default function PromotionWizard({ categories, coupons, existingDraft }: 
               disabled={isSubmitting}
               className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              {isSubmitting ? 'Creando...' : '✓ Crear Promoción'}
+              {isSubmitting
+                ? (isEditMode ? 'Guardando...' : 'Creando...')
+                : (isEditMode ? '✓ Guardar Cambios' : '✓ Crear Promoción')}
             </button>
           )}
         </div>
       </div>
 
-      {/* Live Preview (Floating) */}
+      {/* Live Preview (Floating) — uses the SAME overlay logic as the storefront */}
       {(currentStep >= 2 && data.image_url) && (
         <div className="fixed bottom-4 right-4 w-80 bg-card border border-border rounded-xl shadow-xl overflow-hidden z-40">
           <div className="p-2 bg-muted border-b border-border flex items-center gap-2">
@@ -979,27 +1078,15 @@ export default function PromotionWizard({ categories, coupons, existingDraft }: 
               alt="Preview" 
               className="w-full h-full object-cover"
             />
-            {data.style_config.overlay_enabled && (
-              <div 
-                className={`absolute inset-0 ${
-                  data.style_config.overlay_position === 'left' ? 'bg-gradient-to-r from-black to-transparent' :
-                  data.style_config.overlay_position === 'right' ? 'bg-gradient-to-l from-black to-transparent' :
-                  data.style_config.overlay_position === 'center' ? 'bg-gradient-to-r from-transparent via-black to-transparent' :
-                  'bg-black'
-                }`}
-                style={{ opacity: data.style_config.overlay_opacity / 100 }}
-              />
-            )}
-            <div className={`absolute inset-0 flex flex-col justify-center p-4 ${
-              data.style_config.text_align === 'center' ? 'items-center text-center' :
-              data.style_config.text_align === 'right' ? 'items-end text-right' :
-              'items-start text-left'
-            }`}>
-              <h3 className={`text-lg font-bold ${data.style_config.text_color === 'white' ? 'text-white' : 'text-black'}`}>
+            {/* Overlay — same getOverlayClasses used by hero & banner */}
+            <div className={`absolute inset-0 ${getOverlayClasses(data.style_config, 'preview')}`} />
+            <div className={`absolute inset-0 flex flex-col justify-center p-4 ${getContentPositionClasses(data.style_config.overlay_position)}`}>
+              <div className={`max-w-[70%] flex flex-col ${getTextAlignClass(data.style_config.text_align)}`}>
+              <h3 className={`font-display text-lg font-bold uppercase ${getTextColorClass(data.style_config.text_color)}`}>
                 {data.title || 'Tu título aquí'}
               </h3>
               {data.description && (
-                <p className={`text-xs mt-1 ${data.style_config.text_color === 'white' ? 'text-white/80' : 'text-black/80'}`}>
+                <p className={`text-xs mt-1 opacity-80 ${getTextColorClass(data.style_config.text_color)}`}>
                   {data.description}
                 </p>
               )}
@@ -1008,6 +1095,7 @@ export default function PromotionWizard({ categories, coupons, existingDraft }: 
                   {data.cta_text}
                 </button>
               )}
+              </div>
             </div>
           </div>
         </div>

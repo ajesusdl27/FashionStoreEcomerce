@@ -1,64 +1,73 @@
 import { useState, useEffect } from "react";
-import { X, Truck, Tag } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { X, Truck, Tag, ExternalLink } from "lucide-react";
 import { toast } from "@/components/islands/Toast";
+import { getPromotionsForZone } from "@/stores/promotionsCache";
+import { resolveStyleConfig, getTextColorClass, getTextAlignClass, getAnnouncementBgClass, normalizeCoupon } from "@/lib/types/promotion";
 
-const STORAGE_KEY = "announcement-dismissed-v2";
+const STORAGE_KEY_PREFIX = "announcement-dismissed-";
 
-interface AnnouncementBarProps {
-  message?: string;
-}
-
-export default function AnnouncementBar({
-  message: initialMessage = "Envío GRATIS en pedidos superiores a 50€",
-}: AnnouncementBarProps) {
+export default function AnnouncementBar() {
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [promoMessage, setPromoMessage] = useState<string>(initialMessage);
+  const [promoMessage, setPromoMessage] = useState<string>("");
+  const [promoDescription, setPromoDescription] = useState<string | null>(null);
   const [promoCoupon, setPromoCoupon] = useState<string | null>(null);
+  const [promoId, setPromoId] = useState<string | null>(null);
+  const [ctaText, setCtaText] = useState<string | null>(null);
+  const [ctaLink, setCtaLink] = useState<string | null>(null);
+  const [textColorClass, setTextColorClass] = useState("text-white");
+  const [textAlignClass, setTextAlignClass] = useState("text-center items-center");
+  const [bgClass, setBgClass] = useState("bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900");
 
   useEffect(() => {
-    // 1. Check dismiss state
-    const isDismissed = localStorage.getItem(STORAGE_KEY);
-    if (isDismissed) return;
-
-    // 2. Fetch active promotion for announcement_top
     const fetchPromo = async () => {
-      const { data: allPromos } = await supabase
-        .from('promotions')
-        .select('title, coupons(code), locations')
-        .eq('is_active', true)
-        .order('priority', { ascending: true });
+      const promos = await getPromotionsForZone('announcement_top');
+      const topPromo = promos[0];
 
-      const topPromo = allPromos?.find(p => 
-        Array.isArray(p.locations) && p.locations.includes('announcement_top')
-      );
+      if (!topPromo) return;
 
-      if (topPromo) {
-        setPromoMessage(topPromo.title);
-        
-        // Handle coupons as object or array (Supabase join quirk)
-        const couponData = topPromo.coupons;
-        if (Array.isArray(couponData) && couponData.length > 0 && couponData[0]) {
-           setPromoCoupon(couponData[0].code);
-        } else if (couponData && typeof couponData === 'object' && 'code' in couponData) {
-           // @ts-ignore
-           setPromoCoupon(couponData.code);
-        }
+      // Check dismiss state for this specific promotion
+      const isDismissed = localStorage.getItem(`${STORAGE_KEY_PREFIX}${topPromo.id}`);
+      if (isDismissed) return;
+
+      setPromoId(topPromo.id);
+      setPromoMessage(topPromo.title);
+
+      // Description (truncated single line)
+      if (topPromo.description) {
+        setPromoDescription(topPromo.description);
       }
+
+      // CTA
+      if (topPromo.cta_text && topPromo.cta_link) {
+        setCtaText(topPromo.cta_text);
+        setCtaLink(topPromo.cta_link);
+      }
+
+      // Coupon — normalised for array/object Supabase quirk
+      const coupon = normalizeCoupon(topPromo.coupons);
+      if (coupon) setPromoCoupon(coupon.code);
+
+      // Style config — honour admin settings
+      const style = resolveStyleConfig(topPromo.style_config);
+      setTextColorClass(getTextColorClass(style.text_color));
+      setTextAlignClass(getTextAlignClass(style.text_align));
+      setBgClass(getAnnouncementBgClass(style));
 
       setIsVisible(true);
       requestAnimationFrame(() => setIsAnimating(true));
     };
 
     fetchPromo();
-  }, [initialMessage]);
+  }, []);
 
   const handleDismiss = () => {
     setIsAnimating(false);
     setTimeout(() => {
       setIsVisible(false);
-      localStorage.setItem(STORAGE_KEY, "true");
+      if (promoId) {
+        localStorage.setItem(`${STORAGE_KEY_PREFIX}${promoId}`, "true");
+      }
     }, 300);
   };
 
@@ -68,7 +77,6 @@ export default function AnnouncementBar({
         await navigator.clipboard.writeText(promoCoupon);
         toast.success(`¡Cupón ${promoCoupon} copiado al portapapeles!`);
       } catch (err) {
-        // Fallback for browsers that don't support clipboard API
         toast.error('No se pudo copiar el código. Inténtalo manualmente.');
         console.error('Clipboard error:', err);
       }
@@ -79,28 +87,43 @@ export default function AnnouncementBar({
 
   return (
     <div
-      className={`bg-gradient-to-r from-primary via-primary/90 to-primary text-primary-foreground text-center py-2 px-4 transition-all duration-300 ${
+      className={`${bgClass} ${textColorClass} py-2 px-4 transition-all duration-300 ${
         isAnimating
           ? "opacity-100 translate-y-0"
           : "opacity-0 -translate-y-full"
       }`}
     >
-      <div className="container mx-auto flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
+      <div className={`container mx-auto flex flex-col sm:flex-row ${textAlignClass} justify-center gap-2 sm:gap-4`}>
         <div className="flex items-center gap-2">
-          {promoCoupon ? <Tag className="w-4 h-4" /> : <Truck className="w-4 h-4 hidden sm:block" />}
-          <span className="text-sm font-medium tracking-wide">{promoMessage}</span>
+          {promoCoupon ? <Tag className="w-4 h-4 flex-shrink-0" /> : <Truck className="w-4 h-4 hidden sm:block flex-shrink-0" />}
+          <span className="font-display text-sm font-medium tracking-wide uppercase">{promoMessage}</span>
+          {promoDescription && (
+            <span className="hidden md:inline text-sm opacity-80 ml-1">— {promoDescription}</span>
+          )}
         </div>
 
-        {promoCoupon && (
-          <button 
-            onClick={copyCoupon}
-            className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 px-3 py-0.5 rounded-full text-xs font-mono font-bold transition-colors cursor-pointer"
-            title="Clic para copiar"
-          >
-            <span>{promoCoupon}</span>
-            <span className="opacity-70 font-sans font-normal text-[10px] hidden sm:inline">COPIAR</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {promoCoupon && (
+            <button
+              onClick={copyCoupon}
+              className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 px-3 py-0.5 rounded-full text-xs font-mono font-bold transition-colors cursor-pointer"
+              title="Clic para copiar"
+            >
+              <span>{promoCoupon}</span>
+              <span className="opacity-70 font-sans font-normal text-[10px] hidden sm:inline">COPIAR</span>
+            </button>
+          )}
+
+          {ctaText && ctaLink && (
+            <a
+              href={ctaLink}
+              className="flex items-center gap-1 bg-white/15 hover:bg-white/25 px-3 py-0.5 rounded-full text-xs font-medium transition-colors"
+            >
+              {ctaText}
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
+        </div>
       </div>
 
       <button

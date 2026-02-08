@@ -2,6 +2,7 @@
  * Promotion Templates Configuration
  * Pre-defined templates for the promotion wizard
  */
+import type { PromotionStyleConfig } from '@/lib/types/promotion';
 
 export interface PromotionTemplate {
   id: string;
@@ -15,13 +16,7 @@ export interface PromotionTemplate {
     description?: string;
     cta_text: string;
     cta_link: string;
-    style_config: {
-      text_color: 'white' | 'black';
-      text_align: 'left' | 'center' | 'right';
-      overlay_enabled: boolean;
-      overlay_position: 'left' | 'center' | 'right' | 'full';
-      overlay_opacity: number;
-    };
+    style_config: PromotionStyleConfig;
     suggested_duration_days?: number;
     suggested_locations: string[];
   };

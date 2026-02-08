@@ -512,6 +512,14 @@ const alreadyExpired =
     btn.addEventListener("click", async () => {
       const id = btn.getAttribute("data-id");
       const isActive = btn.getAttribute("data-active") === "true";
+      const btnEl = btn as HTMLButtonElement;
+
+      // Optimistic UI update
+      btnEl.disabled = true;
+      btnEl.style.opacity = '0.5';
+      const statusSpan = btnEl.querySelector('span:last-child');
+      const originalText = statusSpan?.textContent || '';
+      if (statusSpan) statusSpan.textContent = isActive ? 'Desactivando...' : 'Activando...';
 
       try {
         const response = await fetch("/api/admin/promociones", {
@@ -522,9 +530,17 @@ const alreadyExpired =
 
         if (response.ok) {
           window.location.reload();
+        } else {
+          // Revert on error
+          btnEl.disabled = false;
+          btnEl.style.opacity = '1';
+          if (statusSpan) statusSpan.textContent = originalText;
         }
       } catch (error) {
         console.error("Error toggling status:", error);
+        btnEl.disabled = false;
+        btnEl.style.opacity = '1';
+        if (statusSpan) statusSpan.textContent = originalText;
       }
     });
   });
@@ -533,6 +549,7 @@ const alreadyExpired =
   document.querySelectorAll(".delete-promo-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.getAttribute("data-id");
+      const btnEl = btn as HTMLButtonElement;
 
       if (
         !confirm(
@@ -541,6 +558,9 @@ const alreadyExpired =
       ) {
         return;
       }
+
+      btnEl.disabled = true;
+      btnEl.style.opacity = '0.5';
 
       try {
         const response = await fetch("/api/admin/promociones", {
@@ -551,9 +571,14 @@ const alreadyExpired =
 
         if (response.ok) {
           window.location.reload();
+        } else {
+          btnEl.disabled = false;
+          btnEl.style.opacity = '1';
         }
       } catch (error) {
         console.error("Error deleting promotion:", error);
+        btnEl.disabled = false;
+        btnEl.style.opacity = '1';
       }
     });
   });
@@ -591,7 +616,7 @@ const alreadyExpired =
           priority: promo.priority + 1,
           style_config: promo.style_config,
           start_date: new Date().toISOString(),
-          end_date: promo.end_date,
+          end_date: promo.end_date && new Date(promo.end_date) > new Date() ? promo.end_date : null,
         };
 
         const response = await fetch("/api/admin/promociones", {

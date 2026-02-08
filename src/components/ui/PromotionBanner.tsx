@@ -1,25 +1,7 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getPromotionsForZone } from '@/stores/promotionsCache';
 import { toast } from '@/components/islands/Toast';
-
-interface Promotion {
-  id: string;
-  title: string;
-  description: string;
-  image_url: string;
-  mobile_image_url?: string;
-  cta_text?: string;
-  cta_link?: string;
-  style_config: {
-    text_color?: 'white' | 'black';
-    text_align?: 'left' | 'center' | 'right';
-  };
-  coupons?: {
-    code: string;
-    discount_type: string;
-    discount_value: number;
-  };
-}
+import { resolveStyleConfig, getTextColorClass, getTextAlignClass, getContentPositionClasses, getOverlayClasses, normalizeCoupon, type Promotion } from '@/lib/types/promotion';
 
 interface PromotionBannerProps {
   zone: string;
@@ -45,31 +27,11 @@ export default function PromotionBanner({ zone, className = '', compact = false 
   useEffect(() => {
     const fetchPromotion = async () => {
       try {
-        const now = new Date().toISOString();
-        
-        // Fetch ALL active promotions (don't filter by locations in query - it doesn't work with arrays)
-        const { data, error } = await supabase
-          .from('promotions')
-          .select('*, coupons(code, discount_type, discount_value)')
-          .eq('is_active', true)
-          .order('priority', { ascending: true });
-
-        if (error) {
-          console.error('Error fetching promotion:', error);
-          setLoading(false);
-          return;
-        }
-
-        // Filter by zone AND date in JavaScript (same pattern as AnnouncementBar)
-        const validPromotions = (data || []).filter((promo: any) => {
-          const hasZone = Array.isArray(promo.locations) && promo.locations.includes(zone);
-          const startValid = !promo.start_date || new Date(promo.start_date) <= new Date(now);
-          const endValid = !promo.end_date || new Date(promo.end_date) >= new Date(now);
-          return hasZone && startValid && endValid;
-        });
+        // Use shared cache - no redundant Supabase queries
+        const validPromotions = await getPromotionsForZone(zone);
 
         if (validPromotions.length > 0) {
-          setPromotion(validPromotions[0]);
+          setPromotion(validPromotions[0] as Promotion);
         }
       } catch (e) {
         console.error('Exception fetching promotion:', e);
@@ -83,34 +45,21 @@ export default function PromotionBanner({ zone, className = '', compact = false 
 
   if (loading || !promotion) return null;
 
-  const { title, description, image_url, mobile_image_url, cta_text, cta_link, style_config, coupons } = promotion;
+  const { title, description, image_url, mobile_image_url, cta_text, cta_link } = promotion;
+  const styleConfig = resolveStyleConfig(promotion.style_config);
+  const coupon = normalizeCoupon(promotion.coupons);
   
   // Use mobile image if available and on mobile device
   const displayImage = (isMobile && mobile_image_url) ? mobile_image_url : image_url;
   
-  // Extended color support
-  const getTextColorClass = (color?: string) => {
-    switch (color) {
-      case 'black': return 'text-black';
-      case 'gold': return 'text-amber-400';
-      case 'red': return 'text-red-500';
-      case 'gray': return 'text-gray-300';
-      default: return 'text-white';
-    }
-  };
-  
-  const textColor = getTextColorClass(style_config?.text_color);
-  const textAlign = style_config?.text_align === 'center' 
-    ? 'text-center items-center' 
-    : style_config?.text_align === 'right' 
-      ? 'text-right items-end' 
-      : 'text-left items-start';
+  const textColor = getTextColorClass(styleConfig.text_color);
+  const textAlign = getTextAlignClass(styleConfig.text_align);
   
   const copyCoupon = async () => {
-    if (coupons?.code) {
+    if (coupon?.code) {
       try {
-        await navigator.clipboard.writeText(coupons.code);
-        toast.success(`¡Código ${coupons.code} copiado al portapapeles!`);
+        await navigator.clipboard.writeText(coupon.code);
+        toast.success(`¡Código ${coupon.code} copiado al portapapeles!`);
       } catch (err) {
         // Fallback for browsers that don't support clipboard API
         toast.error('No se pudo copiar el código. Inténtalo manualmente.');
@@ -157,9 +106,9 @@ export default function PromotionBanner({ zone, className = '', compact = false 
             <h3 className="font-heading text-sm md:text-base font-bold text-white truncate">
               {title}
             </h3>
-            {coupons && (
+            {coupon && (
               <span className="text-xs text-primary font-mono font-bold">
-                Código: {coupons.code}
+                Código: {coupon.code}
               </span>
             )}
           </div>
@@ -193,17 +142,14 @@ export default function PromotionBanner({ zone, className = '', compact = false 
             fetchpriority={zone === 'home_hero' ? 'high' : 'auto'}
           />
         </picture>
-        {/* Overlay gradient to improve readability based on text color */}
-        <div className={`absolute inset-0 ${
-          style_config?.text_color === 'black' 
-            ? 'bg-gradient-to-r from-white/80 via-white/40 to-transparent' 
-            : 'bg-black/30'
-        }`} />
+        {/* Overlay gradient — driven by style_config */}
+        <div className={`absolute inset-0 ${getOverlayClasses(styleConfig, 'banner-full')}`} />
       </div>
 
-      {/* Content */}
-      <div className={`relative z-10 container mx-auto px-4 py-12 md:py-20 flex flex-col ${textAlign}`}>
-        <h2 className={`font-heading text-3xl md:text-5xl font-bold mb-4 ${textColor} drop-shadow-sm`}>
+      {/* Content — overlay_position drives horizontal placement */}
+      <div className={`relative z-10 container mx-auto px-4 py-12 md:py-20 flex flex-col ${getContentPositionClasses(styleConfig.overlay_position)}`}>
+        <div className={`max-w-2xl flex flex-col ${textAlign}`}>
+        <h2 className={`font-display text-3xl md:text-5xl font-bold mb-4 ${textColor} drop-shadow-sm`}>
           {title}
         </h2>
         
@@ -213,7 +159,7 @@ export default function PromotionBanner({ zone, className = '', compact = false 
           </p>
         )}
 
-        <div className="flex flex-col sm:flex-row items-center gap-4 mt-2">
+        <div className="flex flex-col sm:flex-row gap-4 mt-2">
           {/* CTA Button */}
           <a 
             href={ctaButtonLink}
@@ -223,10 +169,10 @@ export default function PromotionBanner({ zone, className = '', compact = false 
           </a>
 
           {/* Coupon Display */}
-          {coupons && (
+          {coupon && (
             <>
               <div className="bg-white/90 backdrop-blur text-black px-4 py-2 rounded-lg font-mono font-bold border border-zinc-200 shadow-lg">
-                {coupons.code}
+                {coupon.code}
               </div>
               <button 
                 onClick={copyCoupon}
@@ -236,6 +182,7 @@ export default function PromotionBanner({ zone, className = '', compact = false 
               </button>
             </>
           )}
+        </div>
         </div>
       </div>
     </div>

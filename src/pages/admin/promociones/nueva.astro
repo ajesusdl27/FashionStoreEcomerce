@@ -19,7 +19,7 @@ const authClient = createAuthenticatedClient(accessToken, refreshToken);
 // Fetch coupons for linking
 const { data: coupons } = await authClient
   .from("coupons")
-  .select("id, code")
+  .select("id, code, discount_type, discount_value")
   .eq("is_active", true)
   .order("code", { ascending: true });
 

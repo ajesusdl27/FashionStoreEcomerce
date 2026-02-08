@@ -30,6 +30,68 @@ const sanitizeUrl = (url: string | null | undefined): string | null => {
   return '/productos';
 };
 
+/**
+ * Allowed fields for promotion updates (whitelist)
+ */
+const ALLOWED_UPDATE_FIELDS = [
+  'title', 'description', 'image_url', 'mobile_image_url',
+  'cta_text', 'cta_link', 'coupon_id', 'locations',
+  'priority', 'style_config', 'start_date', 'end_date', 'is_active'
+];
+
+/**
+ * Valid promotion zones
+ */
+const VALID_ZONES = ['home_hero', 'announcement_top', 'cart_sidebar', 'product_page'];
+
+/**
+ * Validate promotion data (shared between POST and PUT)
+ */
+const validatePromotionData = (data: Record<string, any>, isCreate: boolean = false): string | null => {
+  // Required fields for creation
+  if (isCreate && (!data.title || !data.image_url)) {
+    return 'Faltan campos requeridos (Título, Imagen)';
+  }
+
+  // Title length
+  if (data.title !== undefined) {
+    if (typeof data.title !== 'string' || data.title.length < 1) {
+      return 'El título es obligatorio';
+    }
+    if (data.title.length > 200) {
+      return 'El título no puede superar los 200 caracteres';
+    }
+  }
+
+  // Priority must be positive integer
+  if (data.priority !== undefined) {
+    const priority = Number(data.priority);
+    if (!Number.isInteger(priority) || priority < 1) {
+      return 'La prioridad debe ser un número entero positivo';
+    }
+  }
+
+  // Validate date ordering
+  if (data.start_date && data.end_date) {
+    if (new Date(data.end_date) <= new Date(data.start_date)) {
+      return 'La fecha de fin debe ser posterior a la fecha de inicio';
+    }
+  }
+
+  // Validate locations array
+  if (data.locations !== undefined) {
+    if (!Array.isArray(data.locations)) {
+      return 'Las ubicaciones deben ser un array';
+    }
+    const invalidZones = data.locations.filter((z: string) => !VALID_ZONES.includes(z));
+    if (invalidZones.length > 0) {
+      return `Ubicaciones no válidas: ${invalidZones.join(', ')}`;
+    }
+  }
+
+  return null;
+};
+
 // GET - List all promotions
 export const GET: APIRoute = async ({ cookies }) => {
   try {
@@ -112,8 +174,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } = body;
 
     // Validate required fields
-    if (!title || !image_url) {
-      return new Response(JSON.stringify({ error: 'Faltan campos requeridos (Título, Imagen)' }), { 
+    const validationError = validatePromotionData(body, true);
+    if (validationError) {
+      return new Response(JSON.stringify({ error: validationError }), { 
         status: 400, headers: { 'Content-Type': 'application/json' } 
       });
     }
@@ -176,11 +239,27 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
 
     const authClient = createAuthenticatedClient(accessToken, refreshToken);
     const body = await request.json();
-    const { id, ...updates } = body;
+    const { id, ...rawUpdates } = body;
 
     if (!id) {
       return new Response(JSON.stringify({ error: 'ID de promoción requerido' }), {
         status: 400, headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Whitelist allowed fields to prevent arbitrary field injection
+    const updates: Record<string, any> = {};
+    for (const key of ALLOWED_UPDATE_FIELDS) {
+      if (key in rawUpdates) {
+        updates[key] = rawUpdates[key];
+      }
+    }
+
+    // Validate the update data
+    const validationError = validatePromotionData(updates);
+    if (validationError) {
+      return new Response(JSON.stringify({ error: validationError }), { 
+        status: 400, headers: { 'Content-Type': 'application/json' } 
       });
     }
 
