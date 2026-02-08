@@ -60,8 +60,18 @@ export const sanitizeTextField = (value: string): string => {
     .trim();
 };
 
-/**
- * Valida que el texto sanitizado sea seguro (sin cambios significativos)
+/** * Sanitiza campos de texto en tiempo real (sin trim final)
+ * Permite espacios al escribir, mantiene cursor en posición correcta
+ */
+export const sanitizeTextFieldLive = (value: string): string => {
+  if (!value || typeof value !== 'string') return '';
+  // Rechaza: < > / \ { } ( ) [ ] ; : ' " & caracteres de control
+  return value
+    .replace(/[<>\/\\{}\\'\";:\[\]()]/g, '')
+    .replace(/\s+/g, ' '); // Normaliza espacios múltiples, pero sin .trim()
+};
+
+/** * Valida que el texto sanitizado sea seguro (sin cambios significativos)
  */
 export const isTextSafe = (original: string, sanitized: string): boolean => {
   // Si el texto sanitizado cambió más del 10% de caracteres, rechazar

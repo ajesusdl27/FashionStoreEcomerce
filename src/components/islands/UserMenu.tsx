@@ -92,7 +92,7 @@ export default function UserMenu() {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-56 glass border border-border rounded-lg shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-lg shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
           {/* User Info */}
           <div className="px-4 py-3 border-b border-border">
             <p className="text-sm font-medium truncate">

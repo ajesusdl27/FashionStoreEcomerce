@@ -163,8 +163,8 @@ export default function ProductAddToCart({
 
           {/* Stock warning */}
           {selectedVariant && selectedVariant.stock > 0 && selectedVariant.stock <= 5 && (
-            <p className="mt-3 text-sm text-yellow-400">
-              ⚡ {selectedVariant.stock} unidades disponibles
+            <p className="mt-3 text-sm text-yellow-600">
+              {selectedVariant.stock} unidades disponibles
             </p>
           )}
         </div>

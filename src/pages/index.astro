@@ -8,7 +8,6 @@ import { formatPrice } from "@/lib/formatters";
 import { 
   ArrowRight, 
   Copy, 
-  ChevronDown, 
   Zap, 
   Tag, 
   Package, 
@@ -216,11 +215,6 @@ const promoStyles = heroPromotion ? getPromoStyles(heroPromotion.style_config) :
                 </div>
             </div>
         </div>
-        
-        {/* Scroll Indicator - Hidden on very small screens to save space */}
-        <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 animate-bounce hidden sm:block">
-            <ChevronDown className={`w-8 h-8 ${promoStyles?.textColor} opacity-50`} />
-        </div>
     </section>
 
   ) : (
@@ -293,16 +287,6 @@ const promoStyles = heroPromotion ? getPromoStyles(heroPromotion.style_config) :
             >
             <Flame className="w-5 h-5 text-red-500 fill-red-500" /> OFERTAS
             </a>
-        </div>
-        </div>
-
-        <!-- Scroll indicator -->
-        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 animate-fade-up-delay-3">
-        <div class="flex flex-col items-center gap-2 text-muted-foreground">
-            <span class="text-xs uppercase tracking-widest">Scroll</span>
-            <div class="w-6 h-10 rounded-full border-2 border-muted-foreground/30 flex items-start justify-center p-1">
-            <div class="w-1.5 h-2.5 bg-primary rounded-full animate-bounce"></div>
-            </div>
         </div>
         </div>
     </section>

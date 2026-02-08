@@ -120,7 +120,7 @@ export default function HeaderNavigation({ currentPath }: HeaderNavigationProps)
 
         {/* Dropdown Menu */}
         {isDropdownOpen && (
-          <div className="absolute left-0 top-full mt-3 w-56 glass border border-border rounded-lg shadow-xl py-2 z-[45] animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="absolute left-0 top-full mt-3 w-56 bg-card border border-border rounded-lg shadow-xl py-2 z-[45] animate-in fade-in slide-in-from-top-2 duration-200">
             {isLoading ? (
               <div className="px-4 py-3 text-sm text-muted-foreground">
                 Cargando categorías...

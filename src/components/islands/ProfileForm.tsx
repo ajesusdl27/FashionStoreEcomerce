@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { cleanPhone, cleanPostalCode, sanitizeTextField } from '@/lib/validators';
+import { cleanPhone, cleanPostalCode, sanitizeTextField, sanitizeTextFieldLive } from '@/lib/validators';
 
 interface ProfileData {
   full_name: string;
@@ -49,7 +49,7 @@ export default function ProfileForm({ initialData }: Props) {
     } else if (field === 'default_postal_code') {
       cleanedValue = cleanPostalCode(value);
     } else if (field === 'full_name' || field === 'default_address' || field === 'default_city') {
-      cleanedValue = sanitizeTextField(value);
+      cleanedValue = sanitizeTextFieldLive(value);
     }
     
     setFormData(prev => ({ ...prev, [field]: cleanedValue }));

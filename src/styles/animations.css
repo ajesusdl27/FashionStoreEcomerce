@@ -129,13 +129,6 @@
   scroll-snap-align: center;
 }
 
-/* Efectos de cristal/glass */
-.glass {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-
 /* Respeto por prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up,
