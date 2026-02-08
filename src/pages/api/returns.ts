@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { createClient } from "@supabase/supabase-js";
-import { sendReturnConfirmation } from "@/lib/email";
+import { sendReturnConfirmation, sendAdminReturnNotification } from "@/lib/email";
 import { validateToken } from "@/lib/auth-utils";
 export const prerender = false;
 
@@ -247,6 +247,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         customerEmail: orderDetails.customer_email,
         items: emailItems,
       }).catch(err => console.error('Error sending return confirmation email:', err));
+
+      // Send admin notification (non-blocking)
+      sendAdminReturnNotification({
+        returnId: newReturn.id,
+        orderId: order_id,
+        orderNumber: orderDetails.order_number,
+        customerName: orderDetails.customer_name,
+        customerEmail: orderDetails.customer_email,
+        items: emailItems,
+      }).catch(err => console.error('Error sending admin return notification:', err));
     }
 
     return new Response(

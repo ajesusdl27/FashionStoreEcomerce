@@ -7,6 +7,15 @@ import {
   generateReturnRejectedHTML,
   type ReturnEmailData 
 } from './email-templates-returns';
+import {
+  generateAdminOrderNotificationHTML,
+  generateAdminReturnNotificationHTML,
+  generateLowStockAlertHTML,
+  type AdminOrderNotificationData,
+  type AdminReturnNotificationData,
+  type LowStockAlertData,
+  type LowStockItem,
+} from './email-templates-admin';
 import { generateTicketPDF } from './pdf-generator';
 import { formatOrderId } from './order-utils';
 import { getContactInfo } from './settings';
@@ -999,3 +1008,159 @@ export async function sendReturnRejectedEmail(data: ReturnEmailData): Promise<{ 
     return { success: false, error: errorMessage };
   }
 }
+
+// ==================================================
+// NOTIFICACIONES AL ADMINISTRADOR
+// ==================================================
+
+/**
+ * Obtiene el email del administrador desde settings (store_email)
+ */
+async function getAdminEmail(): Promise<string | null> {
+  try {
+    const contactInfo = await getContactInfo();
+    return contactInfo.email || null;
+  } catch (error) {
+    console.warn('📧 [ADMIN-EMAIL] Could not fetch admin email from settings');
+    return null;
+  }
+}
+
+/**
+ * Envía notificación al admin cuando un cliente paga un pedido
+ */
+export async function sendAdminOrderNotification(data: AdminOrderNotificationData): Promise<{ success: boolean; error?: string }> {
+  console.log('📧 [ADMIN-EMAIL] Sending order notification to admin...');
+  
+  if (!resend) {
+    console.warn('📧 [ADMIN-EMAIL] Resend not configured - skipping admin notification');
+    return { success: false, error: 'Email service not configured' };
+  }
+
+  try {
+    const adminEmail = await getAdminEmail();
+    if (!adminEmail) {
+      console.warn('📧 [ADMIN-EMAIL] No admin email configured in settings (store_email)');
+      return { success: false, error: 'Admin email not configured' };
+    }
+
+    const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
+    const templateOptions = await getEmailTemplateOptions();
+    const displayId = formatOrderId(data.orderNumber);
+
+    const { data: responseData, error } = await resend.emails.send({
+      from: fromEmail,
+      to: adminEmail,
+      subject: `[Admin] 💳 Nuevo pedido pagado ${displayId} — ${data.totalAmount.toFixed(2)}€`,
+      html: generateAdminOrderNotificationHTML(data, templateOptions),
+    });
+
+    if (error) {
+      console.error('📧 [ADMIN-EMAIL] Error sending admin order notification:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`📧 [ADMIN-EMAIL] ✅ Admin order notification sent to ${adminEmail}. ID: ${responseData?.id}`);
+    return { success: true };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error('📧 [ADMIN-EMAIL] Exception:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Envía notificación al admin cuando un cliente solicita una devolución
+ */
+export async function sendAdminReturnNotification(data: AdminReturnNotificationData): Promise<{ success: boolean; error?: string }> {
+  console.log('📧 [ADMIN-EMAIL] Sending return notification to admin...');
+  
+  if (!resend) {
+    console.warn('📧 [ADMIN-EMAIL] Resend not configured - skipping admin notification');
+    return { success: false, error: 'Email service not configured' };
+  }
+
+  try {
+    const adminEmail = await getAdminEmail();
+    if (!adminEmail) {
+      console.warn('📧 [ADMIN-EMAIL] No admin email configured in settings (store_email)');
+      return { success: false, error: 'Admin email not configured' };
+    }
+
+    const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
+    const templateOptions = await getEmailTemplateOptions();
+    const displayId = data.orderNumber
+      ? formatOrderId(data.orderNumber)
+      : `#${data.orderId.slice(0, 8).toUpperCase()}`;
+
+    const { data: responseData, error } = await resend.emails.send({
+      from: fromEmail,
+      to: adminEmail,
+      subject: `[Admin] 📦 Nueva solicitud de devolución — Pedido ${displayId}`,
+      html: generateAdminReturnNotificationHTML(data, templateOptions),
+    });
+
+    if (error) {
+      console.error('📧 [ADMIN-EMAIL] Error sending admin return notification:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`📧 [ADMIN-EMAIL] ✅ Admin return notification sent to ${adminEmail}. ID: ${responseData?.id}`);
+    return { success: true };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error('📧 [ADMIN-EMAIL] Exception:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Envía alerta de stock bajo al administrador (reporte diario)
+ */
+export async function sendLowStockAlert(data: LowStockAlertData): Promise<{ success: boolean; error?: string }> {
+  console.log(`📧 [ADMIN-EMAIL] Sending low stock alert (${data.items.length} items)...`);
+  
+  if (!resend) {
+    console.warn('📧 [ADMIN-EMAIL] Resend not configured - skipping low stock alert');
+    return { success: false, error: 'Email service not configured' };
+  }
+
+  try {
+    const adminEmail = await getAdminEmail();
+    if (!adminEmail) {
+      console.warn('📧 [ADMIN-EMAIL] No admin email configured in settings (store_email)');
+      return { success: false, error: 'Admin email not configured' };
+    }
+
+    const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
+    const templateOptions = await getEmailTemplateOptions();
+    
+    const outOfStock = data.items.filter(i => i.stock === 0).length;
+    const subjectParts: string[] = [];
+    if (outOfStock > 0) subjectParts.push(`${outOfStock} sin stock`);
+    const lowCount = data.items.length - outOfStock;
+    if (lowCount > 0) subjectParts.push(`${lowCount} stock bajo`);
+
+    const { data: responseData, error } = await resend.emails.send({
+      from: fromEmail,
+      to: adminEmail,
+      subject: `[Admin] 📊 Alerta de Inventario — ${subjectParts.join(', ')} (${data.items.length} variantes)`,
+      html: generateLowStockAlertHTML(data, templateOptions),
+    });
+
+    if (error) {
+      console.error('📧 [ADMIN-EMAIL] Error sending low stock alert:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`📧 [ADMIN-EMAIL] ✅ Low stock alert sent to ${adminEmail}. ID: ${responseData?.id}`);
+    return { success: true };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error('📧 [ADMIN-EMAIL] Exception:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+// Re-export admin types for convenience
+export type { AdminOrderNotificationData, AdminReturnNotificationData, LowStockAlertData, LowStockItem };
