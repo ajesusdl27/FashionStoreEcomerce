@@ -39,6 +39,17 @@ const MONTH_NAMES = [
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
+// Format location names to user-friendly labels
+const formatLocation = (location: string): string => {
+  const locationMap: Record<string, string> = {
+    home_hero: 'Home Hero',
+    announcement_top: 'Barra Superior',
+    cart_sidebar: 'Carrito',
+    product_page: 'Ficha Producto',
+  };
+  return locationMap[location] || location;
+};
+
 export default function PromotionCalendar({ promotions }: PromotionCalendarProps) {
   const today = new Date();
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
@@ -312,7 +323,7 @@ export default function PromotionCalendar({ promotions }: PromotionCalendarProps
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4" />
-                  <span>{selectedPromotion.locations.join(', ')}</span>
+                  <span>{selectedPromotion.locations.map(loc => formatLocation(loc)).join(', ')}</span>
                 </div>
               </div>
 
