@@ -257,6 +257,8 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
           order_id: orderId,
           order_number: orderNumber.toString(),
           coupon_id: validatedCoupon?.id || '',
+          coupon_code: couponCode || '',
+          coupon_discount: validatedCoupon?.calculatedDiscount.toString() || '0',
           source: 'mobile'
         },
         description: `Pedido #${formattedOrderId} - FashionStore Mobile`,
