@@ -8,7 +8,7 @@ export const CAMPAIGN_STATUS = {
   SENDING: 'sending',
   SENT: 'sent',
   FAILED: 'failed',
-  PAUSED: 'paused',
+  PAUSED: 'paused', // NOTE: Exists in DB schema CHECK constraint but no UI/API implements pause/resume yet
 } as const;
 
 export type CampaignStatus = typeof CAMPAIGN_STATUS[keyof typeof CAMPAIGN_STATUS];

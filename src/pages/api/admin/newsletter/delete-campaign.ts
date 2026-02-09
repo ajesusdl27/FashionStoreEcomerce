@@ -1,7 +1,6 @@
 import type { APIRoute } from 'astro';
 import { createAuthenticatedClient } from '@/lib/supabase';
 import { validateToken } from '@/lib/auth-utils';
-import { CAMPAIGN_STATUS } from '@/lib/constants/newsletter';
 
 export const DELETE: APIRoute = async ({ request, cookies }) => {
   try {
@@ -33,40 +32,29 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // Fetch current campaign to verify status
-    const { data: campaign, error: fetchError } = await authClient
-      .from('newsletter_campaigns')
-      .select('status')
-      .eq('id', id)
-      .single();
-
-    if (fetchError || !campaign) {
-      return new Response(JSON.stringify({ error: 'Campaña no encontrada' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Only allow deleting drafts and failed campaigns (not sent or sending)
-    if (campaign.status === CAMPAIGN_STATUS.SENT || campaign.status === CAMPAIGN_STATUS.SENDING) {
-      return new Response(JSON.stringify({ 
-        error: `No se puede eliminar una campaña con estado "${campaign.status}"` 
-      }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Delete campaign (will cascade to send_logs)
-    const { error } = await authClient
+    // FIX: Atomic delete - use WHERE clause to prevent race condition 
+    // (deleting a campaign that changed status between SELECT and DELETE)
+    // Only allow deleting drafts, failed, and paused campaigns in a single atomic operation
+    const { data: deleted, error } = await authClient
       .from('newsletter_campaigns')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .not('status', 'in', '("sent","sending")')
+      .select('id');
 
     if (error) {
       console.error('Error deleting campaign:', error);
       return new Response(JSON.stringify({ error: 'Error al eliminar campaña' }), {
         status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!deleted || deleted.length === 0) {
+      return new Response(JSON.stringify({ 
+        error: 'No se puede eliminar una campaña enviada o en proceso de envío' 
+      }), {
+        status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }

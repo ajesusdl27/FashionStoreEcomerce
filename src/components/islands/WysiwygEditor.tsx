@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { useEditor, EditorContent, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -8,7 +8,8 @@ import Underline from '@tiptap/extension-underline';
 
 interface WysiwygEditorProps {
   content: string;
-  onChange: (html: string) => void;
+  /** ID of a hidden input/textarea to sync HTML content into (serializable across Astro island boundary) */
+  targetInputId: string;
   placeholder?: string;
 }
 
@@ -261,7 +262,16 @@ const Toolbar = ({ editor }: { editor: Editor | null }) => {
   );
 };
 
-export function WysiwygEditor({ content, onChange, placeholder }: WysiwygEditorProps) {
+export function WysiwygEditor({ content, targetInputId, placeholder }: WysiwygEditorProps) {
+  const targetRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+
+  // Resolve target DOM element once on mount
+  useEffect(() => {
+    if (targetInputId) {
+      targetRef.current = document.getElementById(targetInputId) as HTMLInputElement | HTMLTextAreaElement | null;
+    }
+  }, [targetInputId]);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -293,9 +303,25 @@ export function WysiwygEditor({ content, onChange, placeholder }: WysiwygEditorP
       },
     },
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      // Sync HTML to the target input element in the DOM (works across Astro island boundary)
+      if (targetRef.current) {
+        targetRef.current.value = editor.getHTML();
+      }
     },
   });
+
+  // Listen for custom event to allow external (vanilla JS) code to push content into the editor
+  // Usage from Astro: document.dispatchEvent(new CustomEvent('wysiwyg:setContent', { detail: htmlString }))
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const html = (e as CustomEvent<string>).detail;
+      if (editor && html !== undefined) {
+        editor.commands.setContent(html, false);
+      }
+    };
+    document.addEventListener('wysiwyg:setContent', handler);
+    return () => document.removeEventListener('wysiwyg:setContent', handler);
+  }, [editor]);
 
   return (
     <div className="border border-border rounded-lg overflow-hidden bg-background">
@@ -304,10 +330,10 @@ export function WysiwygEditor({ content, onChange, placeholder }: WysiwygEditorP
         editor={editor} 
         className="wysiwyg-editor"
       />
-      {!content && placeholder && (
+      {placeholder && (
         <style>{`
           .wysiwyg-editor .ProseMirror p.is-editor-empty:first-child::before {
-            content: '${placeholder}';
+            content: '${placeholder.replace(/\\/g, '\\\\').replace(/'/g, "\\\'")}'; 
             float: left;
             color: var(--muted-foreground);
             pointer-events: none;

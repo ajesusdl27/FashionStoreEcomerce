@@ -52,6 +52,49 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       updateData.last_error = errorMessage;
     }
 
+    // FIX: When transitioning to 'sending', set total_recipients and enforce atomic transition from 'draft'
+    if (status === CAMPAIGN_STATUS.SENDING) {
+      // Count active subscribers to store for historical reference
+      const { count: activeSubscribers } = await authClient
+        .from('newsletter_subscribers')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true);
+      
+      updateData.total_recipients = activeSubscribers || 0;
+
+      // Atomic transition: only update if current status is 'draft' (prevents double-send race condition)
+      const { data: updated, error } = await authClient
+        .from('newsletter_campaigns')
+        .update(updateData)
+        .eq('id', campaignId)
+        .eq('status', CAMPAIGN_STATUS.DRAFT)
+        .select('id');
+
+      if (error) {
+        console.error('Error updating campaign status:', error);
+        return new Response(JSON.stringify({ error: 'Error al actualizar estado' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      // If no rows updated, the campaign was not in 'draft' status (already being sent by another user)
+      if (!updated || updated.length === 0) {
+        return new Response(JSON.stringify({ 
+          error: 'La campaña ya está siendo enviada o no está en estado borrador' 
+        }), {
+          status: 409,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // For other status transitions (failed, paused, etc.) - no atomic check needed
     const { error } = await authClient
       .from('newsletter_campaigns')
       .update(updateData)

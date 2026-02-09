@@ -61,7 +61,6 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     const updateData: Record<string, unknown> = { 
       subject, 
       content,
-      updated_at: new Date().toISOString(),
     };
 
     // If campaign was failed, reset to draft so it can be sent again
@@ -69,6 +68,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       updateData.status = CAMPAIGN_STATUS.DRAFT;
       updateData.last_error = null;
       updateData.failed_count = 0;
+      updateData.sent_count = 0;  // FIX: Reset both counters to avoid incorrect totals on resend
     }
 
     const { error } = await authClient

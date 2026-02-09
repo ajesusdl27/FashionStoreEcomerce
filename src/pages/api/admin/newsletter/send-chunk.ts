@@ -43,12 +43,33 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
+    // FIX: Validate campaign is in 'sending' status (server-side protection)
+    if (campaign.status !== 'sending') {
+      return new Response(JSON.stringify({ error: 'La campaña no está en estado de envío' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // FIX: Get already-sent subscriber emails for this campaign to prevent duplicates on resend
+    const { data: alreadySent } = await authClient
+      .from('newsletter_send_logs')
+      .select('subscriber_email')
+      .eq('campaign_id', campaignId)
+      .eq('status', SEND_LOG_STATUS.SENT);
+    
+    const alreadySentEmails = new Set(
+      (alreadySent || []).map(l => l.subscriber_email?.toLowerCase())
+    );
+
     // Fetch subscribers chunk (including unsubscribe_token for GDPR)
-    const { data: subscribers, error: subError } = await authClient
+    let subscribersQuery = authClient
       .from('newsletter_subscribers')
       .select('id, email, unsubscribe_token')
       .eq('is_active', true)
       .range(offset, offset + limit - 1);
+    
+    const { data: subscribers, error: subError } = await subscribersQuery;
 
     if (subError) {
       console.error('Error fetching subscribers:', subError);
@@ -72,6 +93,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const siteUrl = import.meta.env.PUBLIC_SITE_URL || 'http://fashionstoreajesusdl.victoriafp.online';
 
     for (const sub of subscribers) {
+      // FIX: Skip subscribers who already received this campaign (anti-duplicate on resend)
+      if (alreadySentEmails.has(sub.email?.toLowerCase())) {
+        continue;
+      }
+
       // Generate unique unsubscribe URL for each subscriber (GDPR CRITICAL)
       const unsubscribeUrl = `${siteUrl}/newsletter/unsubscribe?token=${sub.unsubscribe_token}`;
       const emailHtml = generateNewsletterHTML({
@@ -115,15 +141,33 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Update campaign sent_count and failed_count
-    await authClient
-      .from('newsletter_campaigns')
-      .update({ 
-        sent_count: (campaign.sent_count || 0) + sentCount,
-        failed_count: (campaign.failed_count || 0) + failedCount
-      })
-      .eq('id', campaignId);
-
+    const newSentCount = (campaign.sent_count || 0) + sentCount;
+    const newFailedCount = (campaign.failed_count || 0) + failedCount;
+    
     const done = subscribers.length < limit;
+
+    if (done) {
+      // FIX: Consolidate final status update here instead of separate mark-sent API call
+      // This eliminates the two-phase commit problem (browser crash between send-chunk and mark-sent)
+      await authClient
+        .from('newsletter_campaigns')
+        .update({ 
+          sent_count: newSentCount,
+          failed_count: newFailedCount,
+          status: 'sent',
+          sent_at: new Date().toISOString(),
+        })
+        .eq('id', campaignId);
+    } else {
+      // Not done yet - just update counters
+      await authClient
+        .from('newsletter_campaigns')
+        .update({ 
+          sent_count: newSentCount,
+          failed_count: newFailedCount,
+        })
+        .eq('id', campaignId);
+    }
 
     return new Response(JSON.stringify({ 
       sent: sentCount,

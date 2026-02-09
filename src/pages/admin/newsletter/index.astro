@@ -37,26 +37,33 @@ if (welcomeCoupon) {
   // Get orders that used this coupon
   const { data: couponUsages } = await supabase
     .from("coupon_usages")
-    .select("order_id")
+    .select("order_id, customer_email")
     .eq("coupon_id", welcomeCoupon.id);
   
   if (couponUsages && couponUsages.length > 0) {
     const orderIds = couponUsages.map(u => u.order_id).filter(Boolean);
     if (orderIds.length > 0) {
+      // FIX: Use correct field name (total_amount, not total), filter by valid statuses, include refunded_amount
       const { data: orders } = await supabase
         .from("orders")
-        .select("total")
-        .in("id", orderIds);
+        .select("total_amount, refunded_amount")
+        .in("id", orderIds)
+        .in("status", ["paid", "shipped", "delivered"]);
       
       if (orders) {
-        couponRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);
+        couponRevenue = orders.reduce((sum, order) => {
+          const total = Number(order.total_amount) || 0;
+          const refunded = Number(order.refunded_amount) || 0;
+          return sum + (total - refunded);
+        }, 0);
       }
     }
-  }
-  
-  // Calculate conversion rate (subscribers who used the coupon)
-  if (subscriberCount && subscriberCount > 0) {
-    conversionRate = (couponUsageCount / subscriberCount) * 100;
+    
+    // FIX: Calculate conversion rate using unique emails, not total usage count
+    if (subscriberCount && subscriberCount > 0) {
+      const uniqueEmails = new Set(couponUsages.map(u => u.customer_email?.toLowerCase()).filter(Boolean));
+      conversionRate = (uniqueEmails.size / subscriberCount) * 100;
+    }
   }
 }
 

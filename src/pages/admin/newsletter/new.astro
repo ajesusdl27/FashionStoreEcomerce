@@ -77,10 +77,7 @@ import WysiwygEditor from "@/components/islands/WysiwygEditor";
             <WysiwygEditor 
               client:load
               content=""
-              onChange={(html: string) => {
-                const contentInput = document.getElementById('content') as HTMLTextAreaElement;
-                if (contentInput) contentInput.value = html;
-              }}
+              targetInputId="content"
               placeholder="Escribe el contenido de tu email aquí..."
             />
           </div>
@@ -110,14 +107,14 @@ import WysiwygEditor from "@/components/islands/WysiwygEditor";
           id="save-draft"
           class="flex-1 py-3 px-4 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/80 transition-colors"
         >
-          💾 Guardar Borrador
+           Guardar Borrador
         </button>
         <button
           type="button"
           id="save-and-send"
           class="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
         >
-          📤 Guardar y Enviar
+           Guardar y Enviar
         </button>
       </div>
 
@@ -152,10 +149,10 @@ import WysiwygEditor from "@/components/islands/WysiwygEditor";
         editorWysiwyg?.classList.remove('hidden');
         editorHtml?.classList.add('hidden');
         
-        // Sync HTML to WYSIWYG would require re-initializing the editor
-        // For now, we just show a warning if there's content
+        // Push HTML textarea content into the WYSIWYG editor via custom event
         if (contentHtmlTextarea?.value) {
           contentInput.value = contentHtmlTextarea.value;
+          document.dispatchEvent(new CustomEvent('wysiwyg:setContent', { detail: contentHtmlTextarea.value }));
         }
       } else {
         tabHtml?.classList.replace('bg-secondary', 'bg-primary');

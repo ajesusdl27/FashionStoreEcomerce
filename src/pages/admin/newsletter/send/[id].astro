@@ -313,13 +313,32 @@ const { count: subscriberCount } = await supabase
 
       // CRITICAL: Mark campaign as 'sending' BEFORE starting
       try {
-        await fetch("/api/admin/newsletter/update-status", {
+        const statusResponse = await fetch("/api/admin/newsletter/update-status", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ campaignId, status: "sending" }),
         });
+        
+        // FIX: Handle atomic transition failure (another user already sending)
+        if (!statusResponse.ok) {
+          const statusResult = await statusResponse.json();
+          if (statusText) {
+            statusText.textContent = statusResult.error || 'No se pudo iniciar el envío. La campaña puede estar siendo enviada desde otra pestaña.';
+            statusText.className = "text-sm text-red-400 mt-3 text-center";
+          }
+          actionButtons?.classList.remove("hidden");
+          progressSection?.classList.add("hidden");
+          return;
+        }
       } catch (e) {
         console.error("Failed to update status to sending:", e);
+        if (statusText) {
+          statusText.textContent = 'Error de conexión al iniciar el envío.';
+          statusText.className = "text-sm text-red-400 mt-3 text-center";
+        }
+        actionButtons?.classList.remove("hidden");
+        progressSection?.classList.add("hidden");
+        return;
       }
 
       let offset = 0;
@@ -360,12 +379,8 @@ const { count: subscriberCount } = await supabase
             progressText.textContent = `${totalSent} enviados / ${total} (${totalFailed} fallidos)`;
 
           if (result.done) {
-            // Mark campaign as sent
-            await fetch("/api/admin/newsletter/mark-sent", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ campaignId, totalSent }),
-            });
+            // FIX: mark-sent is now handled server-side inside send-chunk when done=true
+            // No separate API call needed, eliminating the two-phase commit problem
 
             // Show result
             progressSection?.classList.add("hidden");
