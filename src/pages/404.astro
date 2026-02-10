@@ -1,0 +1,159 @@
+---
+import PublicLayout from '@/layouts/PublicLayout.astro';
+import Button from '@/components/ui/Button.astro';
+import { Home, Shirt, Mail, Search } from 'lucide-react';
+---
+
+<PublicLayout 
+	title="404 - Página no encontrada | FashionStore"
+	description="La página que buscas no existe. Explora nuestro catálogo de moda urbana y deportiva premium."
+	noindex={true}
+>
+	<!-- Breadcrumb -->
+	<nav class="container mx-auto px-4 pt-8" aria-label="Breadcrumb">
+		<ol class="flex items-center gap-2 text-sm text-muted-foreground">
+			<li>
+				<a href="/" class="hover:text-primary transition-colors">
+					Inicio
+				</a>
+			</li>
+			<li>/</li>
+			<li class="text-foreground">404</li>
+		</ol>
+	</nav>
+
+	<!-- Hero Section -->
+	<section class="container mx-auto px-4 py-16 md:py-24">
+		<div class="max-w-4xl mx-auto text-center animate-fade-up">
+			<!-- Large 404 Number -->
+			<div class="mb-8 relative">
+				<h1 class="font-display text-[120px] md:text-[200px] lg:text-[280px] leading-none text-primary neon-glow tracking-tight">
+					404
+				</h1>
+				<!-- Floating Icon -->
+				<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-float opacity-20">
+					<Search className="w-24 h-24 md:w-32 md:h-32 text-primary" />
+				</div>
+			</div>
+
+			<!-- Title & Description -->
+			<div class="mb-12 space-y-4">
+				<h2 class="font-heading text-3xl md:text-5xl text-foreground">
+					PÁGINA NO ENCONTRADA
+				</h2>
+				<p class="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+					Parece que esta ruta no existe en nuestro mapa. Pero no te preocupes, 
+					tenemos muchas otras direcciones increíbles para ti.
+				</p>
+			</div>
+
+			<!-- Quick Action Button -->
+			<div class="mb-20">
+				<Button 
+					variant="primary" 
+					href="/"
+					class="text-lg px-8 py-4"
+				>
+					<Home className="w-5 h-5 mr-2" />
+					Volver al inicio
+				</Button>
+			</div>
+		</div>
+
+		<!-- Navigation Cards Grid -->
+		<div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-up" style="animation-delay: 0.2s;">
+			<!-- Home Card -->
+			<a 
+				href="/"
+				class="group glass admin-card p-8 text-center hover:border-primary/50 hover:bg-muted/50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
+				aria-label="Ir a la página de inicio"
+			>
+				<div class="mb-6 mx-auto w-20 h-20 bg-card border border-border rounded-2xl flex items-center justify-center group-hover:border-primary/50 transition-all">
+					<Home className="w-10 h-10 text-primary group-hover:scale-110 transition-transform" />
+				</div>
+				<h3 class="font-heading text-xl mb-2 text-foreground">
+					INICIO
+				</h3>
+				<p class="text-muted-foreground text-sm">
+					Descubre las últimas tendencias en moda urbana y deportiva
+				</p>
+			</a>
+
+			<!-- Products Card -->
+			<a 
+				href="/productos"
+				class="group glass admin-card p-8 text-center hover:border-primary/50 hover:bg-muted/50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
+				aria-label="Ver catálogo de productos"
+			>
+				<div class="mb-6 mx-auto w-20 h-20 bg-card border border-border rounded-2xl flex items-center justify-center group-hover:border-primary/50 transition-all">
+					<Shirt className="w-10 h-10 text-primary group-hover:scale-110 transition-transform" />
+				</div>
+				<h3 class="font-heading text-xl mb-2 text-foreground">
+					CATÁLOGO
+				</h3>
+				<p class="text-muted-foreground text-sm">
+					Explora nuestra colección completa de productos premium
+				</p>
+			</a>
+
+			<!-- Contact Card -->
+			<a 
+				href="/contacto"
+				class="group glass admin-card p-8 text-center hover:border-primary/50 hover:bg-muted/50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
+				aria-label="Ir a la página de contacto"
+			>
+				<div class="mb-6 mx-auto w-20 h-20 bg-card border border-border rounded-2xl flex items-center justify-center group-hover:border-primary/50 transition-all">
+					<Mail className="w-10 h-10 text-primary group-hover:scale-110 transition-transform" />
+				</div>
+				<h3 class="font-heading text-xl mb-2 text-foreground">
+					CONTACTO
+				</h3>
+				<p class="text-muted-foreground text-sm">
+					¿Necesitas ayuda? Nuestro equipo está listo para asistirte
+				</p>
+			</a>
+		</div>
+
+		<!-- Additional Help Text -->
+		<div class="max-w-2xl mx-auto text-center mt-16">
+			<p class="text-sm text-muted-foreground">
+				Si crees que esto es un error o necesitas asistencia inmediata, 
+				<a href="/contacto" class="text-primary hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background rounded">
+					contáctanos
+				</a> 
+				y te ayudaremos a encontrar lo que buscas.
+			</p>
+		</div>
+	</section>
+</PublicLayout>
+
+<style>
+	/* Ensure animations work properly */
+	@keyframes fade-up {
+		from {
+			opacity: 0;
+			transform: translateY(20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@keyframes float {
+		0%, 100% {
+			transform: translate(-50%, -50%) translateY(0px);
+		}
+		50% {
+			transform: translate(-50%, -50%) translateY(-20px);
+		}
+	}
+
+	.animate-fade-up {
+		animation: fade-up 0.6s ease-out forwards;
+	}
+
+	.animate-float {
+		animation: float 6s ease-in-out infinite;
+	}
+</style>
