@@ -358,7 +358,7 @@ export const POST: APIRoute = async ({ request }) => {
       // Get order by Payment Intent ID (stored in stripe_session_id with pi_ prefix)
       const { data: order, error: orderError } = await supabaseAdmin
         .from('orders')
-        .select('id, status, customer_email, customer_name, order_number')
+        .select('id, status, customer_email, customer_name, order_number, confirmation_email_sent')
         .eq('stripe_session_id', paymentIntentId)
         .single();
       
@@ -371,24 +371,32 @@ export const POST: APIRoute = async ({ request }) => {
       const displayId = formatOrderId(order.order_number);
       console.log(`📱 [WEBHOOK] Found order: ${displayId} (UUID: ${order.id})`);
       
-      // Idempotency check
-      if (order.status === 'paid') {
-        console.log(`📱 [WEBHOOK] ℹ️ Order ${displayId} already marked as paid - skipping`);
+      // Idempotency: check if we already fully processed this order
+      // We now use confirmation_email_sent as the idempotency flag instead of status,
+      // because the mobile app no longer updates status to 'paid' (it delegates to webhook).
+      // This ensures coupon usage + email are always processed.
+      const alreadyProcessed = order.status === 'paid' && order.confirmation_email_sent === true;
+      if (alreadyProcessed) {
+        console.log(`📱 [WEBHOOK] ℹ️ Order ${displayId} already fully processed (paid + email sent) - skipping`);
         break;
       }
       
-      // Update order status to paid
-      const { error: updateError } = await supabaseAdmin
-        .from('orders')
-        .update({ status: 'paid' })
-        .eq('id', order.id);
-      
-      if (updateError) {
-        console.error('📱 [WEBHOOK] ❌ Error updating order status:', updateError);
-        break;
+      // Update order status to paid (idempotent - safe to call multiple times)
+      if (order.status !== 'paid') {
+        const { error: updateError } = await supabaseAdmin
+          .from('orders')
+          .update({ status: 'paid' })
+          .eq('id', order.id);
+        
+        if (updateError) {
+          console.error('📱 [WEBHOOK] ❌ Error updating order status:', updateError);
+          break;
+        }
+        
+        console.log(`📱 [WEBHOOK] ✅ Order ${displayId} marked as paid`);
+      } else {
+        console.log(`📱 [WEBHOOK] ℹ️ Order ${displayId} already paid, continuing with coupon + email`);
       }
-      
-      console.log(`📱 [WEBHOOK] ✅ Order ${displayId} marked as paid`);
       
       // Record coupon usage if present in metadata
       const couponId = paymentIntent.metadata?.coupon_id;
@@ -446,9 +454,18 @@ export const POST: APIRoute = async ({ request }) => {
           };
         });
 
-        // Get coupon data directly from metadata + coupons table (more reliable than coupon_usages)
+        // Get coupon data: prefer DB columns (most reliable), fallback to PI metadata
         let couponData2: { couponCode: string; discountAmount: number } | undefined;
-        if (couponId && couponId.trim() !== '') {
+        
+        // First, try to read from the order record (new columns from migration 039)
+        const dbCouponCode = fullOrder?.coupon_code;
+        const dbDiscountAmount = Number(fullOrder?.discount_amount || 0);
+        
+        if (dbCouponCode && dbDiscountAmount > 0) {
+          couponData2 = { couponCode: dbCouponCode, discountAmount: dbDiscountAmount };
+          console.log(`📱 [WEBHOOK] Coupon data from DB: ${dbCouponCode}, discount: ${dbDiscountAmount}€`);
+        } else if (couponId && couponId.trim() !== '') {
+          // Fallback: read from Stripe PI metadata
           const metaDiscount = Number(paymentIntent.metadata?.coupon_discount || 0);
           let code = paymentIntent.metadata?.coupon_code || '';
           if (!code) {
@@ -465,6 +482,9 @@ export const POST: APIRoute = async ({ request }) => {
             couponData2 = { couponCode: code, discountAmount: metaDiscount };
           }
         }
+
+        // Get shipping cost from DB (new column), fallback to calculation
+        const shippingCost = Number(fullOrder?.shipping_cost || 0);
         
         // Use Stripe payment amount as source of truth
         const piTotalAmount = paymentIntent.amount != null
@@ -482,11 +502,18 @@ export const POST: APIRoute = async ({ request }) => {
           shippingCountry: fullOrder?.shipping_country || 'España',
           totalAmount: piTotalAmount,
           items: emailItems,
+          shippingCost: shippingCost,
           ...(couponData2 || {}),
         });
         
         if (emailResult.success) {
           console.log(`📱 [WEBHOOK] ✅ Confirmation email sent to ${order.customer_email}`);
+          
+          // Mark email as sent (idempotency flag)
+          await supabaseAdmin
+            .from('orders')
+            .update({ confirmation_email_sent: true })
+            .eq('id', order.id);
         } else {
           console.error('📱 [WEBHOOK] ❌ Failed to send email:', emailResult.error);
         }

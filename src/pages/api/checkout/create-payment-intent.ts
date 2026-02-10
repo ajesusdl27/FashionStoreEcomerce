@@ -189,7 +189,13 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
       p_total_amount: totalCents / 100, // Store in euros
       p_stripe_session_id: null, // Will be updated with Payment Intent ID
       p_items: orderItemsData,
-      p_customer_id: customerId
+      p_customer_id: customerId,
+      // Financial breakdown
+      p_subtotal: subtotalCents / 100,
+      p_shipping_cost: shippingCents / 100,
+      p_discount_amount: discountCents / 100,
+      p_coupon_code: couponCode || null,
+      p_coupon_id: validatedCoupon?.id || null,
     });
 
     if (orderError || !orderResult) {

@@ -161,7 +161,13 @@ export const POST: APIRoute = async ({ request, url, locals, cookies }) => {
       p_total_amount: totalCents / 100,
       p_stripe_session_id: null, // Will be updated after Stripe session creation
       p_items: orderItemsData,
-      p_customer_id: customerId
+      p_customer_id: customerId,
+      // Financial breakdown
+      p_subtotal: subtotalCents / 100,
+      p_shipping_cost: shippingCents / 100,
+      p_discount_amount: validatedCoupon ? Math.round(validatedCoupon.calculatedDiscount * 100) / 100 : 0,
+      p_coupon_code: couponCode || null,
+      p_coupon_id: validatedCoupon?.id || null,
     });
 
     if (orderError || !orderResult) {

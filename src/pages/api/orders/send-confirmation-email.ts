@@ -100,7 +100,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       price: Number(item.price_at_purchase)
     }));
 
+    // Extraer datos de cupón y envío desde las columnas de la orden (migración 039)
+    const couponCode = order.coupon_code;
+    const discountAmount = Number(order.discount_amount || 0);
+    const shippingCost = Number(order.shipping_cost || 0);
+
     console.log('📧 Sending email to:', order.customer_email, 'for order:', order.order_number);
+    if (couponCode) {
+      console.log('📧 Coupon:', couponCode, 'Discount:', discountAmount, 'Shipping:', shippingCost);
+    }
 
     // 7. Enviar email
     const emailResult = await sendOrderConfirmation({
@@ -114,7 +122,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       shippingCountry: order.shipping_country || 'España',
       totalAmount: Number(order.total_amount),
       items,
-      orderDate: new Date(order.created_at)
+      orderDate: new Date(order.created_at),
+      ...(couponCode && discountAmount > 0 ? { couponCode, discountAmount } : {}),
+      ...(shippingCost > 0 ? { shippingCost } : {}),
     });
 
     if (!emailResult.success) {
