@@ -192,6 +192,7 @@ export interface InvoiceData {
   total: number;
   couponCode?: string;
   discountAmount?: number;
+  shippingCost?: number;
 }
 
 export const InvoiceTemplate: React.FC<{ data: InvoiceData }> = ({ data }) => {
@@ -261,32 +262,51 @@ export const InvoiceTemplate: React.FC<{ data: InvoiceData }> = ({ data }) => {
 
         {/* Totals */}
         <View style={styles.totalsSection}>
-          {data.discountAmount && data.discountAmount > 0 ? (
-            <>
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Subtotal artículos</Text>
-                <Text style={styles.totalValue}>
-                  {formatCurrency(data.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0))}
-                </Text>
-              </View>
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Descuento{data.couponCode ? ` (${data.couponCode})` : ''}</Text>
-                <Text style={[styles.totalValue, { color: '#16a34a' }]}>-{formatCurrency(data.discountAmount)}</Text>
-              </View>
-            </>
-          ) : null}
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Base Imponible</Text>
-            <Text style={styles.totalValue}>{formatCurrency(data.subtotal)}</Text>
-          </View>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>IVA ({data.taxRate}%)</Text>
-            <Text style={styles.totalValue}>{formatCurrency(data.taxAmount)}</Text>
-          </View>
-          <View style={styles.grandTotal}>
-            <Text style={styles.grandTotalLabel}>TOTAL</Text>
-            <Text style={styles.grandTotalValue}>{formatCurrency(data.total)}</Text>
-          </View>
+          {(() => {
+            const itemsSubtotal = data.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
+            const hasDiscount = data.discountAmount != null && data.discountAmount > 0;
+            const hasShipping = data.shippingCost != null && data.shippingCost > 0;
+            const showBreakdown = hasDiscount || hasShipping;
+
+            return (
+              <>
+                {showBreakdown && (
+                  <>
+                    <View style={styles.totalRow}>
+                      <Text style={styles.totalLabel}>Subtotal artículos</Text>
+                      <Text style={styles.totalValue}>
+                        {formatCurrency(itemsSubtotal)}
+                      </Text>
+                    </View>
+                    {hasShipping && (
+                      <View style={styles.totalRow}>
+                        <Text style={styles.totalLabel}>Gastos de envío</Text>
+                        <Text style={styles.totalValue}>{formatCurrency(data.shippingCost!)}</Text>
+                      </View>
+                    )}
+                    {hasDiscount && (
+                      <View style={styles.totalRow}>
+                        <Text style={styles.totalLabel}>Descuento{data.couponCode ? ` (${data.couponCode})` : ''}</Text>
+                        <Text style={[styles.totalValue, { color: '#16a34a' }]}>-{formatCurrency(data.discountAmount!)}</Text>
+                      </View>
+                    )}
+                  </>
+                )}
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Base Imponible</Text>
+                  <Text style={styles.totalValue}>{formatCurrency(data.subtotal)}</Text>
+                </View>
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>IVA ({data.taxRate}%)</Text>
+                  <Text style={styles.totalValue}>{formatCurrency(data.taxAmount)}</Text>
+                </View>
+                <View style={styles.grandTotal}>
+                  <Text style={styles.grandTotalLabel}>TOTAL</Text>
+                  <Text style={styles.grandTotalValue}>{formatCurrency(data.total)}</Text>
+                </View>
+              </>
+            );
+          })()}
         </View>
 
         {/* Legal note */}

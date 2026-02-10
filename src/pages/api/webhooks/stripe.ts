@@ -223,6 +223,9 @@ export const POST: APIRoute = async ({ request }) => {
           const emailTotalAmount = session.amount_total != null
             ? session.amount_total / 100
             : Number(order.total_amount);
+
+          // Get shipping cost from order record (new columns from migration 039)
+          const webShippingCost = Number(order.shipping_cost || 0);
           
           // Send confirmation email
           const emailResult = await sendOrderConfirmation({
@@ -236,6 +239,7 @@ export const POST: APIRoute = async ({ request }) => {
             shippingCountry: order.shipping_country || 'España',
             totalAmount: emailTotalAmount,
             items: emailItems,
+            shippingCost: webShippingCost > 0 ? webShippingCost : undefined,
             ...(couponData || {}),
           });
           

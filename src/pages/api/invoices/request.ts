@@ -50,7 +50,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Verificar que el pedido pertenece al usuario (usar admin para bypass RLS)
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
-      .select('id, order_number, customer_email, total_amount, created_at, status')
+      .select('id, order_number, customer_email, total_amount, created_at, status, subtotal, shipping_cost, discount_amount, coupon_code')
       .eq('id', orderId)
       .eq('customer_email', user.email)
       .in('status', ['paid', 'shipped', 'delivered'])
@@ -126,33 +126,41 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       `)
       .eq('order_id', orderId);
 
-    // Buscar cupón usado en este pedido (JOIN coupon_usages + coupons)
+    // Get coupon/discount data: prefer DB columns (migration 039), fallback to coupon_usages
     let couponCode: string | undefined;
     let discountAmount: number | undefined;
-    try {
-      const { data: couponUsage } = await supabaseAdmin
-        .from('coupon_usages')
-        .select('coupons:coupon_id (code, discount_type, discount_value)')
-        .eq('order_id', orderId)
-        .limit(1)
-        .single();
+    const shippingCost = Number(order.shipping_cost || 0);
 
-      if (couponUsage?.coupons) {
-        const coupon = Array.isArray(couponUsage.coupons) ? couponUsage.coupons[0] : couponUsage.coupons;
-        if (coupon) {
-          couponCode = coupon.code;
-          // Calculate discount from coupon parameters
-          const itemsSubtotal = (orderItems || []).reduce((sum: number, item: any) => 
-            sum + (Number(item.price_at_purchase) * item.quantity), 0);
-          if (coupon.discount_type === 'fixed') {
-            discountAmount = coupon.discount_value;
-          } else if (coupon.discount_type === 'percentage') {
-            discountAmount = Math.round(itemsSubtotal * coupon.discount_value) / 100;
+    // Priority 1: Read from order columns (most reliable)
+    if (order.coupon_code && Number(order.discount_amount || 0) > 0) {
+      couponCode = order.coupon_code;
+      discountAmount = Number(order.discount_amount);
+    } else {
+      // Priority 2: Fallback to coupon_usages join (legacy orders)
+      try {
+        const { data: couponUsage } = await supabaseAdmin
+          .from('coupon_usages')
+          .select('coupons:coupon_id (code, discount_type, discount_value)')
+          .eq('order_id', orderId)
+          .limit(1)
+          .single();
+
+        if (couponUsage?.coupons) {
+          const coupon = Array.isArray(couponUsage.coupons) ? couponUsage.coupons[0] : couponUsage.coupons;
+          if (coupon) {
+            couponCode = coupon.code;
+            const itemsSubtotal = (orderItems || []).reduce((sum: number, item: any) => 
+              sum + (Number(item.price_at_purchase) * item.quantity), 0);
+            if (coupon.discount_type === 'fixed') {
+              discountAmount = coupon.discount_value;
+            } else if (coupon.discount_type === 'percentage') {
+              discountAmount = Math.round(itemsSubtotal * coupon.discount_value) / 100;
+            }
           }
         }
+      } catch (e) {
+        // No coupon used, continue without discount info
       }
-    } catch (e) {
-      // No coupon used, continue without discount info
     }
 
     // Calcular importes
@@ -185,6 +193,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       total,
       couponCode,
       discountAmount,
+      shippingCost: shippingCost > 0 ? shippingCost : undefined,
     });
 
     // Subir PDF a Supabase Storage (usar admin para bypass RLS)

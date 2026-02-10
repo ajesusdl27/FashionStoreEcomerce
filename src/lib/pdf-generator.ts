@@ -33,6 +33,7 @@ export async function generateTicketPDF(data: {
   totalAmount: number;
   couponCode?: string;
   discountAmount?: number;
+  shippingCost?: number;
 }): Promise<Buffer> {
   const companyInfo = getCompanyInfo();
   
@@ -53,6 +54,7 @@ export async function generateTicketPDF(data: {
     totalAmount: data.totalAmount,
     couponCode: data.couponCode,
     discountAmount: data.discountAmount,
+    shippingCost: data.shippingCost,
     ...companyInfo,
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -86,6 +88,7 @@ export async function generateInvoicePDF(data: {
   total: number;
   couponCode?: string;
   discountAmount?: number;
+  shippingCost?: number;
 }): Promise<Buffer> {
   const companyInfo = getCompanyInfo();
   
@@ -112,6 +115,7 @@ export async function generateInvoicePDF(data: {
     total: data.total,
     couponCode: data.couponCode,
     discountAmount: data.discountAmount,
+    shippingCost: data.shippingCost,
     ...companyInfo,
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
