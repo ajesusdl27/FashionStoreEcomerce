@@ -355,11 +355,31 @@ if (order.status === 'cancelled') {
               ))
             }
           </div>
-          <div class="p-5 border-t border-border flex justify-between items-center bg-muted/30">
-            <span class="font-semibold">Total</span>
-            <span class="text-2xl font-bold text-primary">
-              {formatPrice(order.total_amount)}
-            </span>
+          <div class="p-5 border-t border-border space-y-2 bg-muted/30">
+            {order.subtotal && (
+              <div class="flex justify-between text-sm">
+                <span class="text-muted-foreground">Subtotal</span>
+                <span class="tabular-nums">{formatPrice(order.subtotal)}</span>
+              </div>
+            )}
+            {Number(order.shipping_cost || 0) > 0 && (
+              <div class="flex justify-between text-sm">
+                <span class="text-muted-foreground">Envío</span>
+                <span class="tabular-nums">{formatPrice(order.shipping_cost)}</span>
+              </div>
+            )}
+            {Number(order.discount_amount || 0) > 0 && (
+              <div class="flex justify-between text-sm text-green-500">
+                <span>Descuento{order.coupon_code ? ` (${order.coupon_code})` : ''}</span>
+                <span class="tabular-nums">-{formatPrice(order.discount_amount)}</span>
+              </div>
+            )}
+            <div class="flex justify-between items-center pt-2 border-t border-border">
+              <span class="font-semibold">Total</span>
+              <span class="text-2xl font-bold text-primary">
+                {formatPrice(order.total_amount)}
+              </span>
+            </div>
           </div>
         </div>
 

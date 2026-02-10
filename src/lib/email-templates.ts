@@ -90,8 +90,8 @@ export function generateOrderConfirmationHTML(
                 ${(function() {
                   const subtotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
                   const discount = order.discountAmount || 0;
-                  // Shipping = total + discount - subtotal (discount must be added back to get original total)
-                  const shippingCost = order.totalAmount + discount - subtotal;
+                  // Use shippingCost from order data if available, fallback to formula for legacy orders
+                  const shippingCost = order.shippingCost != null ? order.shippingCost : (order.totalAmount + discount - subtotal);
                   let rows = '';
                   
                   if (shippingCost > 0.01) {

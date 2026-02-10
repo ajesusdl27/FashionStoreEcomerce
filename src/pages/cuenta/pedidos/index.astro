@@ -2,7 +2,6 @@
 import PublicLayout from "@/layouts/PublicLayout.astro";
 import { supabase } from "@/lib/supabase";
 import { formatOrderId } from "@/lib/order-utils";
-import { getShippingConfig } from "@/lib/settings";
 import { formatPrice } from "@/lib/formatters";
 import { Package, ChevronRight, ArrowLeft, Filter, ShoppingBag } from "lucide-react";
 
@@ -23,13 +22,6 @@ let query = supabase
     `
     *,
     order_number,
-    coupon_usages(
-      coupons(
-        code,
-        discount_type,
-        discount_value
-      )
-    ),
     order_items(
       price_at_purchase,
       quantity,
@@ -49,42 +41,6 @@ if (statusFilter && statusFilter !== "all") {
 }
 
 const { data: orders } = await query;
-
-// Obtener configuración de envío dinámica (una sola vez)
-const shippingConfigData = await getShippingConfig();
-
-function calculateOrderTotal(order: any) {
-  const items = order.order_items || [];
-  const couponUsage = order.coupon_usages?.[0];
-  const coupon = couponUsage?.coupons;
-
-  // Calculate subtotal
-  const subtotal = items.reduce(
-    (sum: number, item: any) => sum + item.price_at_purchase * item.quantity,
-    0,
-  );
-
-  // Calculate discount
-  let discountAmount = 0;
-  if (coupon) {
-    if (coupon.discount_type === "percentage") {
-      discountAmount = subtotal * (coupon.discount_value / 100);
-    } else {
-      discountAmount = Number(coupon.discount_value);
-    }
-  }
-
-  // Cap discount
-  discountAmount = Math.min(discountAmount, subtotal);
-
-  // Calculate shipping using dynamic settings
-  const shippingCost =
-    subtotal >= shippingConfigData.freeShippingThreshold
-      ? 0
-      : shippingConfigData.shippingCostEuros;
-
-  return subtotal + shippingCost - discountAmount;
-}
 
 function formatDate(date: string): string {
   return new Intl.DateTimeFormat("es-ES", {
@@ -156,8 +112,8 @@ function getStatusBadge(status: string) {
       <div class="space-y-4">
         {orders.map((order) => {
           const badge = getStatusBadge(order.status);
-          const finalTotal = calculateOrderTotal(order);
-          const hasCoupon = order.coupon_usages && order.coupon_usages.length > 0;
+          const finalTotal = Number(order.total_amount);
+          const hasCoupon = !!order.coupon_code;
           // Get first 3 product images
           const productImages = order.order_items
             ?.slice(0, 3)

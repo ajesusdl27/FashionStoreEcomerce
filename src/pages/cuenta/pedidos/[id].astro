@@ -5,7 +5,6 @@ import OrderActions from "@/components/orders/OrderActions";
 import InvoiceButton from "@/components/InvoiceButton";
 import OrderTimeline from "@/components/ui/OrderTimeline";
 import { formatOrderId } from "@/lib/order-utils";
-import { getShippingConfig } from "@/lib/settings";
 import { formatPrice } from "@/lib/formatters";
 import { ArrowLeft, Package, MapPin, Mail, Phone, Truck, MessageCircle } from "lucide-react";
 
@@ -34,13 +33,6 @@ const { data: order, error } = await supabase
         images:product_images(image_url)
       ),
       variant:product_variants(id, size)
-    ),
-    coupon_usages(
-      coupons(
-        code,
-        discount_type,
-        discount_value
-      )
     )
   `
   )
@@ -59,39 +51,15 @@ if (!order) {
   return Astro.redirect("/cuenta/pedidos");
 }
 
-// Calculate totals
-const subtotal = order.items.reduce(
+// Read financial breakdown from DB columns (stored at order creation time)
+const subtotal = Number(order.subtotal) || order.items.reduce(
   (sum: number, item: any) => sum + item.price_at_purchase * item.quantity,
   0
 );
-
-// Get coupon info if any
-// Supabase returns an array for one-to-many, even if we expect one
-const couponUsage = order.coupon_usages?.[0];
-const coupon = couponUsage?.coupons;
-
-// Calculate discount
-let discountAmount = 0;
-if (coupon) {
-  if (coupon.discount_type === "percentage") {
-    discountAmount = subtotal * (coupon.discount_value / 100);
-  } else {
-    // Fixed amount
-    discountAmount = Number(coupon.discount_value);
-  }
-}
-
-// Ensure discount doesn't exceed subtotal
-discountAmount = Math.min(discountAmount, subtotal);
-
-// Obtener configuración de envío dinámica
-const shippingConfigData = await getShippingConfig();
-
-// Calculate shipping using dynamic settings
-const shippingCost = subtotal >= shippingConfigData.freeShippingThreshold ? 0 : shippingConfigData.shippingCostEuros;
-
-// Final total
-const finalTotal = subtotal + shippingCost - discountAmount;
+const discountAmount = Number(order.discount_amount || 0);
+const couponCode = order.coupon_code || null;
+const shippingCost = Number(order.shipping_cost || 0);
+const finalTotal = Number(order.total_amount);
 
 if (error) {
   console.error("Error fetching order:", error);
@@ -292,11 +260,11 @@ const currentStatus = statusConfig[order.status] || statusConfig.pending;
               <span class="text-muted-foreground">Subtotal</span>
               <span>{formatPrice(subtotal)}</span>
             </div>
-            {discountAmount > 0 && coupon && (
+            {discountAmount > 0 && (
               <div class="flex justify-between text-green-500">
                 <span class="flex items-center gap-1">
                   Descuento
-                  <span class="badge badge-success text-xs">{coupon.code}</span>
+                  {couponCode && <span class="badge badge-success text-xs">{couponCode}</span>}
                 </span>
                 <span>-{formatPrice(discountAmount)}</span>
               </div>
