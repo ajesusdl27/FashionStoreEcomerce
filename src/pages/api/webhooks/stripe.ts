@@ -403,7 +403,7 @@ export const POST: APIRoute = async ({ request }) => {
       if (couponId && couponId.trim() !== '') {
         const customerEmail = order.customer_email;
         
-        const { error: couponError } = await supabase.rpc('use_coupon', {
+        const { error: couponError } = await supabaseAdmin.rpc('use_coupon', {
           p_coupon_id: couponId,
           p_customer_email: customerEmail,
           p_order_id: order.id

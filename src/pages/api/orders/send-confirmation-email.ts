@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { sendOrderConfirmation } from '@/lib/email';
 
 /**
@@ -80,15 +80,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // 5. Verificar que el pedido está en estado 'paid' o superior
-    if (!['paid', 'shipped', 'delivered'].includes(order.status)) {
-      console.error('❌ Order not paid:', order.status);
+    // 5. Verificar que el pedido no está en un estado terminal inválido
+    // Aceptamos 'pending' porque Flutter puede llamar este endpoint
+    // antes de que el status se propague a 'paid' (race window).
+    if (['cancelled', 'refunded'].includes(order.status)) {
+      console.error('❌ Order in invalid state:', order.status);
       return new Response(
         JSON.stringify({ 
-          error: 'El pedido no está en estado pagado',
+          error: 'El pedido está cancelado o reembolsado',
           status: order.status 
         }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Skip si ya se envió el email (idempotencia)
+    if (order.confirmation_email_sent === true) {
+      console.log('ℹ️ Email already sent for order:', order.order_number);
+      return new Response(
+        JSON.stringify({ success: true, message: 'Email ya enviado anteriormente' }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
@@ -136,6 +147,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Marcar email como enviado (usando admin para bypass RLS)
+    await supabaseAdmin
+      .from('orders')
+      .update({ confirmation_email_sent: true })
+      .eq('id', orderId);
+
+    // Registrar uso de cupón si existe (idempotente via UNIQUE constraint)
+    if (order.coupon_id) {
+      const { error: couponError } = await supabaseAdmin.rpc('use_coupon', {
+        p_coupon_id: order.coupon_id,
+        p_customer_email: order.customer_email,
+        p_order_id: order.id,
+      });
+      if (couponError && couponError.code !== '23505') {
+        console.error('⚠️ Error recording coupon usage:', couponError);
+      } else {
+        console.log('✅ Coupon usage recorded for order:', order.order_number);
+      }
     }
 
     console.log('Confirmation email sent successfully to:', order.customer_email);
