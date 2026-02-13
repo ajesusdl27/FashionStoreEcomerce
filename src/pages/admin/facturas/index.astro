@@ -1,0 +1,116 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { supabaseAdmin } from "@/lib/supabase";
+import InvoicesList from "@/components/islands/admin/InvoicesList";
+
+// Parse URL params
+const page = parseInt(Astro.url.searchParams.get("page") || "1");
+const searchQuery = Astro.url.searchParams.get("q") || "";
+const dateFrom = Astro.url.searchParams.get("from") || "";
+const dateTo = Astro.url.searchParams.get("to") || "";
+const activeTab = Astro.url.searchParams.get("tab") || "facturas";
+const limit = 20;
+const offset = (page - 1) * limit;
+
+// === Query de facturas (solo si tab=facturas) ===
+let invoices: any[] = [];
+let invoiceCount = 0;
+let invoiceError: any = null;
+
+if (activeTab === "facturas") {
+  let query = supabaseAdmin
+    .from("invoices")
+    .select(
+      "id, invoice_number, order_id, customer_nif, customer_fiscal_name, customer_fiscal_address, total, issued_at, pdf_url, orders!inner(order_number, customer_name)",
+      { count: "exact" }
+    )
+    .order("issued_at", { ascending: false });
+
+  if (searchQuery) {
+    query = query.or(
+      `invoice_number.ilike.%${searchQuery}%,customer_fiscal_name.ilike.%${searchQuery}%,customer_nif.ilike.%${searchQuery}%`
+    );
+  }
+  if (dateFrom) {
+    query = query.gte("issued_at", `${dateFrom}T00:00:00`);
+  }
+  if (dateTo) {
+    query = query.lte("issued_at", `${dateTo}T23:59:59`);
+  }
+
+  const { data: rawInvoices, count, error } = await query.range(offset, offset + limit - 1);
+  invoiceError = error;
+  invoiceCount = count || 0;
+
+  invoices = (rawInvoices || []).map((inv: any) => ({
+    id: inv.id,
+    invoice_number: inv.invoice_number,
+    order_id: inv.order_id,
+    order_number: inv.orders?.order_number || null,
+    customer_name: inv.orders?.customer_name || null,
+    customer_nif: inv.customer_nif,
+    customer_fiscal_name: inv.customer_fiscal_name,
+    customer_fiscal_address: inv.customer_fiscal_address,
+    total: inv.total,
+    issued_at: inv.issued_at,
+    pdf_url: inv.pdf_url,
+  }));
+}
+
+// === Query de tickets (pedidos pagados, solo si tab=tickets) ===
+let ticketOrders: any[] = [];
+let ticketCount = 0;
+let ticketError: any = null;
+
+if (activeTab === "tickets") {
+  let ticketQuery = supabaseAdmin
+    .from("orders")
+    .select("id, order_number, customer_name, customer_email, total_amount, status, created_at", { count: "exact" })
+    .in("status", ["paid", "shipped", "delivered"])
+    .order("created_at", { ascending: false });
+
+  if (searchQuery) {
+    const num = parseInt(searchQuery.replace(/[^0-9]/g, ''), 10);
+    if (!isNaN(num) && num > 0) {
+      ticketQuery = ticketQuery.eq("order_number", num);
+    } else {
+      ticketQuery = ticketQuery.or(`customer_name.ilike.%${searchQuery}%,customer_email.ilike.%${searchQuery}%`);
+    }
+  }
+  if (dateFrom) {
+    ticketQuery = ticketQuery.gte("created_at", `${dateFrom}T00:00:00`);
+  }
+  if (dateTo) {
+    ticketQuery = ticketQuery.lte("created_at", `${dateTo}T23:59:59`);
+  }
+
+  const { data, count, error } = await ticketQuery.range(offset, offset + limit - 1);
+  ticketOrders = data || [];
+  ticketCount = count || 0;
+  ticketError = error;
+}
+
+const error = invoiceError || ticketError;
+---
+
+<AdminLayout title="Facturas">
+  {error ? (
+    <div class="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-600 dark:text-red-400">
+      Error cargando datos: {error.message}
+    </div>
+  ) : (
+    <InvoicesList
+      client:load
+      initialInvoices={invoices}
+      totalCount={invoiceCount}
+      initialTicketOrders={ticketOrders}
+      ticketTotalCount={ticketCount}
+      activeTab={activeTab}
+      currentPage={page}
+      pageSize={limit}
+      initialSearch={searchQuery}
+      initialFrom={dateFrom}
+      initialTo={dateTo}
+    />
+  )}
+</AdminLayout>
