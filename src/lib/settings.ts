@@ -7,7 +7,7 @@
  * @module settings
  */
 
-import { supabase } from './supabase';
+import { supabase, supabaseAdmin } from './supabase';
 
 // ============================================
 // TIPOS
@@ -170,7 +170,7 @@ export async function getSettings(): Promise<StoreSettings> {
   }
   
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('settings')
       .select('key, value, value_bool, value_number');
     

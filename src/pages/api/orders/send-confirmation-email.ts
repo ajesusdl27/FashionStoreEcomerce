@@ -155,16 +155,22 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .update({ confirmation_email_sent: true })
       .eq('id', orderId);
 
-    // Notificar al admin (fire-and-forget para no bloquear la respuesta al cliente)
-    sendAdminOrderNotification({
+    // Notificar al admin (awaited para garantizar entrega antes de responder)
+    const adminResult = await sendAdminOrderNotification({
       orderId: order.id,
       orderNumber: order.order_number,
       customerName: order.customer_name,
       customerEmail: order.customer_email,
       totalAmount: Number(order.total_amount),
       items,
-      orderDate: new Date(order.created_at),
-    }).catch(err => console.error('Error sending admin notification:', err));
+      shippingCity: order.shipping_city,
+      shippingAddress: order.shipping_address,
+    });
+    if (adminResult.success) {
+      console.log('✅ Admin notification sent for order:', order.order_number);
+    } else {
+      console.error('❌ Failed to send admin notification:', adminResult.error);
+    }
 
     // Registrar uso de cupón si existe (idempotente via UNIQUE constraint)
     if (order.coupon_id) {

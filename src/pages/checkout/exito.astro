@@ -3,7 +3,7 @@ import PublicLayout from "@/layouts/PublicLayout.astro";
 import Button from "@/components/ui/Button.astro";
 import { supabase, supabaseAdmin } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe";
-import { sendOrderConfirmation } from "@/lib/email";
+import { sendOrderConfirmation, sendAdminOrderNotification } from "@/lib/email";
 import { formatOrderId } from "@/lib/order-utils";
 import { formatPrice } from "@/lib/formatters";
 
@@ -184,6 +184,33 @@ if (sessionId) {
               console.log(
                 "✅ Confirmation email sent successfully from success page",
               );
+
+              // Marcar email como enviado (idempotencia para el webhook)
+              await supabaseAdmin
+                .from("orders")
+                .update({ confirmation_email_sent: true })
+                .eq("id", order.id);
+
+              // Enviar notificación al admin (awaited para garantizar entrega)
+              try {
+                const adminResult = await sendAdminOrderNotification({
+                  orderId: order.id,
+                  orderNumber: order.order_number,
+                  customerName: order.customer_name,
+                  customerEmail: order.customer_email,
+                  totalAmount: Number(order.total_amount),
+                  items: emailItems,
+                  shippingCity: order.shipping_city,
+                  shippingAddress: order.shipping_address,
+                });
+                if (adminResult.success) {
+                  console.log("✅ Admin order notification sent from success page");
+                } else {
+                  console.error("Failed to send admin notification:", adminResult.error);
+                }
+              } catch (adminError) {
+                console.error("Exception sending admin notification:", adminError);
+              }
             }
           } catch (emailError) {
             console.error("Exception sending confirmation email:", emailError);

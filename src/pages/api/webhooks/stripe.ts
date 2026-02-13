@@ -249,9 +249,9 @@ export const POST: APIRoute = async ({ request }) => {
             console.error('🔔 [WEBHOOK] ❌ Failed to send confirmation email:', emailResult.error);
           }
 
-          // Send admin notification (non-blocking)
+          // Send admin notification (awaited to guarantee delivery before response)
           console.log('🔔 [WEBHOOK] 📧 Sending admin notification...');
-          sendAdminOrderNotification({
+          const adminResult = await sendAdminOrderNotification({
             orderId: order.id,
             orderNumber: order.order_number,
             customerName: order.customer_name,
@@ -260,13 +260,12 @@ export const POST: APIRoute = async ({ request }) => {
             items: emailItems,
             shippingCity: order.shipping_city,
             shippingAddress: order.shipping_address,
-          }).then(result => {
-            if (result.success) {
-              console.log('🔔 [WEBHOOK] ✅ Admin order notification sent');
-            } else {
-              console.error('🔔 [WEBHOOK] ❌ Failed to send admin notification:', result.error);
-            }
-          }).catch(err => console.error('🔔 [WEBHOOK] ❌ Exception sending admin notification:', err));
+          });
+          if (adminResult.success) {
+            console.log('🔔 [WEBHOOK] ✅ Admin order notification sent');
+          } else {
+            console.error('🔔 [WEBHOOK] ❌ Failed to send admin notification:', adminResult.error);
+          }
 
         } catch (emailError) {
           console.error('🔔 [WEBHOOK] ❌ Exception sending confirmation email:', emailError);
@@ -522,9 +521,9 @@ export const POST: APIRoute = async ({ request }) => {
           console.error('📱 [WEBHOOK] ❌ Failed to send email:', emailResult.error);
         }
 
-        // Send admin notification (non-blocking)
+        // Send admin notification (awaited to guarantee delivery before response)
         console.log('📱 [WEBHOOK] 📧 Sending admin notification...');
-        sendAdminOrderNotification({
+        const adminResult = await sendAdminOrderNotification({
           orderId: order.id,
           orderNumber: order.order_number,
           customerName: order.customer_name,
@@ -533,13 +532,12 @@ export const POST: APIRoute = async ({ request }) => {
           items: emailItems,
           shippingCity: fullOrder?.shipping_city,
           shippingAddress: fullOrder?.shipping_address,
-        }).then(result => {
-          if (result.success) {
-            console.log('📱 [WEBHOOK] ✅ Admin order notification sent');
-          } else {
-            console.error('📱 [WEBHOOK] ❌ Failed to send admin notification:', result.error);
-          }
-        }).catch(err => console.error('📱 [WEBHOOK] ❌ Exception sending admin notification:', err));
+        });
+        if (adminResult.success) {
+          console.log('📱 [WEBHOOK] ✅ Admin order notification sent');
+        } else {
+          console.error('📱 [WEBHOOK] ❌ Failed to send admin notification:', adminResult.error);
+        }
 
       } catch (emailError) {
         console.error('📱 [WEBHOOK] ❌ Exception sending email:', emailError);
