@@ -198,6 +198,110 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       });
     }
 
+    if (action === 'list-invoices') {
+      const page = parseInt(url.searchParams.get('page') || '0', 10);
+      const pageSize = parseInt(url.searchParams.get('pageSize') || '20', 10);
+      const search = url.searchParams.get('search') || '';
+      const startDate = url.searchParams.get('startDate') || '';
+      const endDate = url.searchParams.get('endDate') || '';
+      const offset = page * pageSize;
+
+      let query = supabaseAdmin
+        .from('invoices')
+        .select('*, orders!inner(order_number, customer_name)');
+
+      if (search) {
+        const s = search.toLowerCase();
+        query = query.or(
+          `invoice_number.ilike.%${s}%,customer_nif.ilike.%${s}%,customer_fiscal_name.ilike.%${s}%`
+        );
+      }
+
+      if (startDate) {
+        query = query.gte('issued_at', startDate);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setDate(end.getDate() + 1);
+        query = query.lt('issued_at', end.toISOString());
+      }
+
+      const { data, error } = await query
+        .order('issued_at', { ascending: false })
+        .range(offset, offset + pageSize - 1);
+
+      if (error) {
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Flatten joined order data
+      const invoices = (data || []).map((inv: any) => {
+        const { orders, ...rest } = inv;
+        return {
+          ...rest,
+          order_number: orders?.order_number,
+          customer_name: orders?.customer_name ?? rest.customer_name,
+        };
+      });
+
+      return new Response(JSON.stringify({ invoices }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (action === 'list-tickets') {
+      const page = parseInt(url.searchParams.get('page') || '0', 10);
+      const pageSize = parseInt(url.searchParams.get('pageSize') || '20', 10);
+      const search = url.searchParams.get('search') || '';
+      const startDate = url.searchParams.get('startDate') || '';
+      const endDate = url.searchParams.get('endDate') || '';
+      const offset = page * pageSize;
+
+      let query = supabaseAdmin
+        .from('orders')
+        .select('id, order_number, customer_name, customer_email, total_amount, status, created_at')
+        .in('status', ['paid', 'shipped', 'delivered']);
+
+      if (search) {
+        const s = search.toLowerCase();
+        const numericQuery = parseInt(s.replace(/[^0-9]/g, ''), 10);
+        if (!isNaN(numericQuery) && numericQuery > 0) {
+          query = query.eq('order_number', numericQuery);
+        } else {
+          query = query.or(`customer_name.ilike.%${s}%,customer_email.ilike.%${s}%`);
+        }
+      }
+
+      if (startDate) {
+        query = query.gte('created_at', startDate);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setDate(end.getDate() + 1);
+        query = query.lt('created_at', end.toISOString());
+      }
+
+      const { data, error } = await query
+        .order('created_at', { ascending: false })
+        .range(offset, offset + pageSize - 1);
+
+      if (error) {
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      return new Response(JSON.stringify({ orders: data || [] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     return new Response(JSON.stringify({ error: 'Acción no válida' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
