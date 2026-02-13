@@ -117,8 +117,8 @@ export function generateAdminOrderNotificationHTML(
             <td style="padding: 30px;">
               <!-- Alert Banner -->
               <div style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); border-radius: 8px; padding: 20px; margin-bottom: 25px; text-align: center;">
-                <span style="font-size: 36px;">💳</span>
-                <h2 style="margin: 10px 0 5px; color: #ffffff; font-size: 20px;">¡Nuevo Pedido Pagado!</h2>
+                <span style="font-size: 36px; color: #ffffff;">&#8364;</span>
+                <h2 style="margin: 10px 0 5px; color: #ffffff; font-size: 20px;">Nuevo Pedido Pagado</h2>
                 <p style="margin: 0; color: rgba(255,255,255,0.9); font-size: 14px;">Se ha recibido un nuevo pago</p>
               </div>
 
@@ -243,7 +243,7 @@ export function generateAdminReturnNotificationHTML(
             <td style="padding: 30px;">
               <!-- Alert Banner -->
               <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 8px; padding: 20px; margin-bottom: 25px; text-align: center;">
-                <span style="font-size: 36px;">📦</span>
+                <span style="font-size: 36px; color: #ffffff;">&#9888;</span>
                 <h2 style="margin: 10px 0 5px; color: #ffffff; font-size: 20px;">Nueva Solicitud de Devolución</h2>
                 <p style="margin: 0; color: rgba(255,255,255,0.9); font-size: 14px;">Un cliente ha solicitado una devolución</p>
               </div>
@@ -290,7 +290,7 @@ export function generateAdminReturnNotificationHTML(
               <!-- Action Required -->
               <div style="background-color: #fffbeb; border: 1px solid #fbbf24; border-radius: 8px; padding: 16px; margin-bottom: 25px;">
                 <p style="margin: 0; font-size: 14px; color: #92400e;">
-                  <strong>⚡ Acción requerida:</strong> Revisa esta solicitud y apruébala o recházala desde el panel de administración.
+                  <strong>Acción requerida:</strong> Revisa esta solicitud y apruébala o recházala desde el panel de administración.
                 </p>
               </div>
 
@@ -379,7 +379,7 @@ export function generateLowStockAlertHTML(
 
   if (outOfStock.length > 0) {
     tablesHtml += `
-      <h3 style="margin: 25px 0 12px; font-size: 15px; color: #dc2626;">🔴 Sin Stock (${outOfStock.length})</h3>
+      <h3 style="margin: 25px 0 12px; font-size: 15px; color: #dc2626;"><span style="display: inline-block; width: 10px; height: 10px; background-color: #dc2626; border-radius: 50; margin-right: 6px;"></span>Sin Stock (${outOfStock.length})</h3>
       <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #fee2e2; border-radius: 6px; overflow: hidden; margin-bottom: 20px;">
         <tr style="background-color: #fef2f2;">
           <th style="padding: 10px 12px; text-align: left; font-size: 12px; color: #991b1b; text-transform: uppercase;">Producto</th>
@@ -392,7 +392,7 @@ export function generateLowStockAlertHTML(
 
   if (lowStock.length > 0) {
     tablesHtml += `
-      <h3 style="margin: 25px 0 12px; font-size: 15px; color: #d97706;">🟡 Stock Bajo (${lowStock.length})</h3>
+      <h3 style="margin: 25px 0 12px; font-size: 15px; color: #d97706;"><span style="display: inline-block; width: 10px; height: 10px; background-color: #f59e0b; border-radius: 50; margin-right: 6px;"></span>Stock Bajo (${lowStock.length})</h3>
       <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #fef3c7; border-radius: 6px; overflow: hidden; margin-bottom: 20px;">
         <tr style="background-color: #fffbeb;">
           <th style="padding: 10px 12px; text-align: left; font-size: 12px; color: #92400e; text-transform: uppercase;">Producto</th>
@@ -409,7 +409,7 @@ export function generateLowStockAlertHTML(
             <td style="padding: 30px;">
               <!-- Alert Banner -->
               <div style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); border-radius: 8px; padding: 20px; margin-bottom: 25px; text-align: center;">
-                <span style="font-size: 36px;">📊</span>
+                <span style="font-size: 36px; color: #ffffff;">&#9888;</span>
                 <h2 style="margin: 10px 0 5px; color: #ffffff; font-size: 20px;">Reporte Diario de Stock</h2>
                 <p style="margin: 0; color: rgba(255,255,255,0.9); font-size: 13px;">${dateStr}</p>
               </div>

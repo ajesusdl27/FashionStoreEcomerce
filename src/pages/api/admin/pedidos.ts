@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { createAuthenticatedClient, supabaseAdmin } from '@/lib/supabase';
 import { validateToken } from '@/lib/auth-utils';
-import { sendOrderShipped } from '@/lib/email';
+import { sendOrderShipped, sendOrderCancelled } from '@/lib/email';
 
 // UPDATE order status
 export const PUT: APIRoute = async ({ request, cookies }) => {
@@ -160,8 +160,33 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       });
     }
 
+    // Send cancellation email when admin cancels an order
+    let emailSent = false;
+    if (status === 'cancelled') {
+      const { data: order } = await supabaseAdmin
+        .from('orders')
+        .select('id, order_number, customer_name, customer_email, total_amount')
+        .eq('id', id)
+        .single();
+
+      if (order) {
+        const emailResult = await sendOrderCancelled({
+          orderId: order.id,
+          orderNumber: order.order_number,
+          customerName: order.customer_name,
+          customerEmail: order.customer_email,
+          reason: 'Cancelado por el administrador',
+          refundAmount: order.total_amount,
+        });
+        emailSent = emailResult.success;
+        if (!emailResult.success) {
+          console.warn('Failed to send cancellation email:', emailResult.error);
+        }
+      }
+    }
+
     console.log('✅ [ADMIN PEDIDOS] Order updated successfully');
-    return new Response(JSON.stringify({ success: true }), { 
+    return new Response(JSON.stringify({ success: true, emailSent }), { 
       status: 200, headers: { 'Content-Type': 'application/json' } 
     });
   } catch (error: any) {

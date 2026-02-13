@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: fromEmail,
         to: [customer_email],
-        subject: `📄 Factura ${invoice.invoice_number} - Pedido ${displayOrderNumber}`,
+        subject: `Factura ${invoice.invoice_number} - Pedido ${displayOrderNumber}`,
         html: generateInvoiceEmailHTML({
           invoiceNumber: invoice.invoice_number,
           orderNumber: displayOrderNumber,
@@ -184,64 +184,62 @@ function generateInvoiceEmailHTML(data: {
 
   return `
     <!DOCTYPE html>
-    <html>
+    <html lang="es">
     <head>
-      <meta charset="utf-8">
+      <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
     </head>
-    <body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f5f5f5;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f4f4;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 40px 20px;">
         <tr>
           <td align="center">
-            <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+            <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
               <!-- Header -->
               <tr>
-                <td style="background-color: #0a0a0a; padding: 30px; text-align: center;">
-                  <h1 style="margin: 0; font-size: 28px; font-weight: bold; color: #ffffff; letter-spacing: 2px;">
-                    FASHIONSTORE
-                  </h1>
+                <td style="background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%); padding: 30px; text-align: center;">
+                  <h1 style="margin: 0; color: #CCFF00; font-size: 28px; font-weight: bold; letter-spacing: 2px;">FASHIONSTORE</h1>
                 </td>
               </tr>
               
-              <!-- Content -->
+              <!-- Icon & Title -->
               <tr>
-                <td style="padding: 40px 30px;">
-                  <h2 style="margin: 0 0 20px 0; font-size: 24px; color: #0a0a0a;">
-                    📄 Tu factura está lista
-                  </h2>
-                  
-                  <p style="margin: 0 0 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">
-                    Hola <strong>${data.customerName}</strong>,
+                <td style="padding: 40px 30px 20px; text-align: center;">
+                  <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border-radius: 50%; line-height: 80px;">
+                    <span style="font-size: 36px; color: #ffffff;">&#128196;</span>
+                  </div>
+                  <h2 style="margin: 0 0 10px; color: #0a0a0a; font-size: 24px;">Tu factura esta lista</h2>
+                  <p style="margin: 0; color: #666; font-size: 16px; line-height: 1.5;">
+                    Hola ${data.customerName}, adjunto encontraras la factura correspondiente a tu pedido.
                   </p>
-                  
-                  <p style="margin: 0 0 30px 0; font-size: 16px; color: #333333; line-height: 1.6;">
-                    Adjunto encontrarás la factura correspondiente a tu pedido. A continuación te resumimos los datos:
-                  </p>
-                  
-                  <!-- Invoice Details Box -->
-                  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f8f8; border-radius: 8px; margin-bottom: 30px;">
+                </td>
+              </tr>
+              
+              <!-- Invoice Details -->
+              <tr>
+                <td style="padding: 0 30px 30px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f8f8; border-radius: 8px;">
                     <tr>
                       <td style="padding: 20px;">
                         <table width="100%" cellpadding="0" cellspacing="0">
                           <tr>
-                            <td style="padding: 8px 0; border-bottom: 1px solid #eeeeee;">
-                              <span style="color: #666666;">Nº Factura:</span>
+                            <td style="padding: 8px 0; border-bottom: 1px solid #e5e5e5;">
+                              <span style="color: #666; font-size: 14px;">N. Factura:</span>
                             </td>
-                            <td style="padding: 8px 0; border-bottom: 1px solid #eeeeee; text-align: right;">
+                            <td style="padding: 8px 0; border-bottom: 1px solid #e5e5e5; text-align: right;">
                               <strong style="color: #0a0a0a;">${data.invoiceNumber}</strong>
                             </td>
                           </tr>
                           <tr>
-                            <td style="padding: 8px 0; border-bottom: 1px solid #eeeeee;">
-                              <span style="color: #666666;">Pedido:</span>
+                            <td style="padding: 8px 0; border-bottom: 1px solid #e5e5e5;">
+                              <span style="color: #666; font-size: 14px;">Pedido:</span>
                             </td>
-                            <td style="padding: 8px 0; border-bottom: 1px solid #eeeeee; text-align: right;">
+                            <td style="padding: 8px 0; border-bottom: 1px solid #e5e5e5; text-align: right;">
                               <strong style="color: #0a0a0a;">${data.orderNumber}</strong>
                             </td>
                           </tr>
                           <tr>
                             <td style="padding: 8px 0;">
-                              <span style="color: #666666;">Total:</span>
+                              <span style="color: #666; font-size: 14px;">Total:</span>
                             </td>
                             <td style="padding: 8px 0; text-align: right;">
                               <strong style="color: #0a0a0a; font-size: 18px;">${formatCurrency(data.total)}</strong>
@@ -251,15 +249,24 @@ function generateInvoiceEmailHTML(data: {
                       </td>
                     </tr>
                   </table>
-                  
-                  <!-- Attachment notice -->
-                  <div style="background-color: #CCFF00; padding: 15px 20px; border-radius: 8px; margin-bottom: 30px;">
+                </td>
+              </tr>
+              
+              <!-- Attachment notice -->
+              <tr>
+                <td style="padding: 0 30px 30px;">
+                  <div style="background-color: #CCFF00; padding: 15px 20px; border-radius: 8px;">
                     <p style="margin: 0; font-size: 14px; color: #0a0a0a;">
-                      📎 <strong>El PDF de tu factura está adjunto a este email.</strong>
+                      <strong>El PDF de tu factura esta adjunto a este email.</strong>
                     </p>
                   </div>
-                  
-                  <p style="margin: 0; font-size: 14px; color: #666666; line-height: 1.6;">
+                </td>
+              </tr>
+              
+              <!-- Contact -->
+              <tr>
+                <td style="padding: 0 30px 30px;">
+                  <p style="margin: 0; font-size: 14px; color: #666; line-height: 1.6;">
                     Si tienes alguna pregunta sobre tu factura, no dudes en contactarnos.
                   </p>
                 </td>
@@ -267,12 +274,12 @@ function generateInvoiceEmailHTML(data: {
               
               <!-- Footer -->
               <tr>
-                <td style="background-color: #f8f8f8; padding: 20px 30px; text-align: center; border-top: 1px solid #eeeeee;">
-                  <p style="margin: 0 0 10px 0; font-size: 12px; color: #999999;">
+                <td style="background-color: #f8f8f8; padding: 30px; text-align: center; border-top: 1px solid #e5e5e5;">
+                  <p style="margin: 0 0 10px; color: #666; font-size: 14px;">
                     Este email fue enviado por FashionStore
                   </p>
-                  <p style="margin: 0; font-size: 12px; color: #999999;">
-                    © ${new Date().getFullYear()} FashionStore. Todos los derechos reservados.
+                  <p style="margin: 0; color: #999; font-size: 12px;">
+                    &copy; ${new Date().getFullYear()} FashionStore. Todos los derechos reservados.
                   </p>
                 </td>
               </tr>

@@ -133,7 +133,7 @@ export function generateWelcomeHTML(options: WelcomeTemplateOptions): string {
           <tr>
             <td style="padding: 25px; text-align: center;">
               <p style="color: #0a0a0a; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px;">
-                🎁 Tu código de descuento exclusivo
+                Tu código de descuento exclusivo
               </p>
               <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
                 <tr>
@@ -171,7 +171,7 @@ export function generateWelcomeHTML(options: WelcomeTemplateOptions): string {
             <td style="padding: 15px; background-color: #f9f9f9; border-radius: 8px; margin-bottom: 10px;">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td width="40" style="font-size: 24px;">🔥</td>
+                  <td width="40" style="font-size: 24px;">&#9679;</td>
                   <td style="color: #333; font-size: 14px;"><strong>Ofertas exclusivas</strong> solo para suscriptores</td>
                 </tr>
               </table>
@@ -182,7 +182,7 @@ export function generateWelcomeHTML(options: WelcomeTemplateOptions): string {
             <td style="padding: 15px; background-color: #f9f9f9; border-radius: 8px;">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td width="40" style="font-size: 24px;">👟</td>
+                  <td width="40" style="font-size: 24px;">&#9679;</td>
                   <td style="color: #333; font-size: 14px;"><strong>Primero en enterarte</strong> de nuevos lanzamientos</td>
                 </tr>
               </table>
@@ -193,7 +193,7 @@ export function generateWelcomeHTML(options: WelcomeTemplateOptions): string {
             <td style="padding: 15px; background-color: #f9f9f9; border-radius: 8px;">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td width="40" style="font-size: 24px;">✨</td>
+                  <td width="40" style="font-size: 24px;">&#9679;</td>
                   <td style="color: #333; font-size: 14px;"><strong>Contenido único</strong> sobre streetwear y tendencias</td>
                 </tr>
               </table>
@@ -222,6 +222,6 @@ export function generateWelcomeHTML(options: WelcomeTemplateOptions): string {
  */
 export function getWelcomeSubject(isReactivation: boolean): string {
   return isReactivation 
-    ? '¡Bienvenido de nuevo a FashionStore! 👋' 
-    : '¡Bienvenido a la newsletter de FashionStore! 🎉';
+    ? 'Bienvenido de nuevo a FashionStore' 
+    : 'Bienvenido a la newsletter de FashionStore';
 }

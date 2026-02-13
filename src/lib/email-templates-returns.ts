@@ -1,11 +1,12 @@
 /**
  * Email Templates para el Sistema de Devoluciones
  * Genera HTML para notificaciones de estado de devoluciones
+ * Usa el layout base unificado de customer emails
  */
 
 import { formatOrderId } from './order-utils';
 import { formatPrice } from './formatters';
-import type { EmailTemplateOptions } from './email-templates';
+import { customerHeader, customerFooter, customerButton, type EmailTemplateOptions } from './email-templates';
 
 // Valores por defecto (fallback si no se pasan opciones)
 const getDefaultOptions = (): EmailTemplateOptions => ({
@@ -38,7 +39,35 @@ export interface ReturnEmailData {
   };
 }
 
-// Genera HTML para email de devolución aprobada
+// Tipo para datos del email de confirmación de devolución (solicitud recibida)
+export interface ReturnConfirmationEmailData {
+  returnId: string;
+  orderId: string;
+  orderNumber?: number;
+  customerName: string;
+  customerEmail: string;
+  items: {
+    productName: string;
+    size: string;
+    quantity: number;
+    reason: string;
+  }[];
+}
+
+// Labels de motivos de devolución
+const reasonLabels: { [key: string]: string } = {
+  size_mismatch: 'Talla incorrecta',
+  defective: 'Producto defectuoso',
+  not_as_described: 'No coincide con la descripción',
+  changed_mind: 'Cambio de opinión',
+  arrived_late: 'Llegó tarde',
+  other: 'Otro motivo',
+};
+
+// ============================================
+// 1. DEVOLUCIÓN APROBADA
+// ============================================
+
 export function generateReturnApprovedHTML(
   data: ReturnEmailData,
   options?: Partial<EmailTemplateOptions>
@@ -63,34 +92,15 @@ export function generateReturnApprovedHTML(
     </tr>
   `).join('') || '';
 
-  return `
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Devolución Aprobada - ${storeName}</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f4f4;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          
-          <!-- Header -->
-          <tr>
-            <td style="background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%); padding: 30px; text-align: center;">
-              <h1 style="margin: 0; color: #CCFF00; font-size: 28px; font-weight: bold; letter-spacing: 2px;">${storeName?.toUpperCase() || 'FASHIONSTORE'}</h1>
-            </td>
-          </tr>
+  return `${customerHeader(storeName || 'FashionStore')}
           
           <!-- Approved Icon & Message -->
           <tr>
             <td style="padding: 40px 30px 20px; text-align: center;">
               <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border-radius: 50%; line-height: 80px;">
-                <span style="font-size: 40px;">✓</span>
+                <span style="font-size: 36px; color: #ffffff;">&#10003;</span>
               </div>
-              <h2 style="margin: 0 0 10px; color: #0a0a0a; font-size: 24px;">¡Tu devolución ha sido aprobada!</h2>
+              <h2 style="margin: 0 0 10px; color: #0a0a0a; font-size: 24px;">Tu devolución ha sido aprobada</h2>
               <p style="margin: 0; color: #666; font-size: 16px; line-height: 1.5;">
                 Hola ${data.customerName}, hemos revisado tu solicitud y ha sido aprobada.
               </p>
@@ -127,7 +137,7 @@ export function generateReturnApprovedHTML(
           <!-- Instructions -->
           <tr>
             <td style="padding: 0 30px 30px;">
-              <h3 style="margin: 0 0 15px; color: #0a0a0a; font-size: 18px;">📦 ¿Cómo enviar tu devolución?</h3>
+              <h3 style="margin: 0 0 15px; color: #0a0a0a; font-size: 18px;">¿Cómo enviar tu devolución?</h3>
               
               <div style="background-color: #dbeafe; border-radius: 8px; padding: 20px; margin-bottom: 20px; border-left: 4px solid #3b82f6;">
                 <p style="margin: 0 0 15px; color: #0a0a0a; font-weight: bold;">Importante: Debes enviar el paquete para completar la devolución</p>
@@ -143,7 +153,7 @@ export function generateReturnApprovedHTML(
               
               <div style="background-color: #fef3c7; border-radius: 8px; padding: 15px; border-left: 4px solid #f59e0b;">
                 <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
-                  <strong>💡 Consejo:</strong> Guarda el comprobante de envío. Recomendamos usar un servicio con seguimiento para tu tranquilidad.
+                  <strong>Consejo:</strong> Guarda el comprobante de envío. Recomendamos usar un servicio con seguimiento para tu tranquilidad.
                 </p>
               </div>
             </td>
@@ -152,7 +162,7 @@ export function generateReturnApprovedHTML(
           <!-- Return Address -->
           <tr>
             <td style="padding: 0 30px 30px;">
-              <h3 style="margin: 0 0 15px; color: #0a0a0a; font-size: 18px;">📍 Dirección de devolución</h3>
+              <h3 style="margin: 0 0 15px; color: #0a0a0a; font-size: 18px;">Dirección de devolución</h3>
               <div style="background-color: #fef3c7; border-radius: 8px; padding: 20px; border-left: 4px solid #f59e0b;">
                 <p style="margin: 0; color: #333; line-height: 1.6; font-weight: 500;">
                   ${returnAddress.name}<br>
@@ -164,72 +174,31 @@ export function generateReturnApprovedHTML(
             </td>
           </tr>
           
-          <!-- CTA Button -->
-          <tr>
-            <td style="padding: 0 30px 40px; text-align: center;">
-              <a href="${siteUrl}/cuenta/pedidos" 
-                 style="display: inline-block; background-color: #0a0a0a; color: #CCFF00; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">
-                Ver estado de mi devolución
-              </a>
-            </td>
-          </tr>
+          ${customerButton(`${siteUrl}/cuenta/pedidos`, 'Ver estado de mi devolución')}
           
-          <!-- Footer -->
-          <tr>
-            <td style="background-color: #f8f8f8; padding: 30px; text-align: center; border-top: 1px solid #e5e5e5;">
-              <p style="margin: 0 0 10px; color: #666; font-size: 14px;">
-                ¿Tienes alguna pregunta? <a href="mailto:${contactEmail}" style="color: #0a0a0a;">${contactEmail}</a>
-              </p>
-              <p style="margin: 0; color: #999; font-size: 12px;">
-                © ${new Date().getFullYear()} ${storeName}. Todos los derechos reservados.
-              </p>
-            </td>
-          </tr>
-          
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
+${customerFooter(contactEmail)}
   `.trim();
 }
 
-// Genera HTML para email de devolución recibida
+// ============================================
+// 2. DEVOLUCIÓN RECIBIDA
+// ============================================
+
 export function generateReturnReceivedHTML(
   data: ReturnEmailData,
   options?: Partial<EmailTemplateOptions>
 ): string {
   const { siteUrl, contactEmail, storeName } = { ...getDefaultOptions(), ...options };
 
-  return `
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Devolución Recibida - ${storeName}</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f4f4;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          
-          <!-- Header -->
-          <tr>
-            <td style="background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%); padding: 30px; text-align: center;">
-              <h1 style="margin: 0; color: #CCFF00; font-size: 28px; font-weight: bold; letter-spacing: 2px;">${storeName?.toUpperCase() || 'FASHIONSTORE'}</h1>
-            </td>
-          </tr>
+  return `${customerHeader(storeName || 'FashionStore')}
           
           <!-- Received Icon & Message -->
           <tr>
             <td style="padding: 40px 30px 20px; text-align: center;">
               <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); border-radius: 50%; line-height: 80px;">
-                <span style="font-size: 40px;">📦</span>
+                <span style="font-size: 36px; color: #ffffff;">&#9745;</span>
               </div>
-              <h2 style="margin: 0 0 10px; color: #0a0a0a; font-size: 24px;">¡Hemos recibido tu paquete!</h2>
+              <h2 style="margin: 0 0 10px; color: #0a0a0a; font-size: 24px;">Hemos recibido tu paquete</h2>
               <p style="margin: 0; color: #666; font-size: 16px; line-height: 1.5;">
                 Hola ${data.customerName}, tu devolución ha llegado y estamos revisando los artículos.
               </p>
@@ -261,72 +230,31 @@ export function generateReturnReceivedHTML(
             </td>
           </tr>
           
-          <!-- CTA Button -->
-          <tr>
-            <td style="padding: 0 30px 40px; text-align: center;">
-              <a href="${siteUrl}/cuenta/pedidos" 
-                 style="display: inline-block; background-color: #0a0a0a; color: #CCFF00; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">
-                Ver estado de mi devolución
-              </a>
-            </td>
-          </tr>
+          ${customerButton(`${siteUrl}/cuenta/pedidos`, 'Ver estado de mi devolución')}
           
-          <!-- Footer -->
-          <tr>
-            <td style="background-color: #f8f8f8; padding: 30px; text-align: center; border-top: 1px solid #e5e5e5;">
-              <p style="margin: 0 0 10px; color: #666; font-size: 14px;">
-                ¿Tienes alguna pregunta? <a href="mailto:${contactEmail}" style="color: #0a0a0a;">${contactEmail}</a>
-              </p>
-              <p style="margin: 0; color: #999; font-size: 12px;">
-                © ${new Date().getFullYear()} ${storeName}. Todos los derechos reservados.
-              </p>
-            </td>
-          </tr>
-          
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
+${customerFooter(contactEmail)}
   `.trim();
 }
 
-// Genera HTML para email de reembolso completado
+// ============================================
+// 3. REEMBOLSO COMPLETADO
+// ============================================
+
 export function generateReturnCompletedHTML(
   data: ReturnEmailData,
   options?: Partial<EmailTemplateOptions>
 ): string {
   const { siteUrl, contactEmail, storeName } = { ...getDefaultOptions(), ...options };
 
-  return `
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reembolso Completado - ${storeName}</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f4f4;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          
-          <!-- Header -->
-          <tr>
-            <td style="background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%); padding: 30px; text-align: center;">
-              <h1 style="margin: 0; color: #CCFF00; font-size: 28px; font-weight: bold; letter-spacing: 2px;">${storeName?.toUpperCase() || 'FASHIONSTORE'}</h1>
-            </td>
-          </tr>
+  return `${customerHeader(storeName || 'FashionStore')}
           
           <!-- Completed Icon & Message -->
           <tr>
             <td style="padding: 40px 30px 20px; text-align: center;">
               <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 50%; line-height: 80px;">
-                <span style="font-size: 40px;">💰</span>
+                <span style="font-size: 36px; color: #ffffff;">&#8364;</span>
               </div>
-              <h2 style="margin: 0 0 10px; color: #0a0a0a; font-size: 24px;">¡Tu reembolso ha sido procesado!</h2>
+              <h2 style="margin: 0 0 10px; color: #0a0a0a; font-size: 24px;">Tu reembolso ha sido procesado</h2>
               <p style="margin: 0; color: #666; font-size: 16px; line-height: 1.5;">
                 Hola ${data.customerName}, hemos completado tu devolución y procesado el reembolso.
               </p>
@@ -349,7 +277,7 @@ export function generateReturnCompletedHTML(
           <!-- Payment Info -->
           <tr>
             <td style="padding: 0 30px 30px;">
-              <h3 style="margin: 0 0 15px; color: #0a0a0a; font-size: 18px;">💳 Información del reembolso</h3>
+              <h3 style="margin: 0 0 15px; color: #0a0a0a; font-size: 18px;">Información del reembolso</h3>
               <div style="background-color: #f8f8f8; border-radius: 8px; padding: 20px;">
                 <p style="margin: 0; color: #333; line-height: 1.6;">
                   El reembolso ha sido procesado a través del mismo método de pago original.
@@ -361,70 +289,29 @@ export function generateReturnCompletedHTML(
             </td>
           </tr>
           
-          <!-- CTA Button -->
-          <tr>
-            <td style="padding: 0 30px 40px; text-align: center;">
-              <a href="${siteUrl}/productos" 
-                 style="display: inline-block; background-color: #0a0a0a; color: #CCFF00; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">
-                Seguir comprando
-              </a>
-            </td>
-          </tr>
+          ${customerButton(`${siteUrl}/productos`, 'Seguir comprando')}
           
-          <!-- Footer -->
-          <tr>
-            <td style="background-color: #f8f8f8; padding: 30px; text-align: center; border-top: 1px solid #e5e5e5;">
-              <p style="margin: 0 0 10px; color: #666; font-size: 14px;">
-                Gracias por confiar en nosotros. ¿Preguntas? <a href="mailto:${contactEmail}" style="color: #0a0a0a;">${contactEmail}</a>
-              </p>
-              <p style="margin: 0; color: #999; font-size: 12px;">
-                © ${new Date().getFullYear()} ${storeName}. Todos los derechos reservados.
-              </p>
-            </td>
-          </tr>
-          
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
+${customerFooter(contactEmail)}
   `.trim();
 }
 
-// Genera HTML para email de devolución rechazada
+// ============================================
+// 4. DEVOLUCIÓN RECHAZADA
+// ============================================
+
 export function generateReturnRejectedHTML(
   data: ReturnEmailData,
   options?: Partial<EmailTemplateOptions>
 ): string {
   const { siteUrl, contactEmail, storeName } = { ...getDefaultOptions(), ...options };
 
-  return `
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Solicitud de Devolución - ${storeName}</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f4f4;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          
-          <!-- Header -->
-          <tr>
-            <td style="background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%); padding: 30px; text-align: center;">
-              <h1 style="margin: 0; color: #CCFF00; font-size: 28px; font-weight: bold; letter-spacing: 2px;">${storeName?.toUpperCase() || 'FASHIONSTORE'}</h1>
-            </td>
-          </tr>
+  return `${customerHeader(storeName || 'FashionStore')}
           
           <!-- Rejected Icon & Message -->
           <tr>
             <td style="padding: 40px 30px 20px; text-align: center;">
               <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border-radius: 50%; line-height: 80px;">
-                <span style="font-size: 40px;">✕</span>
+                <span style="font-size: 36px; color: #ffffff;">&#10005;</span>
               </div>
               <h2 style="margin: 0 0 10px; color: #0a0a0a; font-size: 24px;">Solicitud de devolución no aprobada</h2>
               <p style="margin: 0; color: #666; font-size: 16px; line-height: 1.5;">
@@ -466,33 +353,108 @@ export function generateReturnRejectedHTML(
             </td>
           </tr>
           
-          <!-- CTA Button -->
-          <tr>
-            <td style="padding: 0 30px 40px; text-align: center;">
-              <a href="mailto:${contactEmail}" 
-                 style="display: inline-block; background-color: #0a0a0a; color: #CCFF00; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">
-                Contactar con soporte
-              </a>
-            </td>
-          </tr>
+          ${customerButton(`mailto:${contactEmail}`, 'Contactar con soporte')}
           
-          <!-- Footer -->
-          <tr>
-            <td style="background-color: #f8f8f8; padding: 30px; text-align: center; border-top: 1px solid #e5e5e5;">
-              <p style="margin: 0 0 10px; color: #666; font-size: 14px;">
-                Revisa nuestra <a href="${siteUrl}/politica-devoluciones" style="color: #0a0a0a;">política de devoluciones</a>
-              </p>
-              <p style="margin: 0; color: #999; font-size: 12px;">
-                © ${new Date().getFullYear()} ${storeName}. Todos los derechos reservados.
-              </p>
-            </td>
-          </tr>
-          
-        </table>
+${customerFooter(contactEmail)}
+  `.trim();
+}
+
+// ============================================
+// 5. CONFIRMACIÓN DE SOLICITUD DE DEVOLUCIÓN
+// ============================================
+
+export function generateReturnConfirmationHTML(
+  data: ReturnConfirmationEmailData,
+  options?: Partial<EmailTemplateOptions>
+): string {
+  const { siteUrl, contactEmail, storeName } = { ...getDefaultOptions(), ...options };
+  
+  const displayOrderId = data.orderNumber 
+    ? formatOrderId(data.orderNumber) 
+    : `#${data.orderId.slice(0, 8).toUpperCase()}`;
+
+  const itemsHtml = data.items.map(item => `
+    <tr>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e5e5;">
+        <strong>${item.productName}</strong><br>
+        <span style="color: #666; font-size: 14px;">Talla: ${item.size}</span>
       </td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: center;">${item.quantity}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: right;">${reasonLabels[item.reason] || item.reason}</td>
     </tr>
-  </table>
-</body>
-</html>
+  `).join('');
+
+  return `${customerHeader(storeName || 'FashionStore')}
+          
+          <!-- Icon & Message -->
+          <tr>
+            <td style="padding: 40px 30px 20px; text-align: center;">
+              <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #CCFF00 0%, #a3cc00 100%); border-radius: 50%; line-height: 80px;">
+                <span style="font-size: 36px; color: #0a0a0a;">&#9993;</span>
+              </div>
+              <h2 style="margin: 0 0 10px; color: #0a0a0a; font-size: 24px;">Solicitud de Devolución Recibida</h2>
+              <p style="margin: 0; color: #666; font-size: 16px; line-height: 1.5;">
+                Hola ${data.customerName}, hemos recibido tu solicitud de devolución.
+              </p>
+            </td>
+          </tr>
+          
+          <!-- Order Number -->
+          <tr>
+            <td style="padding: 0 30px 30px;">
+              <div style="background-color: #f8f8f8; border-radius: 8px; padding: 20px; border-left: 4px solid #CCFF00;">
+                <p style="margin: 0; color: #666; font-size: 14px;">Número de pedido</p>
+                <p style="margin: 5px 0 0; color: #0a0a0a; font-size: 18px; font-weight: bold;">${displayOrderId}</p>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Items -->
+          <tr>
+            <td style="padding: 0 30px 30px;">
+              <h3 style="margin: 0 0 15px; color: #0a0a0a; font-size: 18px;">Artículos a devolver</h3>
+              <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden;">
+                <tr style="background-color: #f8f8f8;">
+                  <th style="padding: 12px; text-align: left; font-size: 14px; color: #666;">Producto</th>
+                  <th style="padding: 12px; text-align: center; font-size: 14px; color: #666;">Cant.</th>
+                  <th style="padding: 12px; text-align: right; font-size: 14px; color: #666;">Motivo</th>
+                </tr>
+                ${itemsHtml}
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Shipping Address -->
+          <tr>
+            <td style="padding: 0 30px 30px;">
+              <h3 style="margin: 0 0 15px; color: #0a0a0a; font-size: 18px;">Dirección para el envío</h3>
+              <div style="background-color: #f8f8f8; border-radius: 8px; padding: 20px;">
+                <p style="margin: 0; color: #333; line-height: 1.6;">
+                  <strong>FashionStore Devoluciones</strong><br>
+                  Calle de la Moda 123<br>
+                  28001 Madrid<br>
+                  España
+                </p>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Instructions -->
+          <tr>
+            <td style="padding: 0 30px 30px;">
+              <div style="background-color: #fffbeb; border-radius: 8px; padding: 20px; border-left: 4px solid #f59e0b;">
+                <h4 style="margin: 0 0 10px; color: #b45309; font-size: 16px;">Instrucciones importantes</h4>
+                <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: #666; line-height: 1.8;">
+                  <li>Incluye el número de pedido visible en el paquete</li>
+                  <li>Los artículos deben estar sin usar y con etiquetas originales</li>
+                  <li>El reembolso se procesará en 5-7 días hábiles tras recibir el paquete</li>
+                </ul>
+              </div>
+            </td>
+          </tr>
+          
+          ${customerButton(`${siteUrl}/cuenta/pedidos`, 'Ver mis pedidos')}
+          
+${customerFooter(contactEmail)}
   `.trim();
 }

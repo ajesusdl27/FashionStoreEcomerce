@@ -201,7 +201,7 @@ Deno.serve(async (req) => {
 
     if (outOfStock.length > 0) {
       tablesHtml += `
-        <h3 style="margin: 25px 0 12px; font-size: 15px; color: #dc2626;">🔴 Sin Stock (${outOfStock.length})</h3>
+        <h3 style="margin: 25px 0 12px; font-size: 15px; color: #dc2626;"><span style="display: inline-block; width: 10px; height: 10px; background-color: #dc2626; border-radius: 50%; margin-right: 6px;"></span>Sin Stock (${outOfStock.length})</h3>
         <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #fee2e2; border-radius: 6px; overflow: hidden; margin-bottom: 20px;">
           <tr style="background-color: #fef2f2;">
             <th style="padding: 10px 12px; text-align: left; font-size: 12px; color: #991b1b; text-transform: uppercase;">Producto</th>
@@ -214,7 +214,7 @@ Deno.serve(async (req) => {
 
     if (lowStock.length > 0) {
       tablesHtml += `
-        <h3 style="margin: 25px 0 12px; font-size: 15px; color: #d97706;">🟡 Stock Bajo (${lowStock.length})</h3>
+        <h3 style="margin: 25px 0 12px; font-size: 15px; color: #d97706;"><span style="display: inline-block; width: 10px; height: 10px; background-color: #f59e0b; border-radius: 50%; margin-right: 6px;"></span>Stock Bajo (${lowStock.length})</h3>
         <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #fef3c7; border-radius: 6px; overflow: hidden; margin-bottom: 20px;">
           <tr style="background-color: #fffbeb;">
             <th style="padding: 10px 12px; text-align: left; font-size: 12px; color: #92400e; text-transform: uppercase;">Producto</th>
@@ -258,7 +258,7 @@ Deno.serve(async (req) => {
             <td style="padding: 30px;">
               <!-- Alert Banner -->
               <div style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); border-radius: 8px; padding: 20px; margin-bottom: 25px; text-align: center;">
-                <span style="font-size: 36px;">📊</span>
+                <span style="font-size: 36px; color: #ffffff;">&#9888;</span>
                 <h2 style="margin: 10px 0 5px; color: #ffffff; font-size: 20px;">Reporte Diario de Stock</h2>
                 <p style="margin: 0; color: rgba(255,255,255,0.9); font-size: 13px;">${dateStr}</p>
               </div>
@@ -318,7 +318,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: resendFromEmail,
         to: [adminEmail],
-        subject: `[Admin] 📊 Alerta de Inventario — ${subjectParts.join(', ')} (${items.length} variantes)`,
+        subject: `[Admin] Alerta de Inventario — ${subjectParts.join(', ')} (${items.length} variantes)`,
         html,
       }),
     })

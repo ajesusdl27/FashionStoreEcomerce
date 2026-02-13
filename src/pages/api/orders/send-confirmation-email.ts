@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
-import { sendOrderConfirmation } from '@/lib/email';
+import { sendOrderConfirmation, sendAdminOrderNotification } from '@/lib/email';
 
 /**
  * Endpoint para enviar email de confirmación de pedido
@@ -154,6 +154,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .from('orders')
       .update({ confirmation_email_sent: true })
       .eq('id', orderId);
+
+    // Notificar al admin (fire-and-forget para no bloquear la respuesta al cliente)
+    sendAdminOrderNotification({
+      orderId: order.id,
+      orderNumber: order.order_number,
+      customerName: order.customer_name,
+      customerEmail: order.customer_email,
+      totalAmount: Number(order.total_amount),
+      items,
+      orderDate: new Date(order.created_at),
+    }).catch(err => console.error('Error sending admin notification:', err));
 
     // Registrar uso de cupón si existe (idempotente via UNIQUE constraint)
     if (order.coupon_id) {

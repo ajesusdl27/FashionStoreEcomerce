@@ -1,4 +1,4 @@
-import type { OrderEmailData } from './email';
+import type { OrderEmailData, CancellationEmailData } from './email';
 import { formatOrderId } from './order-utils';
 import { formatPrice } from './formatters';
 
@@ -16,13 +16,84 @@ const getDefaultOptions = (): EmailTemplateOptions => ({
   storeName: 'FashionStore'
 });
 
+// ============================================
+// LAYOUT BASE CLIENTE
+// ============================================
+
+/**
+ * Header unificado para todos los emails de cliente
+ */
+export function customerHeader(storeName: string): string {
+  return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f4f4;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%); padding: 30px; text-align: center;">
+              <h1 style="margin: 0; color: #CCFF00; font-size: 28px; font-weight: bold; letter-spacing: 2px;">${storeName?.toUpperCase() || 'FASHIONSTORE'}</h1>
+            </td>
+          </tr>`;
+}
+
+/**
+ * Footer unificado para todos los emails de cliente
+ */
+export function customerFooter(contactEmail: string): string {
+  return `
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f8f8f8; padding: 30px; text-align: center; border-top: 1px solid #e5e5e5;">
+              <p style="margin: 0 0 10px; color: #666; font-size: 14px;">
+                ¿Tienes alguna pregunta? Contáctanos en <a href="mailto:${contactEmail}" style="color: #0a0a0a;">${contactEmail}</a>
+              </p>
+              <p style="margin: 0; color: #999; font-size: 12px;">
+                © ${new Date().getFullYear()} FashionStore. Todos los derechos reservados.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+/**
+ * Botón CTA estándar para emails de cliente
+ */
+export function customerButton(href: string, text: string): string {
+  return `
+          <tr>
+            <td style="padding: 0 30px 40px; text-align: center;">
+              <a href="${href}" 
+                 style="display: inline-block; background-color: #0a0a0a; color: #CCFF00; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                ${text}
+              </a>
+            </td>
+          </tr>`;
+}
+
+// ============================================
+// 1. CONFIRMACIÓN DE PEDIDO
+// ============================================
+
 // Genera el HTML del email de confirmación de pedido
 export function generateOrderConfirmationHTML(
   order: OrderEmailData, 
   formattedOrderId: string,
   options?: Partial<EmailTemplateOptions>
 ): string {
-  const { siteUrl, contactEmail } = { ...getDefaultOptions(), ...options };
+  const { siteUrl, contactEmail, storeName } = { ...getDefaultOptions(), ...options };
 
   const itemsHTML = order.items.map(item => `
     <tr>
@@ -35,31 +106,12 @@ export function generateOrderConfirmationHTML(
     </tr>
   `).join('');
 
-  return `
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Confirmación de pedido - FashionStore</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f4f4;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          
-          <!-- Header -->
-          <tr>
-            <td style="background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%); padding: 30px; text-align: center;">
-              <h1 style="margin: 0; color: #CCFF00; font-size: 28px; font-weight: bold; letter-spacing: 2px;">FASHIONSTORE</h1>
-            </td>
-          </tr>
+  return `${customerHeader(storeName || 'FashionStore')}
           
           <!-- Confirmation Message -->
           <tr>
             <td style="padding: 40px 30px 20px;">
-              <h2 style="margin: 0 0 10px; color: #0a0a0a; font-size: 24px;">¡Gracias por tu pedido, ${order.customerName}!</h2>
+              <h2 style="margin: 0 0 10px; color: #0a0a0a; font-size: 24px;">Gracias por tu pedido, ${order.customerName}</h2>
               <p style="margin: 0; color: #666; font-size: 16px; line-height: 1.5;">
                 Tu pedido ha sido confirmado y está siendo procesado. Recibirás otra notificación cuando sea enviado.
               </p>
@@ -137,36 +189,15 @@ export function generateOrderConfirmationHTML(
             </td>
           </tr>
           
-          <!-- CTA Button -->
-          <tr>
-            <td style="padding: 0 30px 40px; text-align: center;">
-              <a href="${siteUrl}/cuenta/pedidos" 
-                 style="display: inline-block; background-color: #0a0a0a; color: #CCFF00; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">
-                Ver mis pedidos
-              </a>
-            </td>
-          </tr>
+          ${customerButton(`${siteUrl}/cuenta/pedidos`, 'Ver mis pedidos')}
           
-          <!-- Footer -->
-          <tr>
-            <td style="background-color: #f8f8f8; padding: 30px; text-align: center; border-top: 1px solid #e5e5e5;">
-              <p style="margin: 0 0 10px; color: #666; font-size: 14px;">
-                ¿Tienes alguna pregunta? Contáctanos en <a href="mailto:${contactEmail}" style="color: #0a0a0a;">${contactEmail}</a>
-              </p>
-              <p style="margin: 0; color: #999; font-size: 12px;">
-                © ${new Date().getFullYear()} FashionStore. Todos los derechos reservados.
-              </p>
-            </td>
-          </tr>
-          
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
+${customerFooter(contactEmail)}
   `.trim();
 }
+
+// ============================================
+// 2. PEDIDO ENVIADO
+// ============================================
 
 // Datos para el email de envío
 export interface OrderShippedData {
@@ -188,7 +219,7 @@ export function generateOrderShippedHTML(
   data: OrderShippedData,
   options?: Partial<EmailTemplateOptions>
 ): string {
-  const { siteUrl, contactEmail } = { ...getDefaultOptions(), ...options };
+  const { siteUrl, contactEmail, storeName } = { ...getDefaultOptions(), ...options };
 
   const trackingSection = data.trackingUrl ? `
     <!-- Tracking Button -->
@@ -197,7 +228,7 @@ export function generateOrderShippedHTML(
         <a href="${data.trackingUrl}" 
            target="_blank"
            style="display: inline-block; background-color: #CCFF00; color: #0a0a0a; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">
-          📦 Seguir mi pedido
+          Seguir mi pedido
         </a>
       </td>
     </tr>
@@ -210,34 +241,15 @@ export function generateOrderShippedHTML(
     </div>
   ` : '';
 
-  return `
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>¡Tu pedido ha sido enviado! - FashionStore</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f4f4;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          
-          <!-- Header -->
-          <tr>
-            <td style="background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%); padding: 30px; text-align: center;">
-              <h1 style="margin: 0; color: #CCFF00; font-size: 28px; font-weight: bold; letter-spacing: 2px;">FASHIONSTORE</h1>
-            </td>
-          </tr>
+  return `${customerHeader(storeName || 'FashionStore')}
           
           <!-- Shipped Icon & Message -->
           <tr>
             <td style="padding: 40px 30px 20px; text-align: center;">
-              <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #CCFF00 0%, #a3cc00 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 40px;">🚚</span>
+              <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #CCFF00 0%, #a3cc00 100%); border-radius: 50%; line-height: 80px;">
+                <span style="font-size: 36px; color: #0a0a0a;">&#10140;</span>
               </div>
-              <h2 style="margin: 0 0 10px; color: #0a0a0a; font-size: 24px;">¡Tu pedido está en camino!</h2>
+              <h2 style="margin: 0 0 10px; color: #0a0a0a; font-size: 24px;">Tu pedido está en camino</h2>
               <p style="margin: 0; color: #666; font-size: 16px; line-height: 1.5;">
                 Hola ${data.customerName}, tu pedido ha sido enviado y pronto llegará a tu dirección.
               </p>
@@ -276,33 +288,66 @@ export function generateOrderShippedHTML(
             </td>
           </tr>
           
-          <!-- CTA Button -->
+          ${customerButton(`${siteUrl}/cuenta/pedidos`, 'Ver mis pedidos')}
+          
+${customerFooter(contactEmail)}
+  `.trim();
+}
+
+// ============================================
+// 3. PEDIDO CANCELADO
+// ============================================
+
+// Genera el HTML del email de pedido cancelado
+export function generateOrderCancelledHTML(
+  data: CancellationEmailData,
+  options?: Partial<EmailTemplateOptions>
+): string {
+  const { siteUrl, contactEmail, storeName } = { ...getDefaultOptions(), ...options };
+  
+  const displayOrderId = formatOrderId(data.orderNumber);
+  const refundText = data.refundAmount 
+    ? `Si se realizó algún cargo, el reembolso de <strong>${data.refundAmount.toFixed(2)}€</strong> se procesará automáticamente en 3-5 días hábiles.`
+    : 'Si se realizó algún cargo, el reembolso se procesará automáticamente en 3-5 días hábiles.';
+
+  return `${customerHeader(storeName || 'FashionStore')}
+          
+          <!-- Cancelled Message -->
           <tr>
-            <td style="padding: 0 30px 40px; text-align: center;">
-              <a href="${siteUrl}/cuenta/pedidos" 
-                 style="display: inline-block; background-color: #0a0a0a; color: #CCFF00; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">
-                Ver mis pedidos
-              </a>
+            <td style="padding: 40px 30px 20px; text-align: center;">
+              <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border-radius: 50%; line-height: 80px;">
+                <span style="font-size: 36px; color: #ffffff;">&#10005;</span>
+              </div>
+              <h2 style="margin: 0 0 10px; color: #0a0a0a; font-size: 24px;">Pedido Cancelado</h2>
+              <p style="margin: 0; color: #666; font-size: 16px; line-height: 1.5;">
+                Hola ${data.customerName}, tu pedido ${displayOrderId} ha sido cancelado${data.reason ? ': ' + data.reason : ''}.
+              </p>
             </td>
           </tr>
           
-          <!-- Footer -->
+          <!-- Refund Info -->
           <tr>
-            <td style="background-color: #f8f8f8; padding: 30px; text-align: center; border-top: 1px solid #e5e5e5;">
-              <p style="margin: 0 0 10px; color: #666; font-size: 14px;">
-                ¿Tienes alguna pregunta? Contáctanos en <a href="mailto:${contactEmail}" style="color: #0a0a0a;">${contactEmail}</a>
-              </p>
-              <p style="margin: 0; color: #999; font-size: 12px;">
-                © ${new Date().getFullYear()} FashionStore. Todos los derechos reservados.
+            <td style="padding: 0 30px 30px;">
+              <div style="background-color: #fef2f2; border-radius: 8px; padding: 20px; border-left: 4px solid #ef4444;">
+                <p style="margin: 0; color: #991b1b; font-size: 14px;">
+                  ${refundText}
+                </p>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Contact -->
+          <tr>
+            <td style="padding: 0 30px 30px;">
+              <p style="margin: 0; color: #666; font-size: 14px; text-align: center;">
+                Si tienes alguna pregunta, contáctanos en 
+                <a href="mailto:${contactEmail}" style="color: #0a0a0a;">${contactEmail}</a>
               </p>
             </td>
           </tr>
           
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
+          ${customerButton(`${siteUrl}`, 'Seguir comprando')}
+          
+${customerFooter(contactEmail)}
   `.trim();
 }
