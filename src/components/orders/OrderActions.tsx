@@ -156,12 +156,19 @@ export default function OrderActions({
     setError(null);
 
     try {
-      const { error: rpcError } = await supabase.rpc('cancel_order', {
-        p_order_id: orderId
+      const response = await fetch('/api/orders/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          reason: 'Cancelación solicitada por el cliente',
+        }),
       });
 
-      if (rpcError) {
-        throw rpcError;
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Error al cancelar el pedido.');
       }
 
       window.location.reload();

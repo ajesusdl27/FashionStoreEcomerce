@@ -184,6 +184,77 @@ export function generateAdminOrderNotificationHTML(
 ${adminFooter(siteUrl)}`;
 }
 
+export interface AdminOrderCancelledNotificationData {
+  orderId: string;
+  orderNumber: number;
+  customerName: string;
+  customerEmail: string;
+  refundAmount: number;
+  reason?: string;
+}
+
+export function generateAdminOrderCancelledNotificationHTML(
+  data: AdminOrderCancelledNotificationData,
+  options?: Partial<EmailTemplateOptions>
+): string {
+  const opts = { ...getDefaultOptions(), ...options };
+  const siteUrl = opts.siteUrl;
+  const storeName = opts.storeName || 'FashionStore';
+  const displayOrderId = formatOrderId(data.orderNumber);
+
+  return `${adminHeader(storeName)}
+          <tr>
+            <td style="padding: 30px;">
+              <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border-radius: 8px; padding: 20px; margin-bottom: 25px; text-align: center;">
+                <span style="font-size: 36px; color: #ffffff;">&#10005;</span>
+                <h2 style="margin: 10px 0 5px; color: #ffffff; font-size: 20px;">Pedido cancelado por cliente</h2>
+                <p style="margin: 0; color: rgba(255,255,255,0.9); font-size: 14px;">Se ha tramitado cancelación y reembolso</p>
+              </div>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
+                <tr>
+                  <td style="background-color: #f8f9fa; border-radius: 8px; padding: 16px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding: 6px 0; font-size: 14px; color: #666;">Pedido:</td>
+                        <td style="padding: 6px 0; font-size: 14px; font-weight: bold; text-align: right;">${displayOrderId}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0; font-size: 14px; color: #666;">Cliente:</td>
+                        <td style="padding: 6px 0; font-size: 14px; text-align: right;">${data.customerName}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0; font-size: 14px; color: #666;">Email:</td>
+                        <td style="padding: 6px 0; font-size: 14px; text-align: right;">
+                          <a href="mailto:${data.customerEmail}" style="color: #16213e;">${data.customerEmail}</a>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0; font-size: 14px; color: #666;">Importe:</td>
+                        <td style="padding: 6px 0; font-size: 16px; font-weight: bold; text-align: right; color: #dc2626;">${data.refundAmount.toFixed(2)}€</td>
+                      </tr>
+                      ${data.reason ? `
+                      <tr>
+                        <td style="padding: 6px 0; font-size: 14px; color: #666;">Motivo:</td>
+                        <td style="padding: 6px 0; font-size: 14px; text-align: right;">${data.reason}</td>
+                      </tr>
+                      ` : ''}
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <div style="text-align: center;">
+                <a href="${siteUrl}/admin/pedidos/${data.orderId}"
+                   style="display: inline-block; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #CCFF00; text-decoration: none; padding: 14px 35px; border-radius: 8px; font-weight: bold; font-size: 14px;">
+                  Ver pedido en Admin →
+                </a>
+              </div>
+            </td>
+          </tr>
+${adminFooter(siteUrl)}`;
+}
+
 // ============================================
 // 2. NUEVA SOLICITUD DE DEVOLUCIÓN
 // ============================================

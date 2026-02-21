@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { stripe } from '@/lib/stripe';
 import { createAuthenticatedClient } from '@/lib/supabase';
-import { sendOrderCancelled } from '@/lib/email';
+import { sendOrderCancelled, sendAdminOrderCancelledNotification } from '@/lib/email';
 import { ensureRectifyingDocumentForOrderCancellation } from '@/lib/fiscal-documents';
 
 export const prerender = false;
@@ -179,9 +179,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
     }
 
+    let emailSent = false;
+    let emailErrorMessage: string | null = null;
+    let adminEmailSent = false;
+    let adminEmailErrorMessage: string | null = null;
+
     // Send cancellation email
     try {
-      await sendOrderCancelled({
+      const emailResult = await sendOrderCancelled({
         orderId: order.id,
         orderNumber: order.order_number,
         customerName: order.customer_name,
@@ -191,9 +196,43 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         rectifyingDocumentNumber: rectifyingDocument?.number,
         rectifyingDocumentUrl: rectifyingDocument?.pdfUrl || undefined,
       });
-      console.log(`Cancellation email sent to ${order.customer_email}`);
+
+      emailSent = emailResult.success;
+      emailErrorMessage = emailResult.error || null;
+
+      if (emailResult.success) {
+        console.log(`Cancellation email sent to ${order.customer_email}`);
+      } else {
+        console.warn(`Cancellation email failed for ${order.customer_email}:`, emailResult.error);
+      }
     } catch (emailError) {
       console.warn('Failed to send cancellation email:', emailError);
+      emailSent = false;
+      emailErrorMessage = emailError instanceof Error ? emailError.message : 'Unknown email error';
+    }
+
+    try {
+      const adminEmailResult = await sendAdminOrderCancelledNotification({
+        orderId: order.id,
+        orderNumber: order.order_number,
+        customerName: order.customer_name,
+        customerEmail: order.customer_email,
+        refundAmount: refundAmountForRectifying > 0 ? refundAmountForRectifying : Number(order.total_amount || 0),
+        reason: reason || 'Cancelación solicitada por el cliente',
+      });
+
+      adminEmailSent = adminEmailResult.success;
+      adminEmailErrorMessage = adminEmailResult.error || null;
+
+      if (adminEmailResult.success) {
+        console.log('Admin cancellation notification sent successfully');
+      } else {
+        console.warn('Admin cancellation notification failed:', adminEmailResult.error);
+      }
+    } catch (adminEmailError) {
+      console.warn('Failed to send admin cancellation notification:', adminEmailError);
+      adminEmailSent = false;
+      adminEmailErrorMessage = adminEmailError instanceof Error ? adminEmailError.message : 'Unknown admin email error';
     }
 
     return new Response(JSON.stringify({ 
@@ -201,6 +240,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       refunded: refundSuccessful,
       refundAmount,
       rectifyingDocument,
+      emailSent,
+      ...(emailErrorMessage ? { emailError: emailErrorMessage } : {}),
+      adminEmailSent,
+      ...(adminEmailErrorMessage ? { adminEmailError: adminEmailErrorMessage } : {}),
       message: refundSuccessful 
         ? `Pedido cancelado. Se te reembolsarán ${refundAmount.toFixed(2)}€ en los próximos 5-10 días hábiles.`
         : 'Pedido cancelado. El reembolso se procesará manualmente en breve.'
