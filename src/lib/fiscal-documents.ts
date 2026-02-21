@@ -37,6 +37,114 @@ const ELIGIBLE_DOCUMENT_STATUSES = [
   'partially_refunded',
 ];
 
+const roundCurrency = (value: number) => Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
+
+type RefundOrderItem = {
+  id: string;
+  productName: string;
+  size: string;
+  quantity: number;
+  unitPrice: number;
+};
+
+function computeRefundItemLines(params: {
+  orderItems: RefundOrderItem[];
+  approvedQuantities: Map<string, number> | null;
+  orderDiscountAmount: number;
+  documentRefundTotal: number;
+}) {
+  const allItemsGrossSubtotal = roundCurrency(
+    params.orderItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0),
+  );
+
+  const selectedItems = params.orderItems
+    .map((item) => {
+      const approvedQty = params.approvedQuantities
+        ? Math.min(Math.max(params.approvedQuantities.get(item.id) || 0, 0), item.quantity)
+        : item.quantity;
+      return { ...item, approvedQty };
+    })
+    .filter((item) => item.approvedQty > 0);
+
+  if (selectedItems.length === 0 || allItemsGrossSubtotal <= 0) {
+    return {
+      lines: [] as Array<{ productName: string; size: string; quantity: number; unitPrice: number }>,
+      itemNetTotal: 0,
+      shippingRefundAmount: 0,
+    };
+  }
+
+  const selectedGrossTotal = roundCurrency(
+    selectedItems.reduce((sum, item) => sum + (item.unitPrice * item.approvedQty), 0),
+  );
+
+  const totalDiscountToApply = allItemsGrossSubtotal > 0
+    ? roundCurrency(
+      Math.min(
+        Math.max(params.orderDiscountAmount || 0, 0),
+        (Math.max(params.orderDiscountAmount || 0, 0) * selectedGrossTotal) / allItemsGrossSubtotal,
+      ),
+    )
+    : 0;
+
+  let distributedDiscount = 0;
+  const lineDrafts = selectedItems.map((item, index) => {
+    const lineGross = roundCurrency(item.unitPrice * item.approvedQty);
+    const isLast = index === selectedItems.length - 1;
+
+    let lineDiscount = 0;
+    if (totalDiscountToApply > 0) {
+      if (isLast) {
+        lineDiscount = roundCurrency(totalDiscountToApply - distributedDiscount);
+      } else {
+        const raw = allItemsGrossSubtotal > 0
+          ? (Math.max(params.orderDiscountAmount || 0, 0) * lineGross) / allItemsGrossSubtotal
+          : 0;
+        lineDiscount = roundCurrency(raw);
+      }
+      lineDiscount = Math.max(0, Math.min(lineDiscount, lineGross));
+      distributedDiscount = roundCurrency(distributedDiscount + lineDiscount);
+    }
+
+    const lineNet = roundCurrency(lineGross - lineDiscount);
+    const unitNet = item.approvedQty > 0 ? -(lineNet / item.approvedQty) : 0;
+
+    return {
+      productName: `Rectificación - ${item.productName}`,
+      size: item.size,
+      quantity: item.approvedQty,
+      unitPrice: unitNet,
+      lineNet,
+    };
+  });
+
+  const itemNetTotal = roundCurrency(lineDrafts.reduce((sum, item) => sum + item.lineNet, 0));
+  const documentRefundTotal = roundCurrency(Math.abs(params.documentRefundTotal || 0));
+  const shippingRefundAmount = Math.max(0, roundCurrency(documentRefundTotal - itemNetTotal));
+
+  const lines = lineDrafts.map(({ productName, size, quantity, unitPrice }) => ({
+    productName,
+    size,
+    quantity,
+    unitPrice,
+  }));
+
+  if (shippingRefundAmount > 0) {
+    lines.push({
+      productName: 'Rectificación - Gastos de envío',
+      size: '-',
+      quantity: 1,
+      unitPrice: -shippingRefundAmount,
+    });
+  }
+
+  return {
+    lines,
+    itemNetTotal,
+    shippingRefundAmount,
+  };
+}
+
 async function createSimplifiedTicketDocumentFallback(orderId: string) {
   const { data: existing } = await supabaseAdmin
     .from('fiscal_documents')
@@ -138,6 +246,7 @@ async function fetchOrderWithItems(orderId: string) {
   const { data: orderItems, error: itemsError } = await supabaseAdmin
     .from('order_items')
     .select(`
+      id,
       quantity,
       price_at_purchase,
       products:product_id (name),
@@ -300,44 +409,51 @@ export async function ensureRectifyingDocumentForReturn(returnId: string) {
   const { data: approvedReturnItems } = await supabaseAdmin
     .from('return_items')
     .select(`
+      order_item_id,
       quantity,
-      refund_amount,
-      inspection_status,
-      products:order_item_id (
-        products:product_id (name),
-        product_variants:variant_id (size)
-      )
+      inspection_status
     `)
     .eq('return_id', returnId)
     .eq('inspection_status', 'approved');
 
-  const refundItems = (approvedReturnItems || [])
-    .map((item: any) => {
-      const orderItemData = Array.isArray(item.products) ? item.products[0] : item.products;
-      const product = Array.isArray(orderItemData?.products) ? orderItemData.products[0] : orderItemData?.products;
-      const variant = Array.isArray(orderItemData?.product_variants) ? orderItemData.product_variants[0] : orderItemData?.product_variants;
-      const lineTotal = Number(item.refund_amount || 0);
-      const quantity = Number(item.quantity || 1);
-      const unitPrice = quantity > 0 ? lineTotal / quantity : 0;
-      return {
-        productName: `Rectificación - ${product?.name || 'Producto'}`,
-        size: variant?.size || '-',
-        quantity,
-        unitPrice: -Math.abs(unitPrice),
-      };
-    })
-    .filter((item) => item.quantity > 0);
-
-  const fallbackItems = orderItems.map((item: any) => {
+  const normalizedOrderItems: RefundOrderItem[] = orderItems.map((item: any) => {
     const product = Array.isArray(item.products) ? item.products[0] : item.products;
     const variant = Array.isArray(item.product_variants) ? item.product_variants[0] : item.product_variants;
     return {
-      productName: `Rectificación - ${product?.name || 'Producto'}`,
+      id: item.id,
+      productName: product?.name || 'Producto',
       size: variant?.size || '-',
-      quantity: item.quantity,
-      unitPrice: -Math.abs(Number(item.price_at_purchase)),
+      quantity: Number(item.quantity || 0),
+      unitPrice: Number(item.price_at_purchase || 0),
     };
   });
+
+  const approvedQuantities = (approvedReturnItems || []).reduce((map, item: any) => {
+    const orderItemId = String(item.order_item_id || '');
+    const quantity = Number(item.quantity || 0);
+    if (!orderItemId || quantity <= 0) {
+      return map;
+    }
+    map.set(orderItemId, (map.get(orderItemId) || 0) + quantity);
+    return map;
+  }, new Map<string, number>());
+
+  const hasApprovedItems = approvedQuantities.size > 0;
+  const refundBreakdown = computeRefundItemLines({
+    orderItems: normalizedOrderItems,
+    approvedQuantities: hasApprovedItems ? approvedQuantities : null,
+    orderDiscountAmount: Number(order.discount_amount || 0),
+    documentRefundTotal: Number(fiscalDocument.total || 0),
+  });
+
+  const rectifyingItems = refundBreakdown.lines.length > 0
+    ? refundBreakdown.lines
+    : normalizedOrderItems.map((item) => ({
+      productName: `Rectificación - ${item.productName}`,
+      size: item.size,
+      quantity: item.quantity,
+      unitPrice: -Math.abs(item.unitPrice),
+    }));
 
   const orderJoin = Array.isArray(fiscalDocument.orders) ? fiscalDocument.orders[0] : fiscalDocument.orders;
   const formattedOrderId = formatOrderId(orderJoin?.order_number || order.order_number);
@@ -350,7 +466,7 @@ export async function ensureRectifyingDocumentForReturn(returnId: string) {
     customerFiscalName: fiscalDocument.customer_name,
     customerNif: fiscalDocument.customer_nif || 'N/A',
     customerFiscalAddress: fiscalDocument.customer_fiscal_address || 'Dirección no informada',
-    items: refundItems.length > 0 ? refundItems : fallbackItems,
+    items: rectifyingItems,
     subtotal: Number(fiscalDocument.subtotal),
     taxRate: Number(fiscalDocument.tax_rate),
     taxAmount: Number(fiscalDocument.tax_amount),
