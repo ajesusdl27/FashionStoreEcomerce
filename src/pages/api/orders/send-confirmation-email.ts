@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { sendOrderConfirmation, sendAdminOrderNotification } from '@/lib/email';
+import { ensureSimplifiedTicketDocument } from '@/lib/fiscal-documents';
 
 /**
  * Endpoint para enviar email de confirmación de pedido
@@ -122,6 +123,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // 7. Enviar email
+    try {
+      await ensureSimplifiedTicketDocument(order.id);
+      console.log('✅ Simplified fiscal document persisted for order:', order.order_number);
+    } catch (docError) {
+      console.error('⚠️ Could not persist simplified fiscal document:', docError);
+    }
+
     const emailResult = await sendOrderConfirmation({
       orderId: order.id,
       orderNumber: order.order_number,

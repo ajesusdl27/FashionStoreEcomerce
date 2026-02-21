@@ -58,14 +58,39 @@ export const GET: APIRoute = async ({ url, cookies, request }) => {
       });
     }
 
-    // Buscar factura existente (usar admin para bypass RLS)
-    const { data: invoice } = await supabaseAdmin
-      .from('invoices')
-      .select('id, order_id, invoice_number, customer_nif, customer_fiscal_name, customer_fiscal_address, subtotal, tax_rate, tax_amount, total, pdf_url, created_at')
+    // Buscar factura en repositorio fiscal unificado (usar admin para bypass RLS)
+    const { data: fiscalInvoice } = await supabaseAdmin
+      .from('fiscal_documents')
+      .select('id, order_id, document_number, customer_nif, customer_name, customer_fiscal_address, subtotal, tax_rate, tax_amount, total, pdf_url, issued_at, document_type')
       .eq('order_id', orderId)
-      .single();
+      .eq('document_type', 'invoice')
+      .order('issued_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
 
-    return new Response(JSON.stringify({ invoice: invoice || null }), {
+    if (fiscalInvoice) {
+      const mappedInvoice = {
+        id: fiscalInvoice.id,
+        order_id: fiscalInvoice.order_id,
+        invoice_number: fiscalInvoice.document_number,
+        customer_nif: fiscalInvoice.customer_nif,
+        customer_fiscal_name: fiscalInvoice.customer_name,
+        customer_fiscal_address: fiscalInvoice.customer_fiscal_address,
+        subtotal: fiscalInvoice.subtotal,
+        tax_rate: fiscalInvoice.tax_rate,
+        tax_amount: fiscalInvoice.tax_amount,
+        total: fiscalInvoice.total,
+        pdf_url: fiscalInvoice.pdf_url,
+        created_at: fiscalInvoice.issued_at,
+      };
+
+      return new Response(JSON.stringify({ invoice: mappedInvoice }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    return new Response(JSON.stringify({ invoice: null }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });

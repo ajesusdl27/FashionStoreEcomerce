@@ -398,12 +398,39 @@ export async function sendReturnCompletedEmail(data: ReturnEmailData): Promise<{
     const fromEmail = import.meta.env.RESEND_FROM_EMAIL || 'FashionStore <onboarding@resend.dev>';
     const templateOptions = await getEmailTemplateOptions();
     const displayId = formatOrderId(data.orderNumber);
-    
+
+    let rectifyingAttachment:
+      | {
+          filename: string;
+          content: string;
+        }
+      | undefined;
+
+    if (data.rectifyingDocumentUrl) {
+      try {
+        const response = await fetch(data.rectifyingDocumentUrl);
+        if (response.ok) {
+          const arrayBuffer = await response.arrayBuffer();
+          const fileBuffer = Buffer.from(arrayBuffer);
+          const fileNumber = (data.rectifyingDocumentNumber || 'rectificativa').replace(/[^a-zA-Z0-9-_]/g, '_');
+          rectifyingAttachment = {
+            filename: `factura-rectificativa-${fileNumber}.pdf`,
+            content: fileBuffer.toString('base64'),
+          };
+        } else {
+          console.warn('📧 [RETURN-EMAIL] Could not download rectifying document for attachment:', response.status);
+        }
+      } catch (attachmentError) {
+        console.warn('📧 [RETURN-EMAIL] Failed to attach rectifying document:', attachmentError);
+      }
+    }
+
     const { error } = await resend.emails.send({
       from: fromEmail,
       to: data.customerEmail,
       subject: `Reembolso procesado - Pedido ${displayId}`,
       html: generateReturnCompletedHTML(data, templateOptions),
+      ...(rectifyingAttachment ? { attachments: [rectifyingAttachment] } : {}),
     });
 
     if (error) {

@@ -3,6 +3,7 @@ import { stripe } from '@/lib/stripe';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { sendOrderConfirmation, sendOrderCancelled, sendAdminOrderNotification } from '@/lib/email';
 import { formatOrderId } from '@/lib/order-utils';
+import { ensureSimplifiedTicketDocument } from '@/lib/fiscal-documents';
 import type Stripe from 'stripe';
 
 const webhookSecret = import.meta.env.STRIPE_WEBHOOK_SECRET;
@@ -228,6 +229,13 @@ export const POST: APIRoute = async ({ request }) => {
           const webShippingCost = Number(order.shipping_cost || 0);
           
           // Send confirmation email
+          try {
+            await ensureSimplifiedTicketDocument(order.id);
+            console.log(`🔔 [WEBHOOK] ✅ Simplified fiscal document generated for order ${displayId}`);
+          } catch (docError) {
+            console.error('🔔 [WEBHOOK] ❌ Failed to persist simplified fiscal document:', docError);
+          }
+
           const emailResult = await sendOrderConfirmation({
             orderId: order.id,
             orderNumber: order.order_number,

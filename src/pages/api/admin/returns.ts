@@ -9,6 +9,7 @@ import {
   type ReturnEmailData 
 } from "@/lib/email";
 import { stripe } from "@/lib/stripe";
+import { ensureRectifyingDocumentForReturn } from "@/lib/fiscal-documents";
 
 export const prerender = false;
 
@@ -191,6 +192,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     // Process Stripe refund when completing the return
     let refundProcessed = false;
     let refundAmount = 0;
+    let rectifyingDocument: { id: string; number: string; pdfUrl: string | null } | null = null;
     
     if (action === "complete") {
       try {
@@ -245,6 +247,18 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
         // Don't fail the request if Stripe refund fails - admin can process manually
         // But log the error for debugging
       }
+
+      try {
+        const rectifying = await ensureRectifyingDocumentForReturn(return_id);
+        rectifyingDocument = {
+          id: rectifying.id,
+          number: rectifying.document_number,
+          pdfUrl: rectifying.pdf_url || null,
+        };
+        console.log(`✅ Rectifying document ${rectifying.document_number} generated for return ${return_id}`);
+      } catch (rectifyingError) {
+        console.error('❌ Error generating rectifying document:', rectifyingError);
+      }
     }
 
     // Send email notifications based on action
@@ -282,6 +296,8 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
             status: action as ReturnEmailData['status'],
             refundAmount: Number(returnData.refund_amount) || 0,
             rejectionReason: rejection_reason,
+            rectifyingDocumentNumber: rectifyingDocument?.number,
+            rectifyingDocumentUrl: rectifyingDocument?.pdfUrl || undefined,
           };
 
           if (action === "approve") {
@@ -321,6 +337,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
         emailSent,
         refundProcessed,
         refundAmount,
+        rectifyingDocument,
         message
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }

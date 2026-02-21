@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@/lib/supabase';
 import { validateToken } from '@/lib/auth-utils';
+import { getFiscalDocumentById } from '@/lib/fiscal-documents';
 
 /**
  * GET /api/admin/facturas/download?id=invoiceId
@@ -36,33 +37,25 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       });
     }
 
-    // Fetch factura
-    const { data: invoice, error } = await supabaseAdmin
-      .from('invoices')
-      .select('id, invoice_number, pdf_url')
-      .eq('id', invoiceId)
-      .single();
-
-    if (error || !invoice) {
-      return new Response(JSON.stringify({ error: 'Factura no encontrada' }), {
+    const fiscalDocument = await getFiscalDocumentById(invoiceId);
+    if (!fiscalDocument) {
+      return new Response(JSON.stringify({ error: 'Documento no encontrado' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    // Si tiene pdf_url, redirigir
-    if (invoice.pdf_url) {
-      return Response.redirect(invoice.pdf_url, 302);
+    if (fiscalDocument.pdf_url) {
+      return Response.redirect(fiscalDocument.pdf_url, 302);
     }
 
-    // Intentar descargar directamente de Storage
-    const fileName = `invoices/${invoice.invoice_number}.pdf`;
+    const fileName = fiscalDocument.pdf_storage_path || `fiscal/${fiscalDocument.document_type}/${fiscalDocument.document_number}.pdf`;
     const { data: fileData, error: downloadError } = await supabaseAdmin.storage
       .from('documents')
       .download(fileName);
 
     if (downloadError || !fileData) {
-      return new Response(JSON.stringify({ error: 'PDF no disponible. Regenera la factura.' }), {
+      return new Response(JSON.stringify({ error: 'PDF no disponible. Regenera el documento.' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -73,7 +66,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${invoice.invoice_number}.pdf"`,
+        'Content-Disposition': `attachment; filename="${fiscalDocument.document_number}.pdf"`,
       },
     });
   } catch (error: any) {

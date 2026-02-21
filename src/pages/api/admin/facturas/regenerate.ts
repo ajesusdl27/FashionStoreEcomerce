@@ -39,19 +39,29 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // Fetch factura existente
-    const { data: invoice, error: invoiceError } = await supabaseAdmin
-      .from('invoices')
-      .select('id, invoice_number, order_id, customer_nif, customer_fiscal_name, customer_fiscal_address')
+    // Fetch documento fiscal existente
+    const { data: fiscalInvoice } = await supabaseAdmin
+      .from('fiscal_documents')
+      .select('id, document_number, order_id, customer_nif, customer_name, customer_fiscal_address, document_type')
       .eq('id', invoiceId)
-      .single();
+      .eq('document_type', 'invoice')
+      .maybeSingle();
 
-    if (invoiceError || !invoice) {
+    if (!fiscalInvoice) {
       return new Response(JSON.stringify({ error: 'Factura no encontrada' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' },
       });
     }
+
+    const invoice = {
+      id: fiscalInvoice.id,
+      invoice_number: fiscalInvoice.document_number,
+      order_id: fiscalInvoice.order_id,
+      customer_nif: fiscalInvoice.customer_nif,
+      customer_fiscal_name: fiscalInvoice.customer_name,
+      customer_fiscal_address: fiscalInvoice.customer_fiscal_address,
+    };
 
     // Si se proporcionaron datos fiscales nuevos, actualizar
     const fiscalName = customerFiscalName || invoice.customer_fiscal_name;
@@ -60,10 +70,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (customerNif || customerFiscalName || customerFiscalAddress) {
       await supabaseAdmin
-        .from('invoices')
+        .from('fiscal_documents')
         .update({
           customer_nif: fiscalNif,
-          customer_fiscal_name: fiscalName,
+          customer_name: fiscalName,
           customer_fiscal_address: fiscalAddress,
         })
         .eq('id', invoiceId);
@@ -167,7 +177,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
 
     // Subir PDF a Storage (upsert sobreesscribe)
-    const fileName = `invoices/${invoice.invoice_number}.pdf`;
+    const fileName = `fiscal/invoice/${invoice.invoice_number}.pdf`;
     await supabaseAdmin.storage.from('documents').upload(fileName, pdfBuffer, {
       contentType: 'application/pdf',
       upsert: true,
@@ -178,7 +188,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Actualizar pdf_url
     if (urlData?.publicUrl) {
-      await supabaseAdmin.from('invoices').update({ pdf_url: urlData.publicUrl }).eq('id', invoiceId);
+      await supabaseAdmin
+        .from('fiscal_documents')
+        .update({ pdf_url: urlData.publicUrl, pdf_storage_path: fileName })
+        .eq('id', invoiceId);
     }
 
     // Retornar PDF

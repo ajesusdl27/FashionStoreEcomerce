@@ -19,16 +19,17 @@ let invoiceError: any = null;
 
 if (activeTab === "facturas") {
   let query = supabaseAdmin
-    .from("invoices")
+    .from("fiscal_documents")
     .select(
-      "id, invoice_number, order_id, customer_nif, customer_fiscal_name, customer_fiscal_address, total, issued_at, pdf_url, orders!inner(order_number, customer_name)",
+      "id, document_number, order_id, customer_nif, customer_name, customer_fiscal_address, total, issued_at, pdf_url, document_type, orders!inner(order_number, customer_name)",
       { count: "exact" }
     )
+    .in("document_type", ["invoice", "rectifying"])
     .order("issued_at", { ascending: false });
 
   if (searchQuery) {
     query = query.or(
-      `invoice_number.ilike.%${searchQuery}%,customer_fiscal_name.ilike.%${searchQuery}%,customer_nif.ilike.%${searchQuery}%`
+      `document_number.ilike.%${searchQuery}%,customer_name.ilike.%${searchQuery}%,customer_nif.ilike.%${searchQuery}%`
     );
   }
   if (dateFrom) {
@@ -44,12 +45,12 @@ if (activeTab === "facturas") {
 
   invoices = (rawInvoices || []).map((inv: any) => ({
     id: inv.id,
-    invoice_number: inv.invoice_number,
+    invoice_number: inv.document_number,
     order_id: inv.order_id,
     order_number: inv.orders?.order_number || null,
-    customer_name: inv.orders?.customer_name || null,
+    customer_name: inv.orders?.customer_name || inv.customer_name || null,
     customer_nif: inv.customer_nif,
-    customer_fiscal_name: inv.customer_fiscal_name,
+    customer_fiscal_name: inv.customer_name,
     customer_fiscal_address: inv.customer_fiscal_address,
     total: inv.total,
     issued_at: inv.issued_at,
@@ -57,35 +58,55 @@ if (activeTab === "facturas") {
   }));
 }
 
-// === Query de tickets (pedidos pagados, solo si tab=tickets) ===
+// === Query de tickets (documentos simplificados, solo si tab=tickets) ===
 let ticketOrders: any[] = [];
 let ticketCount = 0;
 let ticketError: any = null;
 
 if (activeTab === "tickets") {
   let ticketQuery = supabaseAdmin
-    .from("orders")
-    .select("id, order_number, customer_name, customer_email, total_amount, status, created_at", { count: "exact" })
-    .in("status", ["paid", "shipped", "delivered"])
-    .order("created_at", { ascending: false });
+    .from("fiscal_documents")
+    .select(
+      "id, order_id, document_number, customer_name, customer_email, total, issued_at, pdf_url, pdf_storage_path, metadata, orders!inner(order_number, status, created_at)",
+      { count: "exact" }
+    )
+    .eq("document_type", "simplified")
+    .order("issued_at", { ascending: false });
 
   if (searchQuery) {
     const num = parseInt(searchQuery.replace(/[^0-9]/g, ''), 10);
     if (!isNaN(num) && num > 0) {
-      ticketQuery = ticketQuery.eq("order_number", num);
+      ticketQuery = ticketQuery.contains("metadata", { order_number: num });
     } else {
-      ticketQuery = ticketQuery.or(`customer_name.ilike.%${searchQuery}%,customer_email.ilike.%${searchQuery}%`);
+      ticketQuery = ticketQuery.or(
+        `document_number.ilike.%${searchQuery}%,customer_name.ilike.%${searchQuery}%,customer_email.ilike.%${searchQuery}%`
+      );
     }
   }
   if (dateFrom) {
-    ticketQuery = ticketQuery.gte("created_at", `${dateFrom}T00:00:00`);
+    ticketQuery = ticketQuery.gte("issued_at", `${dateFrom}T00:00:00`);
   }
   if (dateTo) {
-    ticketQuery = ticketQuery.lte("created_at", `${dateTo}T23:59:59`);
+    ticketQuery = ticketQuery.lte("issued_at", `${dateTo}T23:59:59`);
   }
 
   const { data, count, error } = await ticketQuery.range(offset, offset + limit - 1);
-  ticketOrders = data || [];
+  ticketOrders = (data || []).map((ticket: any) => {
+    const order = Array.isArray(ticket.orders) ? ticket.orders[0] : ticket.orders;
+    return {
+      id: ticket.order_id,
+      order_number: order?.order_number ?? ticket.metadata?.order_number ?? null,
+      customer_name: ticket.customer_name,
+      customer_email: ticket.customer_email,
+      total_amount: ticket.total,
+      status: order?.status || "paid",
+      created_at: order?.created_at || ticket.issued_at,
+      ticket_number: ticket.document_number,
+      ticket_pdf_url: ticket.pdf_url,
+      ticket_pdf_storage_path: ticket.pdf_storage_path,
+      ticket_issued_at: ticket.issued_at,
+    };
+  });
   ticketCount = count || 0;
   ticketError = error;
 }

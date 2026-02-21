@@ -1,7 +1,14 @@
 import type { APIRoute } from 'astro';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { generateInvoicePDF } from '@/lib/pdf-generator';
-import { formatOrderId, formatInvoiceNumber } from '@/lib/order-utils';
+import { formatOrderId } from '@/lib/order-utils';
+
+function normalizeInvoicePayload(payload: any) {
+  return {
+    invoice_id: payload?.invoice_id ?? payload?.document_id ?? payload?.id ?? null,
+    invoice_number: payload?.invoice_number ?? payload?.document_number ?? null,
+  };
+}
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
@@ -69,9 +76,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Verificar si ya existe una factura (usar admin para bypass RLS)
     const { data: existingInvoice } = await supabaseAdmin
-      .from('invoices')
-      .select('id, invoice_number, pdf_url')
+      .from('fiscal_documents')
+      .select('id, document_number, pdf_url')
       .eq('order_id', orderId)
+      .eq('document_type', 'invoice')
       .single();
 
     let invoiceData;
@@ -79,25 +87,22 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (existingInvoice) {
       // Si existe, actualizamos los datos fiscales (por si hubo corrección) y regeneramos
       const { data: updatedInvoice, error: updateError } = await supabaseAdmin
-        .from('invoices')
+        .from('fiscal_documents')
         .update({
           customer_nif: customerNif,
-          customer_fiscal_name: customerFiscalName,
+          customer_name: customerFiscalName,
           customer_fiscal_address: customerFiscalAddress
         })
         .eq('id', existingInvoice.id)
-        .select('invoice_number, id')
+        .select('document_number, id')
         .single();
 
       if (updateError) throw updateError;
       
-      invoiceData = {
-        invoice_id: updatedInvoice.id,
-        invoice_number: updatedInvoice.invoice_number
-      };
+      invoiceData = normalizeInvoicePayload(updatedInvoice);
     } else {
       // Crear factura usando RPC si no existe (usar admin para bypass RLS)
-      const { data: invoiceResult, error: invoiceError } = await supabaseAdmin.rpc('create_invoice', {
+      const { data: invoiceResult, error: invoiceError } = await supabaseAdmin.rpc('create_invoice_fiscal_document', {
         p_order_id: orderId,
         p_customer_nif: customerNif,
         p_customer_fiscal_name: customerFiscalName,
@@ -112,7 +117,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         });
       }
       
-      invoiceData = Array.isArray(invoiceResult) ? invoiceResult[0] : invoiceResult;
+      invoiceData = normalizeInvoicePayload(Array.isArray(invoiceResult) ? invoiceResult[0] : invoiceResult);
+    }
+
+    if (!invoiceData.invoice_id || !invoiceData.invoice_number) {
+      throw new Error('No se pudo normalizar la factura creada');
     }
     
     // Obtener los items del pedido para el PDF
@@ -197,7 +206,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
 
     // Subir PDF a Supabase Storage (usar admin para bypass RLS)
-    const fileName = `invoices/${invoiceData.invoice_number}.pdf`;
+    const fileName = `fiscal/invoice/${invoiceData.invoice_number}.pdf`;
     const { error: uploadError } = await supabaseAdmin.storage
       .from('documents')
       .upload(fileName, pdfBuffer, {
@@ -218,8 +227,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Actualizar factura con URL del PDF (usar admin para bypass RLS)
     if (urlData?.publicUrl) {
       await supabaseAdmin
-        .from('invoices')
-        .update({ pdf_url: urlData.publicUrl })
+        .from('fiscal_documents')
+        .update({ pdf_url: urlData.publicUrl, pdf_storage_path: fileName })
         .eq('id', invoiceData.invoice_id);
     }
 

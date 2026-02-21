@@ -79,15 +79,39 @@ const formatOrderId = (orderNumber: number | null, id?: string) => {
 };
 
 const statusLabels: Record<string, string> = {
+  created: 'Creado',
+  pending: 'Pendiente',
+  processing: 'Procesando',
   paid: 'Pagado',
   shipped: 'Enviado',
   delivered: 'Entregado',
+  cancelled: 'Cancelado',
+  refunded: 'Reembolsado',
+  partially_refunded: 'Reembolso parcial',
+  return_requested: 'Devolucion solicitada',
+  return_approved: 'Devolucion aprobada',
+  return_shipped: 'Devolucion enviada',
+  return_received: 'Devolucion recibida',
+  return_completed: 'Devolucion completada',
+  return_rejected: 'Devolucion rechazada',
 };
 
 const statusColors: Record<string, { bg: string; text: string; border: string }> = {
+  created: { bg: 'bg-slate-500/20', text: 'text-slate-400', border: 'border-l-slate-500' },
+  pending: { bg: 'bg-amber-500/20', text: 'text-amber-500', border: 'border-l-amber-500' },
+  processing: { bg: 'bg-cyan-500/20', text: 'text-cyan-500', border: 'border-l-cyan-500' },
   paid: { bg: 'bg-green-500/20', text: 'text-green-500', border: 'border-l-green-500' },
   shipped: { bg: 'bg-blue-500/20', text: 'text-blue-500', border: 'border-l-blue-500' },
   delivered: { bg: 'bg-emerald-500/20', text: 'text-emerald-500', border: 'border-l-emerald-500' },
+  cancelled: { bg: 'bg-red-500/20', text: 'text-red-500', border: 'border-l-red-500' },
+  refunded: { bg: 'bg-violet-500/20', text: 'text-violet-400', border: 'border-l-violet-500' },
+  partially_refunded: { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-l-purple-500' },
+  return_requested: { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-l-orange-500' },
+  return_approved: { bg: 'bg-sky-500/20', text: 'text-sky-400', border: 'border-l-sky-500' },
+  return_shipped: { bg: 'bg-indigo-500/20', text: 'text-indigo-400', border: 'border-l-indigo-500' },
+  return_received: { bg: 'bg-teal-500/20', text: 'text-teal-400', border: 'border-l-teal-500' },
+  return_completed: { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-l-green-500' },
+  return_rejected: { bg: 'bg-rose-500/20', text: 'text-rose-400', border: 'border-l-rose-500' },
 };
 
 export default function InvoicesList({

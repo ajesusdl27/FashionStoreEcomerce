@@ -23,6 +23,8 @@ export interface ReturnEmailData {
   customerEmail: string;
   status: 'approved' | 'received' | 'completed' | 'rejected';
   refundAmount?: number;
+  rectifyingDocumentNumber?: string;
+  rectifyingDocumentUrl?: string;
   items?: {
     productName: string;
     size: string;
@@ -288,6 +290,26 @@ export function generateReturnCompletedHTML(
               </div>
             </td>
           </tr>
+
+          ${data.rectifyingDocumentNumber ? `
+          <tr>
+            <td style="padding: 0 30px 30px;">
+              <h3 style="margin: 0 0 15px; color: #0a0a0a; font-size: 18px;">Factura rectificativa</h3>
+              <div style="background-color: #eff6ff; border-radius: 8px; padding: 20px; border-left: 4px solid #3b82f6;">
+                <p style="margin: 0; color: #666; font-size: 14px;">Documento emitido</p>
+                <p style="margin: 5px 0 0; color: #0a0a0a; font-size: 18px; font-weight: bold;">${data.rectifyingDocumentNumber}</p>
+                <p style="margin: 12px 0 0; color: #333; line-height: 1.6; font-size: 14px;">
+                  Te adjuntamos la factura rectificativa en este correo.${data.rectifyingDocumentUrl ? ' También puedes descargarla desde el enlace siguiente.' : ''}
+                </p>
+                ${data.rectifyingDocumentUrl ? `
+                  <p style="margin: 14px 0 0;">
+                    <a href="${data.rectifyingDocumentUrl}" target="_blank" style="display: inline-block; color: #2563eb; text-decoration: none; font-weight: 600;">Descargar factura rectificativa</a>
+                  </p>
+                ` : ''}
+              </div>
+            </td>
+          </tr>
+          ` : ''}
           
           ${customerButton(`${siteUrl}/productos`, 'Seguir comprando')}
           
