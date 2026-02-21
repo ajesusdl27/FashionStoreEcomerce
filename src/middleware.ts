@@ -72,7 +72,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
     response.headers.set(
       'Content-Security-Policy-Report-Only',
-      "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; img-src 'self' data: https: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; connect-src 'self' https: wss:; upgrade-insecure-requests"
+      "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; img-src 'self' data: https: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; connect-src 'self' https: wss:"
     );
 
     const forwardedProto = context.request.headers.get('x-forwarded-proto') || '';
