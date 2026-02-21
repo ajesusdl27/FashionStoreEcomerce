@@ -19,13 +19,14 @@ interface Props {
 
 const { title, description } = Astro.props;
 const currentPath = Astro.url.pathname + Astro.url.search;
+const baseLayoutProps = description ? { title, description } : { title };
 
 // Obtener configuración de envío y branding
 const shippingConfig = await getShippingConfig();
 const settings = await getSettings();
 ---
 
-<BaseLayout title={title} description={description}>
+<BaseLayout {...baseLayoutProps}>
   <!-- Cart Slide Over (React Island) -->
   <CartSlideOver
     client:load
