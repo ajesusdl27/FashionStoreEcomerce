@@ -11,7 +11,13 @@ const {
   image = "/og-image.jpg",
 } = Astro.props;
 
-const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const baseUrl = Astro.site ?? new URL(Astro.url.origin);
+const canonicalURL = new URL(Astro.url.pathname + Astro.url.search, baseUrl);
+const canonicalURLString =
+  canonicalURL.protocol === "http:" && canonicalURL.hostname !== "localhost"
+    ? canonicalURL.toString().replace(/^http:/, "https:")
+    : canonicalURL.toString();
+const socialImageURL = new URL(image, canonicalURLString).toString();
 ---
 
 <!doctype html>
@@ -20,7 +26,7 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="canonical" href={canonicalURL} />
+    <link rel="canonical" href={canonicalURLString} />
 
     <!-- SEO -->
     <title>{title} | FashionStore</title>
@@ -29,17 +35,17 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:url" content={canonicalURLString} />
     <meta property="og:title" content={`${title} | FashionStore`} />
     <meta property="og:description" content={description} />
-    <meta property="og:image" content={new URL(image, Astro.url)} />
+    <meta property="og:image" content={socialImageURL} />
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content={canonicalURL} />
+    <meta property="twitter:url" content={canonicalURLString} />
     <meta property="twitter:title" content={`${title} | FashionStore`} />
     <meta property="twitter:description" content={description} />
-    <meta property="twitter:image" content={new URL(image, Astro.url)} />
+    <meta property="twitter:image" content={socialImageURL} />
 
     <!-- Theme -->
     <script is:inline>

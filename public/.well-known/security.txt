@@ -1,0 +1,4 @@
+Contact: https://fashionstoreajesusdl.victoriafp.online/contacto
+Canonical: https://fashionstoreajesusdl.victoriafp.online/.well-known/security.txt
+Preferred-Languages: es, en
+Expires: 2027-02-21T00:00:00.000Z

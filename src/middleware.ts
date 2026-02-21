@@ -35,12 +35,36 @@ async function getMaintenanceStatus(): Promise<{ enabled: boolean; message: stri
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {
+  const applySecurityHeaders = (response: Response): Response => {
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    response.headers.set(
+      'Permissions-Policy',
+      'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()'
+    );
+
+    response.headers.set(
+      'Content-Security-Policy-Report-Only',
+      "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; img-src 'self' data: https: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; connect-src 'self' https: wss:; upgrade-insecure-requests"
+    );
+
+    const forwardedProto = context.request.headers.get('x-forwarded-proto') || '';
+    const isHttps = context.url.protocol === 'https:' || forwardedProto.includes('https');
+
+    if (isHttps) {
+      response.headers.set('Strict-Transport-Security', 'max-age=86400');
+    }
+
+    return response;
+  };
+
   const { pathname } = context.url;
   const cookies = context.cookies;
 
   // Skip middleware for API routes - they handle their own auth
   if (pathname.startsWith('/api/')) {
-    return next();
+    return applySecurityHeaders(await next());
   }
 
   // Get tokens from cookies
@@ -122,7 +146,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
       const loginUrl = isAdminRoute ? '/admin/login' : '/cuenta/login';
       console.log('🔒 [MIDDLEWARE] Redirect to:', loginUrl);
-      return context.redirect(`${loginUrl}?redirect=${encodeURIComponent(pathname)}`);
+      return applySecurityHeaders(context.redirect(`${loginUrl}?redirect=${encodeURIComponent(pathname)}`));
     }
 
     // Admin routes require admin role
@@ -132,7 +156,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
       
       if (!isAdmin) {
         console.log('🔒 [MIDDLEWARE] ❌ Not admin, access denied');
-        return context.redirect('/admin/login?error=unauthorized');
+        return applySecurityHeaders(context.redirect('/admin/login?error=unauthorized'));
       }
     }
   }
@@ -156,11 +180,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
       if (!isAdmin) {
         // Pasar el mensaje de mantenimiento a la página
         context.locals.maintenanceMessage = maintenance.message;
-        return context.redirect('/mantenimiento');
+        return applySecurityHeaders(context.redirect('/mantenimiento'));
       }
     }
   }
 
-  return next();
+  return applySecurityHeaders(await next());
 });
 
