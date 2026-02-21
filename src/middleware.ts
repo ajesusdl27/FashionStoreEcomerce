@@ -35,6 +35,33 @@ async function getMaintenanceStatus(): Promise<{ enabled: boolean; message: stri
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {
+  const applyCacheHeaders = (response: Response): Response => {
+    const { pathname } = context.url;
+    const contentType = response.headers.get('content-type') || '';
+
+    const isVersionedAsset =
+      pathname.startsWith('/_astro/') ||
+      /\.(?:js|mjs|css|png|jpg|jpeg|gif|svg|ico|webp|avif|woff|woff2|ttf|eot|map)$/.test(pathname);
+
+    if (pathname.startsWith('/api/')) {
+      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+      return response;
+    }
+
+    if (isVersionedAsset) {
+      response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+      return response;
+    }
+
+    if (contentType.includes('text/html')) {
+      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+      return response;
+    }
+
+    response.headers.set('Cache-Control', 'public, max-age=300');
+    return response;
+  };
+
   const applySecurityHeaders = (response: Response): Response => {
     response.headers.set('X-Content-Type-Options', 'nosniff');
     response.headers.set('X-Frame-Options', 'DENY');
@@ -56,7 +83,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
       response.headers.set('Strict-Transport-Security', 'max-age=86400');
     }
 
-    return response;
+    return applyCacheHeaders(response);
   };
 
   const { pathname } = context.url;
