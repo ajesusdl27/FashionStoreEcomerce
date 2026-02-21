@@ -90,6 +90,8 @@ export interface CancellationEmailData {
   customerEmail: string;
   reason?: string;
   refundAmount?: number;
+  rectifyingDocumentNumber?: string;
+  rectifyingDocumentUrl?: string;
 }
 
 // Envía el email de confirmación de pedido con ticket PDF adjunto
@@ -281,11 +283,38 @@ export async function sendOrderCancelled(data: CancellationEmailData): Promise<{
     
     const displayOrderId = formatOrderId(data.orderNumber);
 
+    let rectifyingAttachment:
+      | {
+          filename: string;
+          content: string;
+        }
+      | undefined;
+
+    if (data.rectifyingDocumentUrl) {
+      try {
+        const response = await fetch(data.rectifyingDocumentUrl);
+        if (response.ok) {
+          const arrayBuffer = await response.arrayBuffer();
+          const fileBuffer = Buffer.from(arrayBuffer);
+          const fileNumber = (data.rectifyingDocumentNumber || 'rectificativa').replace(/[^a-zA-Z0-9-_]/g, '_');
+          rectifyingAttachment = {
+            filename: `factura-rectificativa-${fileNumber}.pdf`,
+            content: fileBuffer.toString('base64'),
+          };
+        } else {
+          console.warn('Could not download rectifying document for cancellation attachment:', response.status);
+        }
+      } catch (attachmentError) {
+        console.warn('Failed to attach cancellation rectifying document:', attachmentError);
+      }
+    }
+
     const { error } = await resend.emails.send({
       from: fromEmail,
       to: data.customerEmail,
       subject: `Pedido cancelado - ${displayOrderId}`,
       html: generateOrderCancelledHTML(data, templateOptions),
+      ...(rectifyingAttachment ? { attachments: [rectifyingAttachment] } : {}),
     });
 
     if (error) {

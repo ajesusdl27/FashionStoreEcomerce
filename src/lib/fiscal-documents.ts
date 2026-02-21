@@ -28,6 +28,7 @@ const ELIGIBLE_DOCUMENT_STATUSES = [
   'paid',
   'shipped',
   'delivered',
+  'cancelled',
   'return_requested',
   'return_approved',
   'return_shipped',
@@ -181,8 +182,10 @@ export async function ensureSimplifiedTicketDocument(orderId: string) {
     const errorMessage = String(createError.message || '').toLowerCase();
     const isAmbiguousDocumentNumber =
       errorMessage.includes('document_number') && errorMessage.includes('ambiguous');
+    const isNotEligibleError =
+      errorMessage.includes('no elegible') || errorMessage.includes('no encontrado o no elegible');
 
-    if (!isAmbiguousDocumentNumber) {
+    if (!isAmbiguousDocumentNumber && !isNotEligibleError) {
       throw new Error(createError.message || 'No se pudo crear el documento simplificado');
     }
 
@@ -408,4 +411,119 @@ export async function getFiscalDocumentByOrderAndType(
   }
 
   return data as FiscalDocument;
+}
+
+type CancellationRectifyingInput = {
+  orderId: string;
+  refundAmount: number;
+  requestedBy: 'customer' | 'admin';
+  customerUserId?: string | null;
+};
+
+type CancellationRectifyingResult = {
+  id: string;
+  number: string;
+  pdfUrl: string | null;
+  returnId: string;
+};
+
+const AUTO_CANCEL_RETURN_MARKER_PREFIX = 'AUTO_CANCEL_RECTIFY';
+
+async function ensureTechnicalReturnForCancellation(
+  input: CancellationRectifyingInput,
+): Promise<string> {
+  const marker = `${AUTO_CANCEL_RETURN_MARKER_PREFIX}:${input.orderId}`;
+  const nowIso = new Date().toISOString();
+
+  const { data: existingReturn, error: existingReturnError } = await supabaseAdmin
+    .from('returns')
+    .select('id, status, refund_amount')
+    .eq('order_id', input.orderId)
+    .eq('admin_notes', marker)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existingReturnError) {
+    throw new Error(existingReturnError.message || 'No se pudo consultar la devolución técnica');
+  }
+
+  if (!existingReturn) {
+    const { data: insertedReturn, error: insertError } = await supabaseAdmin
+      .from('returns')
+      .insert({
+        order_id: input.orderId,
+        user_id: input.customerUserId ?? null,
+        status: 'completed',
+        refund_amount: input.refundAmount,
+        refund_method: 'original_payment',
+        customer_notes: `Cancelación automática (${input.requestedBy})`,
+        admin_notes: marker,
+        approved_at: nowIso,
+        received_at: nowIso,
+        completed_at: nowIso,
+      })
+      .select('id')
+      .single();
+
+    if (insertError || !insertedReturn) {
+      throw new Error(insertError?.message || 'No se pudo crear la devolución técnica');
+    }
+
+    return insertedReturn.id;
+  }
+
+  const existingRefundAmount = Number(existingReturn.refund_amount || 0);
+  const needsUpdate =
+    existingReturn.status !== 'completed' || Math.abs(existingRefundAmount - input.refundAmount) > 0.009;
+
+  if (needsUpdate) {
+    const { error: updateError } = await supabaseAdmin
+      .from('returns')
+      .update({
+        status: 'completed',
+        refund_amount: input.refundAmount,
+        refund_method: 'original_payment',
+        approved_at: nowIso,
+        received_at: nowIso,
+        completed_at: nowIso,
+      })
+      .eq('id', existingReturn.id);
+
+    if (updateError) {
+      throw new Error(updateError.message || 'No se pudo actualizar la devolución técnica');
+    }
+  }
+
+  return existingReturn.id;
+}
+
+export async function ensureRectifyingDocumentForOrderCancellation(
+  input: CancellationRectifyingInput,
+): Promise<CancellationRectifyingResult> {
+  const normalizedRefundAmount = Math.round(Number(input.refundAmount || 0) * 100) / 100;
+
+  if (normalizedRefundAmount <= 0) {
+    throw new Error('El importe de reembolso debe ser mayor que cero para emitir rectificativa');
+  }
+
+  try {
+    await ensureSimplifiedTicketDocument(input.orderId);
+  } catch (simplifiedError) {
+    console.warn('⚠️ Could not ensure simplified document before rectifying creation:', simplifiedError);
+  }
+
+  const technicalReturnId = await ensureTechnicalReturnForCancellation({
+    ...input,
+    refundAmount: normalizedRefundAmount,
+  });
+
+  const rectifying = await ensureRectifyingDocumentForReturn(technicalReturnId);
+
+  return {
+    id: rectifying.id,
+    number: rectifying.document_number,
+    pdfUrl: rectifying.pdf_url || null,
+    returnId: technicalReturnId,
+  };
 }

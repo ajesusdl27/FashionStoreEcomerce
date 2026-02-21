@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { stripe } from '@/lib/stripe';
 import { createAuthenticatedClient } from '@/lib/supabase';
 import { sendOrderCancelled } from '@/lib/email';
+import { ensureRectifyingDocumentForOrderCancellation } from '@/lib/fiscal-documents';
 
 export const prerender = false;
 
@@ -158,6 +159,26 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
+    const refundAmountForRectifying = refundSuccessful
+      ? refundAmount
+      : Number(order.total_amount || 0);
+
+    let rectifyingDocument: { id: string; number: string; pdfUrl: string | null; returnId: string } | null = null;
+
+    if (refundAmountForRectifying > 0) {
+      try {
+        rectifyingDocument = await ensureRectifyingDocumentForOrderCancellation({
+          orderId: order.id,
+          refundAmount: refundAmountForRectifying,
+          requestedBy: 'customer',
+          customerUserId: order.customer_id || null,
+        });
+        console.log(`Rectifying document ${rectifyingDocument.number} generated for cancelled order ${order.id}`);
+      } catch (rectifyingError) {
+        console.warn('Failed to generate rectifying document for cancelled order:', rectifyingError);
+      }
+    }
+
     // Send cancellation email
     try {
       await sendOrderCancelled({
@@ -166,6 +187,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         customerName: order.customer_name,
         customerEmail: order.customer_email,
         reason: reason || 'Cancelación solicitada por el cliente',
+        refundAmount: refundAmountForRectifying > 0 ? refundAmountForRectifying : undefined,
+        rectifyingDocumentNumber: rectifyingDocument?.number,
+        rectifyingDocumentUrl: rectifyingDocument?.pdfUrl || undefined,
       });
       console.log(`Cancellation email sent to ${order.customer_email}`);
     } catch (emailError) {
@@ -176,6 +200,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       success: true,
       refunded: refundSuccessful,
       refundAmount,
+      rectifyingDocument,
       message: refundSuccessful 
         ? `Pedido cancelado. Se te reembolsarán ${refundAmount.toFixed(2)}€ en los próximos 5-10 días hábiles.`
         : 'Pedido cancelado. El reembolso se procesará manualmente en breve.'
