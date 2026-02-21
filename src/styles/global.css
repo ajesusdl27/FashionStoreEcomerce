@@ -134,7 +134,7 @@
 
   /* Admin Stat Card */
   .stat-card {
-    @apply admin-card flex items-center justify-between;
+    @apply admin-card flex items-center justify-between h-full;
   }
 
   .stat-value {
