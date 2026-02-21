@@ -1145,7 +1145,6 @@ const getCouponStatus = (coupon: any) => {
           showToast("Error al cambiar estado", "error");
         }
       } catch (error) {
-        console.error("Error toggling status:", error);
         showToast("Error al cambiar estado", "error");
       }
     });
@@ -1199,7 +1198,6 @@ const getCouponStatus = (coupon: any) => {
         showToast("Error al eliminar cupón", "error");
       }
     } catch (error) {
-      console.error("Error deleting coupon:", error);
       showToast("Error al eliminar cupón", "error");
     }
   });

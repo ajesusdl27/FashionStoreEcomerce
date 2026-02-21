@@ -31,7 +31,6 @@ export default function HeaderNavigation({ currentPath }: HeaderNavigationProps)
           .order('name');
         
         if (fetchError) {
-          console.error('Error fetching categories:', fetchError);
           setError(fetchError.message);
           return;
         }
@@ -40,7 +39,6 @@ export default function HeaderNavigation({ currentPath }: HeaderNavigationProps)
           setCategories(data);
         }
       } catch (err) {
-        console.error('Unexpected error fetching categories:', err);
         setError('Error al cargar categorías');
       } finally {
         setIsLoading(false);

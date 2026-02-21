@@ -262,7 +262,6 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Analytics API error:", error);
     return new Response(JSON.stringify({ error: "Internal Server Error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
@@ -757,7 +756,6 @@ try {
     sales7Days
   };
 } catch (err) {
-  console.error('Analytics error:', err);
   error = 'Error al cargar las analíticas';
 }
 ---
@@ -1172,7 +1170,7 @@ test("dashboard should load in under 500ms", async ({ page }) => {
 | **Time to Interactive** | 1.2s           | < 500ms    | Lighthouse                  |
 | **Queries a BD**        | 8 secuenciales | 1 paralela | Supabase logs               |
 | **Satisfaction Score**  | N/A            | > 8/10     | Encuesta usuarios           |
-| **Errores JS**          | 0              | 0          | Sentry/Console              |
+| **Errores JS**          | 0              | 0          | Sentry                      |
 | **Accessibility**       | 75             | > 90       | Lighthouse A11y             |
 
 ---

@@ -79,7 +79,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error: any) {
-    console.error('Error uploading image:', error);
     return new Response(
       JSON.stringify({ error: error.message || 'Error al subir la imagen' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }

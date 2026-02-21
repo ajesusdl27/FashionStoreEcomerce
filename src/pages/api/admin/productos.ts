@@ -143,7 +143,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         .insert(variantsData);
 
       if (variantsError) {
-        console.error('Error creating variants:', variantsError);
       }
     }
 
@@ -160,7 +159,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         .insert(imagesData);
 
       if (imagesError) {
-        console.error('Error creating images:', imagesError);
       }
     }
 

@@ -116,10 +116,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           refundSuccessful = refund.status === 'succeeded' || refund.status === 'pending';
           refundAmount = (refund.amount || 0) / 100; // Convert from cents
           
-          console.log(`Refund ${refund.id} created for order ${orderId}: ${refundAmount}€`);
         }
       } catch (stripeError: any) {
-        console.error('Stripe refund error:', stripeError);
         // Continue with cancellation even if refund fails
         // The admin can process it manually later
       }
@@ -139,7 +137,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           p_quantity: item.quantity
         });
       }
-      console.log(`Stock restored for ${orderItems.length} items`);
     }
 
     // Update order status
@@ -152,7 +149,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .eq('id', orderId);
 
     if (updateError) {
-      console.error('Error updating order status:', updateError);
       return new Response(JSON.stringify({ error: 'Error al actualizar el pedido' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
@@ -173,9 +169,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           requestedBy: 'customer',
           customerUserId: order.customer_id || null,
         });
-        console.log(`Rectifying document ${rectifyingDocument.number} generated for cancelled order ${order.id}`);
       } catch (rectifyingError) {
-        console.warn('Failed to generate rectifying document for cancelled order:', rectifyingError);
       }
     }
 
@@ -201,12 +195,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       emailErrorMessage = emailResult.error || null;
 
       if (emailResult.success) {
-        console.log(`Cancellation email sent to ${order.customer_email}`);
       } else {
-        console.warn(`Cancellation email failed for ${order.customer_email}:`, emailResult.error);
       }
     } catch (emailError) {
-      console.warn('Failed to send cancellation email:', emailError);
       emailSent = false;
       emailErrorMessage = emailError instanceof Error ? emailError.message : 'Unknown email error';
     }
@@ -225,12 +216,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       adminEmailErrorMessage = adminEmailResult.error || null;
 
       if (adminEmailResult.success) {
-        console.log('Admin cancellation notification sent successfully');
       } else {
-        console.warn('Admin cancellation notification failed:', adminEmailResult.error);
       }
     } catch (adminEmailError) {
-      console.warn('Failed to send admin cancellation notification:', adminEmailError);
       adminEmailSent = false;
       adminEmailErrorMessage = adminEmailError instanceof Error ? adminEmailError.message : 'Unknown admin email error';
     }
@@ -253,7 +241,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
 
   } catch (error: any) {
-    console.error('Order cancellation error:', error);
     return new Response(JSON.stringify({ error: error.message || 'Error interno del servidor' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }

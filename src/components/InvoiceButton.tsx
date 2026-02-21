@@ -31,7 +31,6 @@ export default function InvoiceButton({ orderId, orderNumber, orderStatus }: Inv
           }
         }
       } catch (err) {
-        console.error('Error checking invoice:', err);
       } finally {
         setIsLoading(false);
       }

@@ -158,7 +158,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .single();
 
     if (returnError) {
-      console.error("Error creating return:", returnError);
       return new Response(
         JSON.stringify({ error: "Error al crear la solicitud de devolución" }),
         { status: 500, headers: { "Content-Type": "application/json" } }
@@ -189,7 +188,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .insert(returnItems);
 
     if (itemsError) {
-      console.error("Error creating return items:", itemsError);
       // Rollback: delete the return
       await supabase.from("returns").delete().eq("id", newReturn.id);
       return new Response(
@@ -246,7 +244,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         customerName: orderDetails.customer_name,
         customerEmail: orderDetails.customer_email,
         items: emailItems,
-      }).catch(err => console.error('Error sending return confirmation email:', err));
+      }).catch(err => undefined);
 
       // Send admin notification (non-blocking)
       sendAdminReturnNotification({
@@ -256,7 +254,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         customerName: orderDetails.customer_name,
         customerEmail: orderDetails.customer_email,
         items: emailItems,
-      }).catch(err => console.error('Error sending admin return notification:', err));
+      }).catch(err => undefined);
     }
 
     return new Response(
@@ -269,7 +267,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
 
   } catch (error: any) {
-    console.error("Returns API error:", error);
     return new Response(
       JSON.stringify({ error: error.message || "Error interno del servidor" }),
       { status: 500, headers: { "Content-Type": "application/json" } }
@@ -330,7 +327,6 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     const { data: returns, error } = await query;
 
     if (error) {
-      console.error("Error fetching returns:", error);
       return new Response(
         JSON.stringify({ error: "Error al obtener devoluciones" }),
         { status: 500, headers: { "Content-Type": "application/json" } }
@@ -343,7 +339,6 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     });
 
   } catch (error: any) {
-    console.error("Returns API error:", error);
     return new Response(
       JSON.stringify({ error: error.message || "Error interno del servidor" }),
       { status: 500, headers: { "Content-Type": "application/json" } }

@@ -28,10 +28,6 @@ if (orderId) {
           stripeError?.code !== "resource_missing" &&
           stripeError?.raw?.code !== "resource_missing"
         ) {
-          console.log(
-            "Stripe session might already be expired or invalid:",
-            stripeError.message
-          );
         }
       }
 
@@ -55,11 +51,9 @@ if (orderId) {
         p_status: "cancelled",
       });
 
-      console.log(`Order ${orderId} cancelled via cancelado page`);
       isProcessed = true;
     }
   } catch (error) {
-    console.error("Error processing cancellation:", error);
   }
 }
 ---

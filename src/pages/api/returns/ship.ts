@@ -91,7 +91,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
 
     if (rpcError) {
-      console.error("Error marking return as shipped:", rpcError);
       return new Response(
         JSON.stringify({ error: rpcError.message || "Error al actualizar la devolución" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
@@ -107,7 +106,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
 
   } catch (error: any) {
-    console.error("Returns ship API error:", error);
     return new Response(
       JSON.stringify({ error: error.message || "Error interno del servidor" }),
       { status: 500, headers: { "Content-Type": "application/json" } }

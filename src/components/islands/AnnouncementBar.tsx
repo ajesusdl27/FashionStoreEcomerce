@@ -78,7 +78,6 @@ export default function AnnouncementBar() {
         toast.success(`¡Cupón ${promoCoupon} copiado al portapapeles!`);
       } catch (err) {
         toast.error('No se pudo copiar el código. Inténtalo manualmente.');
-        console.error('Clipboard error:', err);
       }
     }
   };

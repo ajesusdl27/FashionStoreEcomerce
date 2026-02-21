@@ -72,7 +72,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { data: subscribers, error: subError } = await subscribersQuery;
 
     if (subError) {
-      console.error('Error fetching subscribers:', subError);
       return new Response(JSON.stringify({ error: 'Error al obtener suscriptores' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
@@ -131,7 +130,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }
       } catch (emailError: unknown) {
         const errorMessage = emailError instanceof Error ? emailError.message : 'Unknown error';
-        console.error(`Error sending to ${sub.email}:`, emailError);
         failedCount++;
         
         // Log failed send
@@ -179,7 +177,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error: unknown) {
-    console.error('Send chunk exception:', error);
     return new Response(JSON.stringify({ error: 'Error interno' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -205,6 +202,5 @@ async function logSendResult(
       error_message: errorMessage || null,
     });
   } catch (e) {
-    console.error('Error logging send result:', e);
   }
 }

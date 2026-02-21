@@ -85,7 +85,6 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     if (returnId) {
       const { data, error } = await query.eq("id", returnId).single();
       if (error) {
-        console.error("Error fetching return:", error);
         return new Response(
           JSON.stringify({ error: "Error al obtener devolución" }),
           { status: 500, headers: { "Content-Type": "application/json" } }
@@ -100,7 +99,6 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     const { data, error } = await query;
 
     if (error) {
-      console.error("Error fetching returns:", error);
       return new Response(
         JSON.stringify({ error: "Error al obtener devoluciones" }),
         { status: 500, headers: { "Content-Type": "application/json" } }
@@ -113,7 +111,6 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     });
 
   } catch (error: any) {
-    console.error("Admin returns API error:", error);
     return new Response(
       JSON.stringify({ error: error.message || "Error interno del servidor" }),
       { status: 500, headers: { "Content-Type": "application/json" } }
@@ -182,7 +179,6 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     });
 
     if (error) {
-      console.error("Error processing return:", error);
       return new Response(
         JSON.stringify({ error: error.message || "Error al procesar la devolución" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
@@ -238,12 +234,10 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
               refundProcessed = refund.status === 'succeeded' || refund.status === 'pending';
               refundAmount = returnForRefund.refund_amount;
               
-              console.log(`✅ Stripe refund ${refund.id} created for return ${return_id}: ${refundAmount}€`);
             }
           }
         }
       } catch (stripeError: any) {
-        console.error("❌ Stripe refund error:", stripeError);
         // Don't fail the request if Stripe refund fails - admin can process manually
         // But log the error for debugging
       }
@@ -255,9 +249,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
           number: rectifying.document_number,
           pdfUrl: rectifying.pdf_url || null,
         };
-        console.log(`✅ Rectifying document ${rectifying.document_number} generated for return ${return_id}`);
       } catch (rectifyingError) {
-        console.error('❌ Error generating rectifying document:', rectifyingError);
       }
     }
 
@@ -285,7 +277,6 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
         const order = Array.isArray(returnData.orders) ? returnData.orders[0] : returnData.orders;
         
         if (!order) {
-          console.warn("No order data found for return email");
         } else {
           // Prepare email data
           const emailData: ReturnEmailData = {
@@ -316,7 +307,6 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
         }
       }
     } catch (emailError) {
-      console.warn("Failed to send return email:", emailError);
       // Don't fail the request if email fails
     }
 
@@ -344,7 +334,6 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     );
 
   } catch (error: any) {
-    console.error("Admin returns API error:", error);
     return new Response(
       JSON.stringify({ error: error.message || "Error interno del servidor" }),
       { status: 500, headers: { "Content-Type": "application/json" } }
@@ -411,7 +400,6 @@ export const PATCH: APIRoute = async ({ request, cookies }) => {
     });
 
     if (error) {
-      console.error("Error inspecting item:", error);
       return new Response(
         JSON.stringify({ error: error.message || "Error al inspeccionar el item" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
@@ -424,7 +412,6 @@ export const PATCH: APIRoute = async ({ request, cookies }) => {
     );
 
   } catch (error: any) {
-    console.error("Admin returns API error:", error);
     return new Response(
       JSON.stringify({ error: error.message || "Error interno del servidor" }),
       { status: 500, headers: { "Content-Type": "application/json" } }

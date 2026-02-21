@@ -86,7 +86,6 @@ export default function HeaderSearch() {
           setShowDropdown(true);
         }
       } catch (err) {
-        console.error('Search error:', err);
       } finally {
         setIsSearching(false);
       }

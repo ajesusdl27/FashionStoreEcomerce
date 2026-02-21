@@ -35,7 +35,6 @@ interface PaymentIntentRequest {
 }
 
 export const POST: APIRoute = async ({ request, locals, cookies }) => {
-  console.log('📱 [MOBILE] Payment Intent request received');
   
   try {
     const body: PaymentIntentRequest = await request.json();
@@ -68,7 +67,6 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
     const dbClient = customerId ? createAuthenticatedClient(accessToken, refreshToken) : supabase;
     
     if (customerId) {
-      console.log(`📱 [MOBILE] Checkout for authenticated user: ${customerId}`);
     }
 
     // Validate required fields with detailed errors
@@ -135,7 +133,6 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
         calculatedDiscount: result.calculated_discount
       };
       discountCents = Math.round(result.calculated_discount * 100);
-      console.log(`📱 [MOBILE] Coupon validated: ${couponCode}, discount: ${result.calculated_discount}€`);
     }
     
     // Calculate total (applying discount directly since we're not using Stripe Checkout)
@@ -207,7 +204,6 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
         });
       }
       
-      console.error('📱 [MOBILE] Error creating order:', orderError);
       return new Response(JSON.stringify({ error: 'Error al crear el pedido' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
@@ -218,7 +214,6 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
     const orderNumber = orderResult.order_number;
     const formattedOrderId = formatOrderId(orderNumber);
     
-    console.log(`📱 [MOBILE] Order created: ${formattedOrderId} (UUID: ${orderId})`);
 
     // Create or get Stripe Customer
     let stripeCustomerId: string;
@@ -232,7 +227,6 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
       
       if (customers.data.length > 0) {
         stripeCustomerId = customers.data[0].id;
-        console.log(`📱 [MOBILE] Using existing Stripe customer: ${stripeCustomerId}`);
       } else {
         // Create new customer
         const customer = await stripe.customers.create({
@@ -245,10 +239,8 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
           }
         });
         stripeCustomerId = customer.id;
-        console.log(`📱 [MOBILE] Created new Stripe customer: ${stripeCustomerId}`);
       }
     } catch (customerError) {
-      console.error('📱 [MOBILE] Error with Stripe customer:', customerError);
       // Continue without customer - payment will still work
       stripeCustomerId = '';
     }
@@ -279,10 +271,8 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
       }
       
       paymentIntent = await stripe.paymentIntents.create(paymentIntentConfig);
-      console.log(`📱 [MOBILE] Payment Intent created: ${paymentIntent.id}`);
     } catch (stripeError) {
       // Stripe failed - rollback stock and delete order
-      console.error('📱 [MOBILE] Error creating Payment Intent:', stripeError);
       
       for (const reserved of reservedItems) {
         await dbClient.rpc('restore_stock', {
@@ -308,9 +298,7 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
       .eq('id', orderId);
     
     if (updateError) {
-      console.error('📱 [MOBILE] Error updating stripe_session_id:', updateError);
     } else {
-      console.log(`📱 [MOBILE] Payment Intent ${paymentIntent.id} linked to order ${formattedOrderId}`);
     }
 
     // Create Ephemeral Key for flutter_stripe (required for Customer Sheet)
@@ -322,9 +310,7 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
           { apiVersion: '2024-06-20' }
         );
         ephemeralKey = ephemeralKeyResponse.secret || '';
-        console.log(`📱 [MOBILE] Ephemeral key created for customer`);
       } catch (keyError) {
-        console.error('📱 [MOBILE] Error creating ephemeral key:', keyError);
         // Non-critical - payment can still work without saved payment methods
       }
     }
@@ -342,7 +328,6 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
     });
 
   } catch (error) {
-    console.error('📱 [MOBILE] Checkout error:', error);
     return new Response(JSON.stringify({ error: 'Error procesando el checkout' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }

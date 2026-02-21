@@ -48,7 +48,6 @@ export default function ResetPasswordForm() {
       const errorDescription = params.get('error_description');
 
       if (error || errorCode) {
-        console.log('Auth error detected:', { error, errorCode, errorDescription });
         
         let errorMessage = errorDescription ? decodeURIComponent(errorDescription) : 'Error en la autenticación';
         
@@ -75,7 +74,6 @@ export default function ResetPasswordForm() {
 
     // Listen for PASSWORD_RECOVERY event - this fires when user clicks recovery link
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('ResetPasswordForm auth event:', event);
       
       if (!mounted) return;
 
@@ -91,7 +89,6 @@ export default function ResetPasswordForm() {
             }),
           });
         } catch (error) {
-          console.warn('Failed to sync recovery session:', error);
         }
         setSessionReady(true);
         setTokenExpired(false);
@@ -173,7 +170,6 @@ export default function ResetPasswordForm() {
       }, 2000);
       
     } catch (err: any) {
-      console.error('Password update error:', err);
       setLoading(false);
 
       let errorMessage = err.message || 'Error al actualizar la contraseña.';

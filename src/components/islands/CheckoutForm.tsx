@@ -365,7 +365,6 @@ export default function CheckoutForm({
         throw new Error('No se pudo conectar con el sistema de pagos');
       }
     } catch (err) {
-      console.error(err);
       const errorMessage = err instanceof Error ? err.message : 'Hubo un error al procesar tu pedido';
       // Make error messages more user-friendly
       if (errorMessage.includes('Stock insuficiente')) {

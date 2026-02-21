@@ -84,7 +84,6 @@ export const GET: APIRoute = async ({ cookies }) => {
       .order('key');
 
     if (error) {
-      console.error('Error fetching settings:', error);
       return new Response(JSON.stringify({ error: 'Error al obtener configuraciones' }), { 
         status: 500, headers: { 'Content-Type': 'application/json' } 
       });
@@ -94,7 +93,6 @@ export const GET: APIRoute = async ({ cookies }) => {
       status: 200, headers: { 'Content-Type': 'application/json' } 
     });
   } catch (error: any) {
-    console.error('Configuration GET error:', error);
     return new Response(JSON.stringify({ error: error.message }), { 
       status: 500, headers: { 'Content-Type': 'application/json' } 
     });
@@ -187,7 +185,6 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
         });
 
       if (error) {
-        console.error('Error updating setting:', setting.key, error);
         return new Response(JSON.stringify({ error: error.message }), { 
           status: 400, headers: { 'Content-Type': 'application/json' } 
         });
@@ -205,7 +202,6 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       status: 200, headers: { 'Content-Type': 'application/json' } 
     });
   } catch (error: any) {
-    console.error('Configuration API error:', error);
     return new Response(JSON.stringify({ error: error.message }), { 
       status: 500, headers: { 'Content-Type': 'application/json' } 
     });

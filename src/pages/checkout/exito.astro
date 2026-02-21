@@ -11,7 +11,6 @@ const sessionId = Astro.url.searchParams.get("session_id");
 
 let order = null;
 let orderItems: any[] = [];
-let emailSent = false;
 let couponInfo: { code: string; discountAmount: number } | null = null;
 
 if (sessionId) {
@@ -29,9 +28,6 @@ if (sessionId) {
 
       const wasAlreadyPaid = existingOrder?.status === "paid";
 
-      console.log(
-        `Order status before update: ${existingOrder?.status}, wasAlreadyPaid: ${wasAlreadyPaid}`,
-      );
 
       // Update order status to paid (backup in case webhook didn't fire)
       const { error: updateError } = await supabase.rpc("update_order_status", {
@@ -40,12 +36,7 @@ if (sessionId) {
       });
 
       if (updateError) {
-        console.error(
-          "Error updating order status in success page:",
-          updateError,
-        );
       } else {
-        console.log("Order status updated to paid via success page");
       }
 
       // Update total_amount with Stripe's actual charged amount (reflects coupon discount)
@@ -60,7 +51,6 @@ if (sessionId) {
       // Record coupon usage if present (backup for webhook)
       if (session.metadata?.coupon_id) {
         const couponId = session.metadata.coupon_id;
-        console.log("Attempting to record coupon usage:", couponId);
 
         const { error: couponError } = await supabase.rpc("use_coupon", {
           p_coupon_id: couponId,
@@ -72,28 +62,13 @@ if (sessionId) {
         if (couponError) {
           // Ignore unique constraint violation (already recorded by webhook)
           if (couponError.code !== "23505") {
-            console.error(
-              "Error recording coupon usage in success page:",
-              couponError,
-            );
           } else {
-            console.log("Coupon already recorded (likely by webhook)");
           }
         } else {
-          console.log("Coupon usage recorded via success page");
         }
       }
 
       // Get order details
-      console.log("🛒 [CHECKOUT SUCCESS] Fetching order details...");
-      console.log(
-        "🛒 [CHECKOUT SUCCESS] Order ID from session:",
-        session.metadata.order_id,
-      );
-      console.log(
-        "🛒 [CHECKOUT SUCCESS] Using client type:",
-        "supabaseAdmin (service role)",
-      );
 
       const { data: orderData, error: orderFetchError } = await supabaseAdmin
         .from("orders")
@@ -102,21 +77,10 @@ if (sessionId) {
         .single();
 
       if (orderFetchError) {
-        console.error("🛒 [CHECKOUT SUCCESS] ❌ Error fetching order:", {
-          code: orderFetchError.code,
-          message: orderFetchError.message,
-          details: orderFetchError.details,
-          hint: orderFetchError.hint,
-          orderId: session.metadata.order_id,
-        });
       } else {
-        console.log("🛒 [CHECKOUT SUCCESS] ✅ Order fetched successfully");
       }
 
       order = orderData;
-      console.log(
-        `🛒 [CHECKOUT SUCCESS] Order result: ${order ? "YES" : "NO"}, order_number: ${order?.order_number}, email: ${order?.customer_email}, status: ${order?.status}`,
-      );
 
       if (order) {
         // Get order items with product info using service role
@@ -143,14 +107,8 @@ if (sessionId) {
 
         // Send confirmation email if webhook didn't already do it
         // (check if order was already paid before we updated it)
-        console.log(
-          `Checking email sending: wasAlreadyPaid=${wasAlreadyPaid}, customerEmail=${order.customer_email}`,
-        );
 
         if (!wasAlreadyPaid && order.customer_email) {
-          console.log(
-            "Attempting to send confirmation email from success page...",
-          );
 
           try {
             const emailItems = orderItems.map((item: any) => ({
@@ -160,7 +118,6 @@ if (sessionId) {
               price: Number(item.price_at_purchase),
             }));
 
-            console.log("Email items prepared:", emailItems.length);
 
             const result = await sendOrderConfirmation({
               orderId: order.id,
@@ -177,13 +134,8 @@ if (sessionId) {
               ...(couponInfo ? { couponCode: couponInfo.code, discountAmount: couponInfo.discountAmount } : {}),
             });
 
-            emailSent = result.success;
             if (!result.success) {
-              console.error("Failed to send confirmation email:", result.error);
             } else {
-              console.log(
-                "✅ Confirmation email sent successfully from success page",
-              );
 
               // Marcar email como enviado (idempotencia para el webhook)
               await supabaseAdmin
@@ -204,26 +156,18 @@ if (sessionId) {
                   shippingAddress: order.shipping_address,
                 });
                 if (adminResult.success) {
-                  console.log("✅ Admin order notification sent from success page");
                 } else {
-                  console.error("Failed to send admin notification:", adminResult.error);
                 }
               } catch (adminError) {
-                console.error("Exception sending admin notification:", adminError);
               }
             }
           } catch (emailError) {
-            console.error("Exception sending confirmation email:", emailError);
           }
         } else {
-          console.log(
-            `Email NOT sent: wasAlreadyPaid=${wasAlreadyPaid}, has email=${!!order.customer_email}`,
-          );
         }
       }
     }
   } catch (error) {
-    console.error("Error fetching order:", error);
   }
 }
 
@@ -376,13 +320,11 @@ function formatDate(date: string): string {
       // Verify cart was cleared
       setTimeout(() => {
         if ($cart.get().length > 0) {
-          console.warn("Cart not properly cleared, retrying...");
           localStorage.removeItem("fashionstore_cart");
           clearCart();
         }
       }, 100);
     } catch (e) {
-      console.error("Error clearing cart:", e);
       // Fallback: clear localStorage directly
       try {
         localStorage.removeItem("fashionstore_cart");

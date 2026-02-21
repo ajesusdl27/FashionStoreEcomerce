@@ -100,9 +100,6 @@ export default function AuthForm({ mode, redirectTo = '/cuenta' }: AuthFormProps
         }
       } else {
         // Login via API
-        console.log('🔑 [CLIENT LOGIN] Starting login process...');
-        console.log('🔑 [CLIENT LOGIN] Email:', email);
-        console.log('🔑 [CLIENT LOGIN] Redirect:', isAdminLogin ? '/admin' : redirectTo);
         
         const startTime = Date.now();
         const response = await fetch('/api/auth/login', {
@@ -116,28 +113,12 @@ export default function AuthForm({ mode, redirectTo = '/cuenta' }: AuthFormProps
         });
 
         const duration = Date.now() - startTime;
-        console.log(`🔑 [CLIENT LOGIN] Response received in ${duration}ms`);
-        console.log('🔑 [CLIENT LOGIN] Response status:', response.status, response.statusText);
-        console.log('🔑 [CLIENT LOGIN] Response headers:', {
-          contentType: response.headers.get('content-type'),
-          setCookie: response.headers.get('set-cookie'),
-          cfRay: response.headers.get('cf-ray'),
-          server: response.headers.get('server')
-        });
 
         // Handle 403 Forbidden specifically (Cloudflare/WAF blocking)
         if (response.status === 403) {
-          console.error('🔑 [CLIENT LOGIN] ❌ 403 Forbidden - Request blocked by firewall/WAF');
-          console.error('🔑 [CLIENT LOGIN] Possible causes:', {
-            cloudflare: 'Cloudflare WAF rules blocking POST requests',
-            rateLimit: 'Rate limiting triggered',
-            ipBlocked: 'IP address blocked',
-            botProtection: 'Bot protection activated'
-          });
           
           // Try to read response as text first (might be HTML error page)
           const text = await response.text();
-          console.error('🔑 [CLIENT LOGIN] 403 Response body:', text.substring(0, 500));
           
           setError('Acceso bloqueado por el firewall. Contacta al administrador.');
           setLoading(false);
@@ -149,42 +130,28 @@ export default function AuthForm({ mode, redirectTo = '/cuenta' }: AuthFormProps
         
         // Read response body only once
         const responseText = await response.text();
-        console.log('🔑 [CLIENT LOGIN] Raw response (first 500 chars):', responseText.substring(0, 500));
         
         try {
           result = JSON.parse(responseText);
-          console.log('🔑 [CLIENT LOGIN] Parsed response data:', result);
         } catch (jsonError) {
-          console.error('🔑 [CLIENT LOGIN] ❌ Failed to parse JSON:', jsonError);
-          console.error('🔑 [CLIENT LOGIN] Content-Type:', contentType);
-          console.error('🔑 [CLIENT LOGIN] Response is not JSON, showing raw text');
           setError(`Error del servidor (${response.status}): ${responseText.substring(0, 100)}`);
           setLoading(false);
           return;
         }
 
         if (!response.ok) {
-          console.error('🔑 [CLIENT LOGIN] ❌ Login failed:', result.error);
           const translatedError = translateError(result.error || `Error al iniciar sesión (${response.status})`);
           setError(translatedError);
           setLoading(false);
           return;
         }
 
-        console.log('🔑 [CLIENT LOGIN] ✅ Login successful!');
         setSuccess('¡Bienvenido! Redirigiendo...');
         setTimeout(() => {
-          console.log('🔑 [CLIENT LOGIN] Redirecting to:', result.redirectTo);
           window.location.href = result.redirectTo;
         }, 1000);
       }
     } catch (err) {
-      console.error('🔑 [CLIENT LOGIN] ❌ Exception caught:', err);
-      console.error('🔑 [CLIENT LOGIN] Error details:', {
-        name: err instanceof Error ? err.name : 'Unknown',
-        message: err instanceof Error ? err.message : String(err),
-        stack: err instanceof Error ? err.stack : undefined
-      });
       setError(`Error de conexión: ${err instanceof Error ? err.message : 'Inténtalo de nuevo'}`);
     } finally {
       setLoading(false);

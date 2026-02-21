@@ -17,12 +17,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const authHeader = request.headers.get('Authorization');
       if (authHeader && authHeader.startsWith('Bearer ')) {
         accessToken = authHeader.substring(7);
-        console.log('📱 Using token from Authorization header');
       }
     }
     
     if (!accessToken) {
-      console.error('❌ No authentication token found');
       return new Response(
         JSON.stringify({ error: 'No autenticado' }),
         { status: 401, headers: { 'Content-Type': 'application/json' } }
@@ -39,7 +37,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    console.log('📧 Request from mobile app - Order ID:', orderId);
 
     // 3. Obtener datos del pedido con items y productos
     const { data: order, error: orderError } = await supabase
@@ -63,7 +60,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .single();
 
     if (orderError || !order) {
-      console.error('Error fetching order:', orderError);
       return new Response(
         JSON.stringify({ error: 'Pedido no encontrado' }),
         { status: 404, headers: { 'Content-Type': 'application/json' } }
@@ -74,7 +70,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { data: { user } } = await supabase.auth.getUser(accessToken);
     
     if (!user || user.email !== order.customer_email) {
-      console.error('❌ User not authorized:', user?.email, 'vs', order.customer_email);
       return new Response(
         JSON.stringify({ error: 'No autorizado' }),
         { status: 403, headers: { 'Content-Type': 'application/json' } }
@@ -85,7 +80,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Aceptamos 'pending' porque Flutter puede llamar este endpoint
     // antes de que el status se propague a 'paid' (race window).
     if (['cancelled', 'refunded'].includes(order.status)) {
-      console.error('❌ Order in invalid state:', order.status);
       return new Response(
         JSON.stringify({ 
           error: 'El pedido está cancelado o reembolsado',
@@ -97,7 +91,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Skip si ya se envió el email (idempotencia)
     if (order.confirmation_email_sent === true) {
-      console.log('ℹ️ Email already sent for order:', order.order_number);
       return new Response(
         JSON.stringify({ success: true, message: 'Email ya enviado anteriormente' }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -117,17 +110,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const discountAmount = Number(order.discount_amount || 0);
     const shippingCost = Number(order.shipping_cost || 0);
 
-    console.log('📧 Sending email to:', order.customer_email, 'for order:', order.order_number);
     if (couponCode) {
-      console.log('📧 Coupon:', couponCode, 'Discount:', discountAmount, 'Shipping:', shippingCost);
     }
 
     // 7. Enviar email
     try {
       await ensureSimplifiedTicketDocument(order.id);
-      console.log('✅ Simplified fiscal document persisted for order:', order.order_number);
     } catch (docError) {
-      console.error('⚠️ Could not persist simplified fiscal document:', docError);
     }
 
     const emailResult = await sendOrderConfirmation({
@@ -147,7 +136,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
 
     if (!emailResult.success) {
-      console.error('Error sending email:', emailResult.error);
       return new Response(
         JSON.stringify({ 
           error: 'Error al enviar el correo',
@@ -175,9 +163,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       shippingAddress: order.shipping_address,
     });
     if (adminResult.success) {
-      console.log('✅ Admin notification sent for order:', order.order_number);
     } else {
-      console.error('❌ Failed to send admin notification:', adminResult.error);
     }
 
     // Registrar uso de cupón si existe (idempotente via UNIQUE constraint)
@@ -188,13 +174,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         p_order_id: order.id,
       });
       if (couponError && couponError.code !== '23505') {
-        console.error('⚠️ Error recording coupon usage:', couponError);
       } else {
-        console.log('✅ Coupon usage recorded for order:', order.order_number);
       }
     }
 
-    console.log('Confirmation email sent successfully to:', order.customer_email);
 
     return new Response(
       JSON.stringify({ 
@@ -205,7 +188,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
 
   } catch (error) {
-    console.error('Error in send-confirmation-email:', error);
     return new Response(
       JSON.stringify({ 
         error: 'Error interno del servidor',

@@ -34,7 +34,6 @@ export default function PromotionBanner({ zone, className = '', compact = false 
           setPromotion(validPromotions[0] as Promotion);
         }
       } catch (e) {
-        console.error('Exception fetching promotion:', e);
       } finally {
         setLoading(false);
       }
@@ -63,7 +62,6 @@ export default function PromotionBanner({ zone, className = '', compact = false 
       } catch (err) {
         // Fallback for browsers that don't support clipboard API
         toast.error('No se pudo copiar el código. Inténtalo manualmente.');
-        console.error('Clipboard error:', err);
       }
     }
   };

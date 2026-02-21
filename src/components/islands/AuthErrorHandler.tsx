@@ -10,11 +10,9 @@ export default function AuthErrorHandler() {
       const error = params.get('error');
       const errorCode = params.get('error_code');
       
-      console.log('AuthErrorHandler - checking hash:', { hash, error, errorCode });
       
       // If there's an auth error, redirect to reset-password page
       if (error || errorCode === 'otp_expired') {
-        console.log('Redirecting to reset-password with hash:', hash);
         window.location.href = `/cuenta/reset-password#${hash}`;
       }
     }

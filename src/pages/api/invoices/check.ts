@@ -36,7 +36,6 @@ export const GET: APIRoute = async ({ url, cookies, request }) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
 
     if (authError || !user) {
-      console.error('Auth error in invoice check:', authError);
       return new Response(JSON.stringify({ invoice: null }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
@@ -96,7 +95,6 @@ export const GET: APIRoute = async ({ url, cookies, request }) => {
     });
 
   } catch (error) {
-    console.error('Error checking invoice:', error);
     return new Response(JSON.stringify({ invoice: null }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }

@@ -237,7 +237,6 @@ export default function OrdersList({
         window.location.reload();
       }
     } catch (error) {
-      console.error('Error updating order:', error);
     }
   };
 

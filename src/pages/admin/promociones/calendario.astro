@@ -20,7 +20,6 @@ const { data: promotions, error } = await authClient
   .order("start_date", { ascending: true });
 
 if (error) {
-  console.error("Error fetching promotions:", error);
 }
 ---
 

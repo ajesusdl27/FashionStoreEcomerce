@@ -71,7 +71,6 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error('Analytics API error:', error);
     return new Response(
       JSON.stringify({ 
         error: 'Error al cargar las analíticas',

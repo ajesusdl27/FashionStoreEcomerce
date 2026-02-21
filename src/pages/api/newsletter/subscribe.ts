@@ -10,7 +10,6 @@ const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL as string;
 const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY as string;
 
 if (!supabaseServiceKey) {
-  console.error('❌ SUPABASE_SERVICE_ROLE_KEY not found');
 }
 
 const serviceClient = createClient(supabaseUrl, supabaseServiceKey, {
@@ -122,7 +121,6 @@ export const POST: APIRoute = async ({ request, clientAddress, cookies }) => {
       .single();
 
     if (error) {
-      console.error('Newsletter subscription error:', error);
       return new Response(JSON.stringify({ error: 'Error al suscribirse' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
@@ -144,7 +142,6 @@ export const POST: APIRoute = async ({ request, clientAddress, cookies }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error: unknown) {
-    console.error('Newsletter subscription exception:', error);
     return new Response(JSON.stringify({ error: 'Error interno' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -212,7 +209,6 @@ async function checkRateLimit(ip: string): Promise<{ allowed: boolean }> {
 
     return { allowed: true };
   } catch (error) {
-    console.error('Rate limit check error:', error);
     // On error, allow the request (fail open)
     return { allowed: true };
   }
@@ -221,7 +217,6 @@ async function checkRateLimit(ip: string): Promise<{ allowed: boolean }> {
 async function sendWelcomeEmail(email: string, isReactivation: boolean, unsubscribeToken?: string) {
   try {
     if (!resend) {
-      console.log('Resend not configured, skipping welcome email');
       return;
     }
 
@@ -251,9 +246,7 @@ async function sendWelcomeEmail(email: string, isReactivation: boolean, unsubscr
       },
     });
 
-    console.log(`Welcome email sent to ${email}`);
   } catch (error) {
-    console.error('Error sending welcome email:', error);
     // Don't throw - subscription should still succeed even if email fails
   }
 }

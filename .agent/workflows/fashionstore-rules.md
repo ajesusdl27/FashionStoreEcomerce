@@ -175,7 +175,7 @@ xl: 1280px
 4. **No video autoplay in hero** - Bad for LCP
 5. **No inline styles** - Use Tailwind
 6. **No `any` types** - Always type properly
-7. **No console.log in production** - Use proper logging
+7. **No debug traces in production** - Use proper monitoring
 
 ---
 

@@ -159,8 +159,8 @@ function isCacheValid(): boolean {
  * @example
  * ```typescript
  * const settings = await getSettings();
- * console.log(settings.storeName); // "FashionStore"
- * console.log(settings.shippingCost); // 4.99
+ * const storeName = settings.storeName;
+ * const shippingCost = settings.shippingCost;
  * ```
  */
 export async function getSettings(): Promise<StoreSettings> {
@@ -175,12 +175,10 @@ export async function getSettings(): Promise<StoreSettings> {
       .select('key, value, value_bool, value_number');
     
     if (error) {
-      console.error('Error fetching settings:', error);
       return { ...DEFAULTS };
     }
     
     if (!data || data.length === 0) {
-      console.warn('No settings found in database, using defaults');
       return { ...DEFAULTS };
     }
     
@@ -190,7 +188,6 @@ export async function getSettings(): Promise<StoreSettings> {
     
     return mapSettingsFromCache(settingsCache);
   } catch (err) {
-    console.error('Exception fetching settings:', err);
     return { ...DEFAULTS };
   }
 }

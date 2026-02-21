@@ -15,13 +15,11 @@
 export const formatOrderId = (orderNumber: number | null | undefined): string => {
   // Validación estricta
   if (orderNumber == null || orderNumber <= 0 || !Number.isInteger(orderNumber)) {
-    console.warn('Invalid order number:', orderNumber);
     return "#PENDIENTE";
   }
   
   // Verificar límite de display (6 dígitos máximo)
   if (orderNumber > 999999) {
-    console.error(`Order number ${orderNumber} exceeds max display limit (999999)`);
     throw new Error('Order number exceeds display limit');
   }
   

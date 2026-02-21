@@ -77,7 +77,6 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       .eq('id', id);
 
     if (error) {
-      console.error('Error updating campaign:', error);
       return new Response(JSON.stringify({ error: 'Error al actualizar campaña' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
@@ -89,7 +88,6 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
-    console.error('Campaign update exception:', error);
     return new Response(JSON.stringify({ error: 'Error interno' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

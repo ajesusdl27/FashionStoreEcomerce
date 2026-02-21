@@ -98,7 +98,6 @@ export async function getSettings(): Promise<StoreSettings> {
     .select('key, value, value_bool, value_number');
   
   if (error || !data) {
-    console.error('Error fetching settings:', error);
     return DEFAULTS;
   }
   
@@ -235,7 +234,7 @@ export async function refreshFormatters(): Promise<void> {
 }
 
 // Inicializar al cargar módulo
-refreshFormatters().catch(console.error);
+refreshFormatters().catch(() => undefined);
 ```
 
 **Archivos a modificar:**

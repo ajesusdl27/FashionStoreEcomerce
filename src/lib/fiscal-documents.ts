@@ -626,7 +626,6 @@ export async function ensureRectifyingDocumentForOrderCancellation(
   try {
     await ensureSimplifiedTicketDocument(input.orderId);
   } catch (simplifiedError) {
-    console.warn('⚠️ Could not ensure simplified document before rectifying creation:', simplifiedError);
   }
 
   const technicalReturnId = await ensureTechnicalReturnForCancellation({

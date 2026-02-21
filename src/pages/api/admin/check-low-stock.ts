@@ -80,7 +80,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .order('stock', { ascending: true });
 
     if (queryError) {
-      console.error('[CHECK-LOW-STOCK] Error querying inventory:', queryError);
       return new Response(
         JSON.stringify({ error: "Error al consultar inventario" }),
         { status: 500, headers: { "Content-Type": "application/json" } }
@@ -141,7 +140,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     );
 
   } catch (error: any) {
-    console.error("[CHECK-LOW-STOCK] Error:", error);
     return new Response(
       JSON.stringify({ error: error.message || "Error interno del servidor" }),
       { status: 500, headers: { "Content-Type": "application/json" } }

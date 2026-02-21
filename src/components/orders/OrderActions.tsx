@@ -93,10 +93,8 @@ export default function OrderActions({
         if (response.ok && result.return) {
           setExistingReturn(result.return);
         } else if (result.error) {
-          console.error('Error fetching return:', result.error);
         }
       } catch (err) {
-        console.error('❌ Error checking return:', err);
       } finally {
         setIsLoadingReturn(false);
       }
@@ -140,7 +138,6 @@ export default function OrderActions({
       setShowTrackingInput(false);
       setTrackingNumber('');
     } catch (err: any) {
-      console.error('Error marking return as shipped:', err);
       setError(err.message || 'Error al marcar la devolución como enviada');
     } finally {
       setIsMarkingShipped(false);
@@ -173,7 +170,6 @@ export default function OrderActions({
 
       window.location.reload();
     } catch (err: any) {
-      console.error('Error cancelling order:', err);
       setError(err.message || 'Error al cancelar el pedido.');
       setIsCancelling(false);
     }
@@ -408,11 +404,6 @@ export default function OrderActions({
             {/* Mark as Shipped Button - Only show when approved */}
             {(() => {
               const shouldShowButton = existingReturn.status === 'approved';
-              console.log('🔘 Button visibility check:', {
-                returnStatus: existingReturn.status,
-                shouldShowButton,
-                existingReturn
-              });
               return shouldShowButton;
             })() && (
               <div className="bg-muted/30 border-t border-current/10 p-4 space-y-3">

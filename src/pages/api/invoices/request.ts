@@ -36,7 +36,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
 
     if (authError || !user) {
-      console.error('Auth error in invoice request:', authError);
       return new Response(JSON.stringify({ error: 'Sesión inválida' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' }
@@ -64,7 +63,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .single();
 
     if (orderError || !order) {
-      console.error('Order not found:', orderError);
       return new Response(JSON.stringify({ error: 'Pedido no encontrado o no accesible' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' }
@@ -110,7 +108,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
 
       if (invoiceError) {
-        console.error('Error creating invoice:', invoiceError);
         return new Response(JSON.stringify({ error: invoiceError.message }), {
           status: 500,
           headers: { 'Content-Type': 'application/json' }
@@ -215,7 +212,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
 
     if (uploadError) {
-      console.error('Error uploading PDF:', uploadError);
       // Continuar sin guardar URL, el PDF se puede regenerar
     }
 
@@ -244,7 +240,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
 
   } catch (error) {
-    console.error('Error in invoice request:', error);
     return new Response(JSON.stringify({ 
       error: error instanceof Error ? error.message : 'Error interno' 
     }), {

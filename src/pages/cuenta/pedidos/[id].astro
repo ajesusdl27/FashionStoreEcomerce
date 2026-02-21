@@ -41,7 +41,6 @@ const { data: order, error } = await supabase
   .single();
 
 if (error) {
-  console.error("Error fetching order:", error);
   // Only for debugging, remove in production
   // return new Response(`Error: ${JSON_stringify(error)}`, { status: 500 });
   return Astro.redirect("/cuenta/pedidos");
@@ -62,7 +61,6 @@ const shippingCost = Number(order.shipping_cost || 0);
 const finalTotal = Number(order.total_amount);
 
 if (error) {
-  console.error("Error fetching order:", error);
   // Only for debugging, remove in production
   // return new Response(`Error: ${JSON_stringify(error)}`, { status: 500 });
   return Astro.redirect("/cuenta/pedidos");

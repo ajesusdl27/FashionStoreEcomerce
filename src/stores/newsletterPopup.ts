@@ -73,7 +73,6 @@ export async function checkAuthenticatedUserSubscription(): Promise<boolean> {
     }
     return false;
   } catch (error) {
-    console.error('Error checking newsletter subscription:', error);
     return false;
   }
 }

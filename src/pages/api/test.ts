@@ -5,7 +5,6 @@ import type { APIRoute } from 'astro';
  * Usar para diagnosticar problemas 403 Forbidden
  */
 export const GET: APIRoute = async () => {
-  console.log('🧪 [TEST] GET request received - working!');
   
   return new Response(
     JSON.stringify({ 
@@ -24,8 +23,6 @@ export const GET: APIRoute = async () => {
 };
 
 export const POST: APIRoute = async ({ request }) => {
-  console.log('🧪 [TEST] POST request received - working!');
-  console.log('🧪 [TEST] Headers:', Object.fromEntries(request.headers.entries()));
   
   let body;
   try {
@@ -40,9 +37,7 @@ export const POST: APIRoute = async ({ request }) => {
       body = await request.text();
     }
     
-    console.log('🧪 [TEST] Body:', body);
   } catch (err) {
-    console.error('🧪 [TEST] Error reading body:', err);
     body = { error: 'Could not parse body' };
   }
   
@@ -70,7 +65,6 @@ export const POST: APIRoute = async ({ request }) => {
 };
 
 export const OPTIONS: APIRoute = async () => {
-  console.log('🧪 [TEST] OPTIONS request received (CORS preflight)');
   
   return new Response(null, {
     status: 204,

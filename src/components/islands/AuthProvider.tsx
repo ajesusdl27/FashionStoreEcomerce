@@ -60,7 +60,6 @@ export default function AuthProvider({ children, initialUser = null }: AuthProvi
                   serverUser.user_metadata?.role === 'admin',
       };
     } catch (error) {
-      console.error('Error fetching user from server:', error);
       return null;
     }
   };
@@ -101,7 +100,6 @@ export default function AuthProvider({ children, initialUser = null }: AuthProvi
     // Listen for auth state changes (mainly for password recovery flow)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: string, session: { access_token: string; refresh_token: string } | null) => {
-        console.log('Auth event:', event);
 
         if (event === 'PASSWORD_RECOVERY' && session) {
           // User came from password recovery link
@@ -118,7 +116,6 @@ export default function AuthProvider({ children, initialUser = null }: AuthProvi
             });
             // Don't call refreshUser() here - wait until password is changed
           } catch (error) {
-            console.error('Error syncing recovery session:', error);
           }
         }
 
@@ -135,7 +132,6 @@ export default function AuthProvider({ children, initialUser = null }: AuthProvi
             });
             await refreshUser();
           } catch (error) {
-            console.error('Error syncing session:', error);
           }
         }
 

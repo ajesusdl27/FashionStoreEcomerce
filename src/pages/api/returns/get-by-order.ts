@@ -48,7 +48,6 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     const serviceRoleKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
     
     if (!supabaseUrl || !serviceRoleKey) {
-      console.error('[API] Missing Supabase credentials');
       return new Response(
         JSON.stringify({ error: 'Configuración del servidor incorrecta' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
@@ -90,7 +89,6 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       .maybeSingle();
 
     if (returnError) {
-      console.error('Error fetching return:', returnError);
       return new Response(
         JSON.stringify({ error: 'Error al obtener la devolución' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
@@ -104,7 +102,6 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     );
 
   } catch (error) {
-    console.error('[API] Unexpected error:', error);
     return new Response(
       JSON.stringify({ error: 'Error interno del servidor' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }

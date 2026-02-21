@@ -59,11 +59,9 @@ export function getServiceSupabase(): SupabaseClient {
   }
 
   if (!supabaseUrl || !serviceRoleKey) {
-    console.warn('⚠️ [SUPABASE] Service role key not configured, falling back to anon client');
     return getSupabase();
   }
 
-  console.log('🔑 [SUPABASE] Creating service role client (bypasses RLS)');
   
   serviceRoleInstance = createClient(supabaseUrl, serviceRoleKey, {
     auth: {
@@ -111,7 +109,6 @@ export async function getRelatedProducts(
     .limit(limit);
 
   if (error) {
-    console.error('Error fetching related products:', error);
     return [];
   }
 

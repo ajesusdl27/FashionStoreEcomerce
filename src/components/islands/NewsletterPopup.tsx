@@ -54,7 +54,6 @@ export default function NewsletterPopup() {
       const isAlreadySubscribed = await checkAuthenticatedUserSubscription();
       
       if (isAlreadySubscribed) {
-        console.log('📧 User already subscribed to newsletter, popup will not show');
         return;
       }
       

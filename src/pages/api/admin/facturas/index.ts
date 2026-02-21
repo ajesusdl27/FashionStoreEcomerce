@@ -272,7 +272,6 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
-    console.error('[ADMIN FACTURAS] GET error:', error);
     return new Response(JSON.stringify({ error: error.message || 'Error interno' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -477,7 +476,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       },
     });
   } catch (error: any) {
-    console.error('[ADMIN FACTURAS] POST error:', error);
     return new Response(JSON.stringify({ error: error.message || 'Error interno' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

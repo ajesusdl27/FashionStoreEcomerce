@@ -80,7 +80,6 @@ async function handleUnsubscribe(token: string | null): Promise<Response> {
       .eq('id', subscriber.id);
 
     if (updateError) {
-      console.error('Error unsubscribing:', updateError);
       return new Response(JSON.stringify({ error: 'Error al procesar la solicitud' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
@@ -97,7 +96,6 @@ async function handleUnsubscribe(token: string | null): Promise<Response> {
     });
 
   } catch (error) {
-    console.error('Unsubscribe exception:', error);
     return new Response(JSON.stringify({ error: 'Error interno del servidor' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

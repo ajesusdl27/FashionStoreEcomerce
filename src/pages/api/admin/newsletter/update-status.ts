@@ -71,7 +71,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         .select('id');
 
       if (error) {
-        console.error('Error updating campaign status:', error);
         return new Response(JSON.stringify({ error: 'Error al actualizar estado' }), {
           status: 500,
           headers: { 'Content-Type': 'application/json' },
@@ -101,7 +100,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .eq('id', campaignId);
 
     if (error) {
-      console.error('Error updating campaign status:', error);
       return new Response(JSON.stringify({ error: 'Error al actualizar estado' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
@@ -113,7 +111,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error: unknown) {
-    console.error('Update status exception:', error);
     return new Response(JSON.stringify({ error: 'Error interno' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

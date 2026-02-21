@@ -74,7 +74,6 @@ Deno.serve(async (req) => {
       .single()
 
     if (invoiceError || !invoice) {
-      console.error('Invoice fetch error:', invoiceError)
       return new Response(
         JSON.stringify({ error: 'Invoice not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -145,7 +144,6 @@ Deno.serve(async (req) => {
 
     if (!emailResponse.ok) {
       const errorData = await emailResponse.json()
-      console.error('Resend API error:', errorData)
       return new Response(
         JSON.stringify({ error: 'Failed to send email' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -153,8 +151,6 @@ Deno.serve(async (req) => {
     }
 
     const emailResult = await emailResponse.json()
-    console.log('Email sent successfully:', emailResult.id)
-
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -165,7 +161,6 @@ Deno.serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error in send-invoice-email function:', error)
     return new Response(
       JSON.stringify({ error: error.message || 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

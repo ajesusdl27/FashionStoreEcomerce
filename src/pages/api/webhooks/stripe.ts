@@ -9,11 +9,8 @@ import type Stripe from 'stripe';
 const webhookSecret = import.meta.env.STRIPE_WEBHOOK_SECRET;
 
 export const POST: APIRoute = async ({ request }) => {
-  console.log('🔔 [WEBHOOK] Stripe webhook received');
-  console.log('🔔 [WEBHOOK] STRIPE_WEBHOOK_SECRET configured:', webhookSecret ? 'YES' : 'NO');
   
   if (!webhookSecret) {
-    console.error('🔔 [WEBHOOK] ❌ Missing STRIPE_WEBHOOK_SECRET');
     return new Response('Webhook secret not configured', { status: 500 });
   }
 
@@ -21,10 +18,8 @@ export const POST: APIRoute = async ({ request }) => {
   const rawBody = await request.arrayBuffer();
   const body = new TextDecoder().decode(rawBody);
   const signature = request.headers.get('stripe-signature');
-  console.log('🔔 [WEBHOOK] Signature present:', signature ? 'YES' : 'NO');
 
   if (!signature) {
-    console.error('🔔 [WEBHOOK] ❌ Missing stripe-signature header');
     return new Response('Missing stripe-signature header', { status: 400 });
   }
 
@@ -32,10 +27,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-    console.log('🔔 [WEBHOOK] ✅ Signature verified successfully');
-    console.log('🔔 [WEBHOOK] Event type:', event.type);
   } catch (err) {
-    console.error('🔔 [WEBHOOK] ❌ Signature verification failed:', err);
     return new Response('Webhook signature verification failed', { status: 400 });
   }
 
@@ -47,15 +39,11 @@ export const POST: APIRoute = async ({ request }) => {
       const orderNumber = session.metadata?.order_number;
 
       if (!orderId) {
-        console.error('No order_id in session metadata');
         break;
       }
 
       // Log con formato legible
       const displayId = orderNumber ? formatOrderId(Number(orderNumber)) : `#${orderId.slice(0, 8)}`;
-      console.log(`🔔 [WEBHOOK] 💳 Processing payment for order: ${displayId} (UUID: ${orderId})`);
-      console.log('🔔 [WEBHOOK] Session ID:', session.id);
-      console.log('🔔 [WEBHOOK] Payment status:', session.payment_status);
 
       // Idempotency check: verify if order was already processed
       const { data: existingOrder } = await supabase
@@ -67,8 +55,6 @@ export const POST: APIRoute = async ({ request }) => {
       let isNewPayment = false;
 
       if (existingOrder?.status !== 'paid') {
-        console.log('🔔 [WEBHOOK] Current order status:', existingOrder?.status || 'NOT FOUND');
-        console.log('🔔 [WEBHOOK] Attempting to update order status to "paid"...');
         
         // Update order status to paid using RPC function
         const { error } = await supabase.rpc('update_order_status', {
@@ -77,10 +63,7 @@ export const POST: APIRoute = async ({ request }) => {
         });
 
         if (error) {
-          console.error('🔔 [WEBHOOK] ❌ Error updating order status:', error);
-          console.error('🔔 [WEBHOOK] Error details:', JSON.stringify(error, null, 2));
         } else {
-          console.log(`🔔 [WEBHOOK] ✅ Order ${displayId} marked as paid`);
           isNewPayment = true;
         }
 
@@ -92,13 +75,10 @@ export const POST: APIRoute = async ({ request }) => {
             .update({ total_amount: stripeFinalAmount })
             .eq('id', orderId);
           if (totalError) {
-            console.error('🔔 [WEBHOOK] ❌ Error updating total_amount:', totalError);
           } else {
-            console.log(`🔔 [WEBHOOK] ✅ Order total_amount updated to ${stripeFinalAmount} (Stripe amount_total)`);
           }
         }
       } else {
-        console.log(`🔔 [WEBHOOK] ℹ️ Order ${displayId} already marked as paid - checking side effects`);
       }
 
       // Record coupon usage if present (regardless of whether we just updated the status or it was already paid)
@@ -108,7 +88,6 @@ export const POST: APIRoute = async ({ request }) => {
         const customerEmail = session.customer_details?.email || session.customer_email || '';
         
         if (!customerEmail) {
-          console.error(`Cannot record coupon usage: missing customer email for order ${orderId}`);
         } else {
           // We use a separate try/catch block or just handle the error to avoid crashing the whole webhook if this fails (e.g. already recorded)
           const { data: couponUsed, error: couponError } = await supabase.rpc('use_coupon', {
@@ -120,24 +99,12 @@ export const POST: APIRoute = async ({ request }) => {
           if (couponError) {
             // Ignore unique constraint errors (code 23505 in Postgres) which mean it was already recorded
             if (couponError.code === '23505') {
-              console.log(`Coupon ${couponId} already recorded for order ${orderId}`);
             } else {
               // Log detailed error information for debugging
-              console.error('Error recording coupon usage:', {
-                couponId,
-                orderId,
-                customerEmail,
-                errorCode: couponError.code,
-                errorMessage: couponError.message,
-                errorDetails: couponError.details,
-                errorHint: couponError.hint
-              });
             }
           } else if (couponUsed === false) {
             // Function returned FALSE (validation failed)
-            console.error(`Coupon ${couponId} validation failed for order ${orderId}`);
           } else {
-            console.log(`Coupon ${couponId} usage recorded successfully for order ${orderId}`);
           }
         }
       }
@@ -150,12 +117,9 @@ export const POST: APIRoute = async ({ request }) => {
       // If the webhook runs AFTER success page, `isNewPayment` will be false, so we SKIP email.
       // If the webhook runs BEFORE success page, `isNewPayment` will be true, so we SEND email.
       // This seems correct to prevent duplicates.
-      console.log('🔔 [WEBHOOK] isNewPayment:', isNewPayment);
       if (isNewPayment) {
-        console.log('🔔 [WEBHOOK] 📧 Preparing to send confirmation email...');
         try {
           // Fetch order details using service role client (bypasses RLS)
-          console.log('🔔 [WEBHOOK] Using supabaseAdmin to fetch order (bypasses RLS)');
           const { data: order, error: orderError } = await supabaseAdmin
             .from('orders')
             .select('*, order_number')
@@ -163,7 +127,6 @@ export const POST: APIRoute = async ({ request }) => {
             .single();
           
           if (orderError || !order) {
-            console.error('Error fetching order for email:', orderError);
             break;
           }
           
@@ -179,7 +142,6 @@ export const POST: APIRoute = async ({ request }) => {
             .eq('order_id', orderId);
           
           if (itemsError) {
-            console.error('Error fetching order items for email:', itemsError);
             break;
           }
           
@@ -231,9 +193,7 @@ export const POST: APIRoute = async ({ request }) => {
           // Send confirmation email
           try {
             await ensureSimplifiedTicketDocument(order.id);
-            console.log(`🔔 [WEBHOOK] ✅ Simplified fiscal document generated for order ${displayId}`);
           } catch (docError) {
-            console.error('🔔 [WEBHOOK] ❌ Failed to persist simplified fiscal document:', docError);
           }
 
           const emailResult = await sendOrderConfirmation({
@@ -252,13 +212,10 @@ export const POST: APIRoute = async ({ request }) => {
           });
           
           if (emailResult.success) {
-            console.log(`🔔 [WEBHOOK] ✅ Confirmation email sent to ${order.customer_email}`);
           } else {
-            console.error('🔔 [WEBHOOK] ❌ Failed to send confirmation email:', emailResult.error);
           }
 
           // Send admin notification (awaited to guarantee delivery before response)
-          console.log('🔔 [WEBHOOK] 📧 Sending admin notification...');
           const adminResult = await sendAdminOrderNotification({
             orderId: order.id,
             orderNumber: order.order_number,
@@ -270,17 +227,13 @@ export const POST: APIRoute = async ({ request }) => {
             shippingAddress: order.shipping_address,
           });
           if (adminResult.success) {
-            console.log('🔔 [WEBHOOK] ✅ Admin order notification sent');
           } else {
-            console.error('🔔 [WEBHOOK] ❌ Failed to send admin notification:', adminResult.error);
           }
 
         } catch (emailError) {
-          console.error('🔔 [WEBHOOK] ❌ Exception sending confirmation email:', emailError);
           // Don't break - order is already paid, email failure is non-critical
         }
       } else {
-        console.log('🔔 [WEBHOOK] ℹ️ Skipping email (not a new payment)');
       }
 
       break;
@@ -291,7 +244,6 @@ export const POST: APIRoute = async ({ request }) => {
       const orderId = session.metadata?.order_id;
 
       if (!orderId) {
-        console.error('No order_id in session metadata');
         break;
       }
 
@@ -301,7 +253,6 @@ export const POST: APIRoute = async ({ request }) => {
       });
 
       if (itemsError) {
-        console.error('Error fetching order items:', itemsError);
         break;
       }
 
@@ -313,7 +264,6 @@ export const POST: APIRoute = async ({ request }) => {
         });
 
         if (restoreError) {
-          console.error(`Error restoring stock for variant ${item.variant_id}:`, restoreError);
         }
       }
 
@@ -324,9 +274,7 @@ export const POST: APIRoute = async ({ request }) => {
       });
 
       if (updateError) {
-        console.error('Error updating order status to cancelled:', updateError);
       } else {
-        console.log(`Order ${orderId} cancelled and stock restored`);
         
         // Send expiration notification email to customer
         try {
@@ -344,10 +292,8 @@ export const POST: APIRoute = async ({ request }) => {
               customerEmail: order.customer_email,
               reason: 'El tiempo para completar el pago ha expirado (30 minutos)'
             });
-            console.log(`Expiration email sent to ${order.customer_email}`);
           }
         } catch (emailError) {
-          console.error('Error sending expiration email:', emailError);
           // Non-critical, don't break
         }
       }
@@ -363,8 +309,6 @@ export const POST: APIRoute = async ({ request }) => {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
       const paymentIntentId = paymentIntent.id;
       
-      console.log(`📱 [WEBHOOK] Payment Intent succeeded: ${paymentIntentId}`);
-      console.log('📱 [WEBHOOK] Metadata:', JSON.stringify(paymentIntent.metadata));
       
       // Get order by Payment Intent ID (stored in stripe_session_id with pi_ prefix)
       const { data: order, error: orderError } = await supabaseAdmin
@@ -374,13 +318,10 @@ export const POST: APIRoute = async ({ request }) => {
         .single();
       
       if (orderError || !order) {
-        console.error('📱 [WEBHOOK] ❌ Order not found for Payment Intent:', paymentIntentId);
-        console.error('📱 [WEBHOOK] Error:', orderError);
         break;
       }
       
       const displayId = formatOrderId(order.order_number);
-      console.log(`📱 [WEBHOOK] Found order: ${displayId} (UUID: ${order.id})`);
       
       // Idempotency: check if we already fully processed this order
       // We now use confirmation_email_sent as the idempotency flag instead of status,
@@ -388,7 +329,6 @@ export const POST: APIRoute = async ({ request }) => {
       // This ensures coupon usage + email are always processed.
       const alreadyProcessed = order.status === 'paid' && order.confirmation_email_sent === true;
       if (alreadyProcessed) {
-        console.log(`📱 [WEBHOOK] ℹ️ Order ${displayId} already fully processed (paid + email sent) - skipping`);
         break;
       }
       
@@ -400,13 +340,10 @@ export const POST: APIRoute = async ({ request }) => {
           .eq('id', order.id);
         
         if (updateError) {
-          console.error('📱 [WEBHOOK] ❌ Error updating order status:', updateError);
           break;
         }
         
-        console.log(`📱 [WEBHOOK] ✅ Order ${displayId} marked as paid`);
       } else {
-        console.log(`📱 [WEBHOOK] ℹ️ Order ${displayId} already paid, continuing with coupon + email`);
       }
       
       // Record coupon usage if present in metadata
@@ -421,14 +358,11 @@ export const POST: APIRoute = async ({ request }) => {
         });
         
         if (couponError && couponError.code !== '23505') {
-          console.error('📱 [WEBHOOK] Error recording coupon usage:', couponError);
         } else {
-          console.log(`📱 [WEBHOOK] ✅ Coupon ${couponId} usage recorded`);
         }
       }
       
       // Send confirmation email
-      console.log('📱 [WEBHOOK] 📧 Preparing to send confirmation email...');
       try {
         // Fetch order items with product details
         const { data: items, error: itemsError } = await supabaseAdmin
@@ -442,7 +376,6 @@ export const POST: APIRoute = async ({ request }) => {
           .eq('order_id', order.id);
         
         if (itemsError) {
-          console.error('📱 [WEBHOOK] Error fetching order items:', itemsError);
           break;
         }
         
@@ -474,7 +407,6 @@ export const POST: APIRoute = async ({ request }) => {
         
         if (dbCouponCode && dbDiscountAmount > 0) {
           couponData2 = { couponCode: dbCouponCode, discountAmount: dbDiscountAmount };
-          console.log(`📱 [WEBHOOK] Coupon data from DB: ${dbCouponCode}, discount: ${dbDiscountAmount}€`);
         } else if (couponId && couponId.trim() !== '') {
           // Fallback: read from Stripe PI metadata
           const metaDiscount = Number(paymentIntent.metadata?.coupon_discount || 0);
@@ -518,7 +450,6 @@ export const POST: APIRoute = async ({ request }) => {
         });
         
         if (emailResult.success) {
-          console.log(`📱 [WEBHOOK] ✅ Confirmation email sent to ${order.customer_email}`);
           
           // Mark email as sent (idempotency flag)
           await supabaseAdmin
@@ -526,11 +457,9 @@ export const POST: APIRoute = async ({ request }) => {
             .update({ confirmation_email_sent: true })
             .eq('id', order.id);
         } else {
-          console.error('📱 [WEBHOOK] ❌ Failed to send email:', emailResult.error);
         }
 
         // Send admin notification (awaited to guarantee delivery before response)
-        console.log('📱 [WEBHOOK] 📧 Sending admin notification...');
         const adminResult = await sendAdminOrderNotification({
           orderId: order.id,
           orderNumber: order.order_number,
@@ -542,13 +471,10 @@ export const POST: APIRoute = async ({ request }) => {
           shippingAddress: fullOrder?.shipping_address,
         });
         if (adminResult.success) {
-          console.log('📱 [WEBHOOK] ✅ Admin order notification sent');
         } else {
-          console.error('📱 [WEBHOOK] ❌ Failed to send admin notification:', adminResult.error);
         }
 
       } catch (emailError) {
-        console.error('📱 [WEBHOOK] ❌ Exception sending email:', emailError);
         // Non-critical, order is already paid
       }
       
@@ -560,8 +486,6 @@ export const POST: APIRoute = async ({ request }) => {
       const paymentIntentId = paymentIntent.id;
       const failureMessage = paymentIntent.last_payment_error?.message || 'Unknown error';
       
-      console.log(`📱 [WEBHOOK] ❌ Payment Intent failed: ${paymentIntentId}`);
-      console.log(`📱 [WEBHOOK] Failure reason: ${failureMessage}`);
       
       // Get order by Payment Intent ID
       const { data: order, error: orderError } = await supabaseAdmin
@@ -571,16 +495,13 @@ export const POST: APIRoute = async ({ request }) => {
         .single();
       
       if (orderError || !order) {
-        console.error('📱 [WEBHOOK] Order not found for failed Payment Intent:', paymentIntentId);
         break;
       }
       
       const displayId = formatOrderId(order.order_number);
-      console.log(`📱 [WEBHOOK] Found order: ${displayId}`);
       
       // Only process if order is still pending
       if (order.status !== 'pending') {
-        console.log(`📱 [WEBHOOK] ℹ️ Order ${displayId} status is ${order.status} - skipping`);
         break;
       }
       
@@ -591,7 +512,6 @@ export const POST: APIRoute = async ({ request }) => {
         .eq('order_id', order.id);
       
       if (itemsError) {
-        console.error('📱 [WEBHOOK] Error fetching order items:', itemsError);
       } else {
         // Restore stock for each item
         for (const item of orderItems || []) {
@@ -601,10 +521,8 @@ export const POST: APIRoute = async ({ request }) => {
           });
           
           if (restoreError) {
-            console.error(`📱 [WEBHOOK] Error restoring stock for variant ${item.variant_id}:`, restoreError);
           }
         }
-        console.log(`📱 [WEBHOOK] ✅ Stock restored for order ${displayId}`);
       }
       
       // Update order status to payment_failed
@@ -614,16 +532,13 @@ export const POST: APIRoute = async ({ request }) => {
         .eq('id', order.id);
       
       if (updateError) {
-        console.error('📱 [WEBHOOK] Error updating order status:', updateError);
       } else {
-        console.log(`📱 [WEBHOOK] ✅ Order ${displayId} marked as payment_failed`);
       }
       
       break;
     }
 
     default:
-      console.log(`Unhandled event type: ${event.type}`);
   }
 
   return new Response(JSON.stringify({ received: true }), {

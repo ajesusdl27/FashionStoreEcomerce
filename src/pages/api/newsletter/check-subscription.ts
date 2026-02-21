@@ -53,7 +53,6 @@ export const GET: APIRoute = async ({ cookies }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error checking newsletter subscription:', error);
     // On error, default to not subscribed (show popup)
     return new Response(JSON.stringify({ isSubscribed: false }), {
       status: 200,

@@ -138,7 +138,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
       stripeCoupon = await stripe.coupons.create(stripeCouponParams);
     } catch (stripeError: any) {
-      console.error('Stripe coupon creation error:', stripeError);
       return new Response(JSON.stringify({ error: `Error al crear cupón en Stripe: ${stripeError.message}` }), { 
         status: 400, headers: { 'Content-Type': 'application/json' } 
       });
@@ -169,7 +168,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       try {
         await stripe.coupons.del(stripeCoupon.id);
       } catch (e) {
-        console.error('Failed to cleanup Stripe coupon:', e);
       }
       
       return new Response(JSON.stringify({ error: error.message }), { 
@@ -181,7 +179,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       status: 201, headers: { 'Content-Type': 'application/json' } 
     });
   } catch (error: any) {
-    console.error('Coupon creation error:', error);
     return new Response(JSON.stringify({ error: error.message }), { 
       status: 500, headers: { 'Content-Type': 'application/json' } 
     });
@@ -300,7 +297,6 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       try {
         await stripe.coupons.del(coupon.stripe_coupon_id);
       } catch (stripeError) {
-        console.error('Failed to delete Stripe coupon:', stripeError);
         // Continue with Supabase deletion even if Stripe fails
       }
     }

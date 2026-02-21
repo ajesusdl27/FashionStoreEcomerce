@@ -105,7 +105,6 @@ export const GET: APIRoute = async ({ cookies }) => {
       .select('*', { count: 'exact', head: true });
 
     if (ordersError) {
-      console.error('Error obteniendo conteo de pedidos:', ordersError);
     }
 
     const returnRate = totalOrders && totalOrders > 0 
@@ -160,7 +159,6 @@ export const GET: APIRoute = async ({ cookies }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error en returns-metrics API:', error);
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : 'Error interno del servidor' 

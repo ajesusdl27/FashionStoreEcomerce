@@ -32,16 +32,12 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('📊 [LOW-STOCK-CRON] Starting daily low stock check...')
-
-    // Create Supabase client with service role
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const resendApiKey = Deno.env.get('RESEND_API_KEY')
     const resendFromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'FashionStore <onboarding@resend.dev>'
 
     if (!resendApiKey) {
-      console.error('📊 [LOW-STOCK-CRON] ❌ RESEND_API_KEY not configured')
       return new Response(
         JSON.stringify({ error: 'RESEND_API_KEY not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -58,7 +54,6 @@ Deno.serve(async (req) => {
       .single()
 
     if (thresholdError) {
-      console.error('📊 [LOW-STOCK-CRON] Error fetching threshold:', thresholdError)
       return new Response(
         JSON.stringify({ error: 'Could not fetch low_stock_threshold setting' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -66,9 +61,6 @@ Deno.serve(async (req) => {
     }
 
     const threshold = thresholdSetting?.value_number ?? 5
-    console.log(`📊 [LOW-STOCK-CRON] Threshold: ${threshold} units`)
-
-    // 2. Get the admin email from settings (store_email)
     const { data: emailSetting, error: emailError } = await supabase
       .from('settings')
       .select('value')
@@ -76,7 +68,6 @@ Deno.serve(async (req) => {
       .single()
 
     if (emailError || !emailSetting?.value) {
-      console.error('📊 [LOW-STOCK-CRON] ❌ Admin email (store_email) not configured:', emailError)
       return new Response(
         JSON.stringify({ error: 'Admin email (store_email) not configured in settings' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -84,9 +75,6 @@ Deno.serve(async (req) => {
     }
 
     const adminEmail = emailSetting.value
-    console.log(`📊 [LOW-STOCK-CRON] Admin email: ${adminEmail}`)
-
-    // 3. Get store name for email template
     const { data: storeNameSetting } = await supabase
       .from('settings')
       .select('value')
@@ -121,7 +109,6 @@ Deno.serve(async (req) => {
       .order('stock', { ascending: true })
 
     if (queryError) {
-      console.error('📊 [LOW-STOCK-CRON] Error querying low stock items:', queryError)
       return new Response(
         JSON.stringify({ error: 'Error querying inventory' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -136,12 +123,7 @@ Deno.serve(async (req) => {
       product_slug: item.products?.slug || '',
     }))
 
-    console.log(`📊 [LOW-STOCK-CRON] Found ${items.length} variants with low stock`)
-
-    // 6. If no low stock items, skip email
     if (items.length === 0) {
-      console.log('📊 [LOW-STOCK-CRON] ✅ No low stock items found. No email needed.')
-      return new Response(
         JSON.stringify({ 
           success: true, 
           message: 'No low stock items found',
@@ -326,15 +308,12 @@ Deno.serve(async (req) => {
     const resendData = await response.json()
 
     if (!response.ok) {
-      console.error('📊 [LOW-STOCK-CRON] ❌ Resend API error:', resendData)
       return new Response(
         JSON.stringify({ error: 'Failed to send email', details: resendData }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    console.log(`📊 [LOW-STOCK-CRON] ✅ Low stock alert sent to ${adminEmail}. Resend ID: ${resendData.id}`)
-    console.log(`📊 [LOW-STOCK-CRON] Summary: ${outOfStock.length} out of stock, ${lowStock.length} low stock`)
 
     return new Response(
       JSON.stringify({
@@ -350,7 +329,6 @@ Deno.serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('📊 [LOW-STOCK-CRON] ❌ Unexpected error:', error)
     return new Response(
       JSON.stringify({ error: 'Internal server error', details: String(error) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -204,7 +204,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       },
     });
   } catch (error: any) {
-    console.error('[ADMIN FACTURAS REGENERATE] error:', error);
     return new Response(JSON.stringify({ error: error.message || 'Error interno' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

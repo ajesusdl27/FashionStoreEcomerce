@@ -94,7 +94,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
 
     if (sendError) {
-      console.error('Error sending test email:', sendError);
       return new Response(JSON.stringify({ error: 'Error al enviar email de prueba' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
@@ -110,7 +109,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
 
   } catch (error: any) {
-    console.error('Send test email error:', error);
     return new Response(JSON.stringify({ error: 'Error interno del servidor' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

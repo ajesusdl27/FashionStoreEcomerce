@@ -98,7 +98,6 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
     });
 
   } catch (error: any) {
-    console.error('Bulk stock update error:', error);
     return new Response(JSON.stringify({ error: error.message }), { 
       status: 500, 
       headers: { 'Content-Type': 'application/json' } 

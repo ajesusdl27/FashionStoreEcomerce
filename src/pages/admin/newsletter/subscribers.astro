@@ -299,7 +299,6 @@ const totalCount = subscribers?.length || 0;
             throw new Error(data.error || 'Error al actualizar el estado');
           }
         } catch (error) {
-          console.error("Error toggling subscriber:", error);
           showToast(
             error instanceof Error ? error.message : 'Error al actualizar el suscriptor',
             'error'

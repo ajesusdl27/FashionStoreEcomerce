@@ -40,7 +40,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .single();
 
     if (error) {
-      console.error('Error creating campaign:', error);
       return new Response(JSON.stringify({ error: 'Error al crear campaña' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
@@ -52,7 +51,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
-    console.error('Campaign creation exception:', error);
     return new Response(JSON.stringify({ error: 'Error interno' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

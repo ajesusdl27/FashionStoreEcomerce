@@ -42,7 +42,6 @@ export const POST: APIRoute = async ({ request, url, locals, cookies }) => {
     const dbClient = customerId ? createAuthenticatedClient(accessToken, refreshToken) : supabase;
     
     if (customerId) {
-      console.log(`Checkout for authenticated user: ${customerId}`);
     }
 
     // Validate required fields with detailed errors
@@ -179,7 +178,6 @@ export const POST: APIRoute = async ({ request, url, locals, cookies }) => {
         });
       }
       
-      console.error('Error creating order:', orderError);
       return new Response(JSON.stringify({ error: 'Error al crear el pedido' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
@@ -190,7 +188,6 @@ export const POST: APIRoute = async ({ request, url, locals, cookies }) => {
     const orderNumber = orderResult.order_number;
     const formattedOrderId = formatOrderId(orderNumber);
     
-    console.log(`Order created: ${formattedOrderId} (UUID: ${orderId})`);
 
     // Build line items for Stripe
     const lineItems: Array<{
@@ -263,7 +260,6 @@ export const POST: APIRoute = async ({ request, url, locals, cookies }) => {
       session = await stripe.checkout.sessions.create(sessionConfig);
     } catch (stripeError) {
       // Stripe session creation failed - rollback stock and delete order
-      console.error('Error creating Stripe session:', stripeError);
       
       for (const reserved of reservedItems) {
         await dbClient.rpc('restore_stock', {
@@ -290,9 +286,7 @@ export const POST: APIRoute = async ({ request, url, locals, cookies }) => {
       .eq('id', orderId);
     
     if (updateError) {
-      console.error('Error updating stripe_session_id:', updateError);
     } else {
-      console.log(`Stripe session ${session.id} linked to order ${formattedOrderId}`);
     }
 
     return new Response(JSON.stringify({ 
@@ -305,7 +299,6 @@ export const POST: APIRoute = async ({ request, url, locals, cookies }) => {
     });
 
   } catch (error) {
-    console.error('Checkout error:', error);
     return new Response(JSON.stringify({ error: 'Error procesando el checkout' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }

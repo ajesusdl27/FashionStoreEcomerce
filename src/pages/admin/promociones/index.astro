@@ -537,7 +537,6 @@ const alreadyExpired =
           if (statusSpan) statusSpan.textContent = originalText;
         }
       } catch (error) {
-        console.error("Error toggling status:", error);
         btnEl.disabled = false;
         btnEl.style.opacity = '1';
         if (statusSpan) statusSpan.textContent = originalText;
@@ -576,7 +575,6 @@ const alreadyExpired =
           btnEl.style.opacity = '1';
         }
       } catch (error) {
-        console.error("Error deleting promotion:", error);
         btnEl.disabled = false;
         btnEl.style.opacity = '1';
       }
@@ -634,7 +632,6 @@ const alreadyExpired =
           alert("Error al duplicar: " + error.error);
         }
       } catch (error) {
-        console.error("Error duplicating promotion:", error);
         alert("Error al duplicar la promoción");
       }
     });

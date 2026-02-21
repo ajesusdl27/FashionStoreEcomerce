@@ -70,7 +70,6 @@ export function useCategories(): UseCategoriesReturn {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar categorías';
       setError(errorMessage);
-      console.error('Error fetching categories:', err);
     } finally {
       setIsLoading(false);
     }

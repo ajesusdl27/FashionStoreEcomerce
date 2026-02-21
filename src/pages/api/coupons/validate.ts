@@ -19,7 +19,6 @@ export const POST: APIRoute = async ({ request }) => {
     });
 
     if (error) {
-      console.error('Coupon validation error:', error);
       return new Response(JSON.stringify({ error: 'Error al validar el cupón' }), { 
         status: 500, headers: { 'Content-Type': 'application/json' } 
       });
@@ -51,7 +50,6 @@ export const POST: APIRoute = async ({ request }) => {
       status: 200, headers: { 'Content-Type': 'application/json' } 
     });
   } catch (error: any) {
-    console.error('Coupon validation error:', error);
     return new Response(JSON.stringify({ error: 'Error al validar el cupón' }), { 
       status: 500, headers: { 'Content-Type': 'application/json' } 
     });

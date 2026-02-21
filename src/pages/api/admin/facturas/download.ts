@@ -70,7 +70,6 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       },
     });
   } catch (error: any) {
-    console.error('[ADMIN FACTURAS DOWNLOAD] error:', error);
     return new Response(JSON.stringify({ error: error.message || 'Error interno' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

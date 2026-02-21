@@ -43,7 +43,6 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       .select('id');
 
     if (error) {
-      console.error('Error deleting campaign:', error);
       return new Response(JSON.stringify({ error: 'Error al eliminar campaña' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
@@ -64,7 +63,6 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
-    console.error('Campaign delete exception:', error);
     return new Response(JSON.stringify({ error: 'Error interno' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

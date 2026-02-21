@@ -192,7 +192,7 @@ if (!email || !EMAIL_REGEX.test(email)) { ... }
 
 | Archivo     | `send-chunk.ts` líneas 83-87                                |
 | ----------- | ----------------------------------------------------------- |
-| **Problema** | `console.error()` pero no se guarda en DB                   |
+| **Problema** | Error detectado pero no se guarda en DB                     |
 | **Impacto** | Imposible saber qué emails fallaron para reintentar         |
 | **Solución** | Crear tabla `newsletter_send_logs`                          |
 
@@ -200,7 +200,7 @@ if (!email || !EMAIL_REGEX.test(email)) { ... }
 
 | Archivo     | `subscribers.astro` script cliente                   |
 | ----------- | ---------------------------------------------------- |
-| **Problema** | Catch silencioso con `console.error`                 |
+| **Problema** | Catch silencioso sin feedback al usuario             |
 | **Solución** | Mostrar toast de error al usuario                    |
 
 ### 13. No existe página de edición de campañas

@@ -49,7 +49,6 @@ export const PUT: APIRoute = async ({ params, request, cookies }) => {
     });
 
     if (error) {
-      console.error('Error marking return as shipped:', error);
       
       // Mensajes de error personalizados
       if (error.message.includes('No tienes permisos')) {
@@ -85,7 +84,6 @@ export const PUT: APIRoute = async ({ params, request, cookies }) => {
     );
 
   } catch (error: any) {
-    console.error('Mark shipped API error:', error);
     return new Response(
       JSON.stringify({ error: error.message || 'Error interno del servidor' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
