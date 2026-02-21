@@ -121,7 +121,6 @@ export default function RelatedProductsCarousel({ products }: Props) {
           const hasOffer = product.is_offer && product.offer_price;
           const displayPrice = hasOffer ? product.offer_price : product.price;
           const totalStock = getTotalStock(product);
-          const isLowStock = totalStock > 0 && totalStock <= 5;
           const imageUrl = getImageUrl(product);
 
           // Get available sizes
@@ -182,15 +181,6 @@ export default function RelatedProductsCarousel({ products }: Props) {
                     </span>
                   )}
                 </div>
-
-                {/* Low stock indicator */}
-                {isLowStock && (
-                  <div className="absolute bottom-2 left-2 right-2 z-10">
-                    <span className="block w-full bg-orange-500 text-white text-xs font-semibold px-2 py-1 rounded text-center shadow-lg">
-                      ⚡ Últimas {totalStock} unidades
-                    </span>
-                  </div>
-                )}
 
                 {/* Out of stock */}
                 {totalStock === 0 && (

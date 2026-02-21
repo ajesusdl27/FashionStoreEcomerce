@@ -19,7 +19,7 @@ const { data: profile } = await authClient
   .from("customer_profiles")
   .select("*")
   .eq("id", user.id)
-  .single();
+  .maybeSingle();
 
 // Merge with user metadata as fallback
 const initialData = {

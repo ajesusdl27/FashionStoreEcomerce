@@ -11,6 +11,24 @@ import { formatPrice } from "@/lib/formatters";
 import { getShippingConfig, getSettings } from "@/lib/settings";
 import { RefreshCw, ShieldCheck, Truck } from "lucide-react";
 
+interface ProductVariant {
+  id: string;
+  size: string;
+  stock: number;
+}
+
+interface RelatedProductCard {
+  id: string;
+  name: string;
+  slug: string;
+  price: number;
+  offer_price?: number | null;
+  is_offer?: boolean;
+  category?: { name: string; slug: string } | null;
+  images?: { image_url: string; order: number }[] | null;
+  variants?: ProductVariant[] | null;
+}
+
 const { slug } = Astro.params;
 
 
@@ -48,7 +66,7 @@ function calculateDiscount(original: number, offer: number): number {
 }
 
 
-const variantsForReact = (product.variants || []).map((v: any) => ({
+const variantsForReact: ProductVariant[] = (product.variants || []).map((v: any) => ({
   id: v.id,
   size: v.size,
   stock: v.stock,
@@ -67,9 +85,39 @@ const shippingConfig = await getShippingConfig();
 const settings = await getSettings();
 
 // Get related products from the same category
-const relatedProducts = product.category?.id
+const rawRelatedProducts = product.category?.id
   ? await getRelatedProducts(product.category.id, product.id, 6)
   : [];
+
+const relatedProducts: RelatedProductCard[] = (rawRelatedProducts || []).map((p: any) => {
+  const normalizedCategory = Array.isArray(p.category)
+    ? (p.category[0]
+      ? { name: p.category[0].name, slug: p.category[0].slug }
+      : null)
+    : p.category
+      ? { name: p.category.name, slug: p.category.slug }
+      : null;
+
+  const normalizedImages = Array.isArray(p.images)
+    ? p.images.map((img: any) => ({ image_url: img.image_url, order: img.order }))
+    : [];
+
+  const normalizedVariants = Array.isArray(p.variants)
+    ? p.variants.map((v: any) => ({ id: v.id, size: v.size, stock: v.stock }))
+    : [];
+
+  return {
+    id: p.id,
+    name: p.name,
+    slug: p.slug,
+    price: p.price,
+    offer_price: p.offer_price,
+    is_offer: p.is_offer,
+    category: normalizedCategory,
+    images: normalizedImages,
+    variants: normalizedVariants,
+  };
+});
 ---
 
 <PublicLayout
@@ -366,49 +414,67 @@ const relatedProducts = product.category?.id
   </div>
 
   <script>
-    // Thumbnail click handler
-    document.querySelectorAll(".thumbnail-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const mainImg = document.getElementById(
-          "main-image"
-        ) as HTMLImageElement;
-        const newSrc = (btn as HTMLElement).dataset.image;
-        if (mainImg && newSrc) {
+    type ProductDetailClickHandler = (event: MouseEvent) => void;
+
+    const handleProductDetailClick: ProductDetailClickHandler = (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      const thumbnailBtn = target.closest('.thumbnail-btn');
+      if (thumbnailBtn instanceof HTMLElement) {
+        event.preventDefault();
+        const mainImg = document.getElementById('main-image');
+        const newSrc = thumbnailBtn.dataset.image;
+
+        if (mainImg instanceof HTMLImageElement && newSrc) {
           mainImg.src = newSrc;
+          mainImg.srcset = '';
         }
 
-        // Update active state
         document
-          .querySelectorAll(".thumbnail-btn")
-          .forEach((b) => b.classList.remove("border-primary"));
-        btn.classList.add("border-primary");
-      });
-    });
+          .querySelectorAll('.thumbnail-btn')
+          .forEach((button: Element) => button.classList.remove('border-primary'));
+        thumbnailBtn.classList.add('border-primary');
+        return;
+      }
 
-    // Tab functionality
-    document.querySelectorAll(".tab-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const tabName = (btn as HTMLElement).dataset.tab;
-        
-        // Update tab buttons
-        document.querySelectorAll(".tab-btn").forEach((b) => {
-          b.classList.remove("border-primary", "text-foreground");
-          b.classList.add("border-transparent", "text-muted-foreground");
-          b.setAttribute("aria-selected", "false");
-        });
-        btn.classList.add("border-primary", "text-foreground");
-        btn.classList.remove("border-transparent", "text-muted-foreground");
-        btn.setAttribute("aria-selected", "true");
+      const tabBtn = target.closest('.tab-btn');
+      if (tabBtn instanceof HTMLElement) {
+        const tabName = tabBtn.dataset.tab;
+        if (!tabName) return;
 
-        // Update tab content
-        document.querySelectorAll(".tab-content").forEach((content) => {
-          content.classList.add("hidden");
+        document.querySelectorAll('.tab-btn').forEach((button: Element) => {
+          button.classList.remove('border-primary', 'text-foreground');
+          button.classList.add('border-transparent', 'text-muted-foreground');
+          button.setAttribute('aria-selected', 'false');
         });
-        const activeContent = document.querySelector(`[data-tab-content="${tabName}"]`);
+
+        tabBtn.classList.add('border-primary', 'text-foreground');
+        tabBtn.classList.remove('border-transparent', 'text-muted-foreground');
+        tabBtn.setAttribute('aria-selected', 'true');
+
+        document.querySelectorAll('.tab-content').forEach((content: Element) => {
+          content.classList.add('hidden');
+        });
+
+        const activeContent = document.querySelector(
+          `[data-tab-content="${tabName}"]`
+        );
         if (activeContent) {
-          activeContent.classList.remove("hidden");
+          activeContent.classList.remove('hidden');
         }
-      });
-    });
+      }
+    };
+
+    const windowWithHandler = window as Window & {
+      __productDetailClickHandler?: ProductDetailClickHandler;
+    };
+    const previousHandler = windowWithHandler.__productDetailClickHandler;
+    if (typeof previousHandler === 'function') {
+      document.removeEventListener('click', previousHandler);
+    }
+
+    windowWithHandler.__productDetailClickHandler = handleProductDetailClick;
+    document.addEventListener('click', handleProductDetailClick);
   </script>
 </PublicLayout>

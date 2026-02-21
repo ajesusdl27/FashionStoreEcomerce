@@ -50,7 +50,7 @@ export default function AuthProvider({ children, initialUser = null }: AuthProvi
         .from('customer_profiles')
         .select('full_name')
         .eq('id', serverUser.id)
-        .single();
+        .maybeSingle();
 
       return {
         id: serverUser.id,
