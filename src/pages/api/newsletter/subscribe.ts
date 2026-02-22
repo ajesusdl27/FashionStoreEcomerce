@@ -104,7 +104,7 @@ export const POST: APIRoute = async ({ request, clientAddress, cookies }) => {
           coupon: {
             code: 'BIENVENIDA10',
             discount: '10%',
-            description: '10% de descuento en tu primera compra (máx. 20€, mín. 30€)',
+            description: '10% de descuento en tu primera compra (máx. 30€, mín. 30€)',
           }
         }), {
           status: 200,
@@ -135,7 +135,7 @@ export const POST: APIRoute = async ({ request, clientAddress, cookies }) => {
       coupon: {
         code: 'BIENVENIDA10',
         discount: '10%',
-        description: '10% de descuento en tu primera compra (máx. 20€, mín. 30€)',
+        description: '10% de descuento en tu primera compra (máx. 30€, mín. 30€)',
       }
     }), {
       status: 200,

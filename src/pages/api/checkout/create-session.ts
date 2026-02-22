@@ -82,7 +82,8 @@ export const POST: APIRoute = async ({ request, url, locals, cookies }) => {
     const shippingCents = subtotalCents >= freeShippingThreshold * 100 ? 0 : shippingCostCents;
     
     // Validate coupon if provided
-    let validatedCoupon: { id: string; stripeCouponId: string; calculatedDiscount: number } | null = null;
+    let validatedCoupon: { id: string; calculatedDiscount: number } | null = null;
+    let discountCents = 0;
     
     if (couponCode) {
       const { data: couponResult, error: couponError } = await dbClient.rpc('validate_coupon', {
@@ -104,13 +105,13 @@ export const POST: APIRoute = async ({ request, url, locals, cookies }) => {
       
       validatedCoupon = {
         id: result.coupon_id,
-        stripeCouponId: result.stripe_coupon_id,
         calculatedDiscount: result.calculated_discount
       };
+      discountCents = Math.round(result.calculated_discount * 100);
     }
     
-    // Calculate total (discount will be applied by Stripe)
-    const totalCents = subtotalCents + shippingCents;
+    // Calculate total using backend-validated discount (same logic as mobile checkout)
+    const totalCents = Math.max(subtotalCents + shippingCents - discountCents, 50); // Minimum 50 cents for Stripe
 
     // Reserve stock for each item
     const reservedItems: { variantId: string; quantity: number }[] = [];
@@ -164,7 +165,7 @@ export const POST: APIRoute = async ({ request, url, locals, cookies }) => {
       // Financial breakdown
       p_subtotal: subtotalCents / 100,
       p_shipping_cost: shippingCents / 100,
-      p_discount_amount: validatedCoupon ? Math.round(validatedCoupon.calculatedDiscount * 100) / 100 : 0,
+      p_discount_amount: discountCents / 100,
       p_coupon_code: couponCode || null,
       p_coupon_id: validatedCoupon?.id || null,
     });
@@ -252,9 +253,17 @@ export const POST: APIRoute = async ({ request, url, locals, cookies }) => {
         billing_address_collection: 'auto'
       };
 
-      // Add Stripe discount if coupon is validated
-      if (validatedCoupon) {
-        sessionConfig.discounts = [{ coupon: validatedCoupon.stripeCouponId }];
+      // Apply fixed amount discount in Stripe based on backend-validated calculation
+      // This preserves max caps (e.g. newsletter 10% up to 30€) and avoids Stripe recalculating percentages
+      if (validatedCoupon && discountCents > 0) {
+        const stripeRuntimeCoupon = await stripe.coupons.create({
+          amount_off: discountCents,
+          currency: 'eur',
+          duration: 'once',
+          name: couponCode ? `${couponCode.toUpperCase()}-runtime` : 'Runtime checkout discount'
+        });
+
+        sessionConfig.discounts = [{ coupon: stripeRuntimeCoupon.id }];
       }
 
       session = await stripe.checkout.sessions.create(sessionConfig);

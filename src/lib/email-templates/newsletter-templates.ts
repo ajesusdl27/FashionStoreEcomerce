@@ -148,7 +148,7 @@ export function generateWelcomeHTML(options: WelcomeTemplateOptions): string {
                 10% de descuento en tu primera compra
               </p>
               <p style="color: #333; font-size: 13px; margin: 0;">
-                Máximo 20€ de descuento · Compra mínima 30€ · Un solo uso
+                Máximo 30€ de descuento · Compra mínima 30€ · Un solo uso
               </p>
               <a href="${siteUrl}/promociones/newsletter-bienvenida" 
                  style="color: #0a0a0a; font-size: 12px; text-decoration: underline; display: inline-block; margin-top: 10px;">
