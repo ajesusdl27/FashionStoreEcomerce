@@ -87,6 +87,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   const { pathname } = context.url;
   const cookies = context.cookies;
+  const normalizedPathname = pathname.length > 1 && pathname.endsWith('/')
+    ? pathname.slice(0, -1)
+    : pathname;
 
   // Skip middleware for API routes - they handle their own auth
   if (pathname.startsWith('/api/')) {
@@ -98,15 +101,24 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const refreshToken = cookies.get('sb-refresh-token')?.value;
 
   // Check if route requires authentication
-  const isAdminRoute = pathname.startsWith('/admin') && pathname !== '/admin/login';
-  const isAccountRoute = pathname.startsWith('/cuenta') && 
-    pathname !== '/cuenta/login' && 
-    pathname !== '/cuenta/registro' &&
-    pathname !== '/cuenta/recuperar-password' &&
-    pathname !== '/cuenta/reset-password';
+  const isAdminRoute = normalizedPathname.startsWith('/admin') && normalizedPathname !== '/admin/login';
+  const accountPublicRoutes = new Set([
+    '/cuenta/login',
+    '/cuenta/registro',
+    '/cuenta/recuperar-password',
+    '/cuenta/reset-password',
+  ]);
+  const isAccountRoute = normalizedPathname.startsWith('/cuenta') &&
+    !accountPublicRoutes.has(normalizedPathname);
 
   // Log auth checks for protected routes
-  if (isAdminRoute || isAccountRoute) {
+  if (import.meta.env.DEV && (isAdminRoute || isAccountRoute)) {
+    console.debug('[auth:middleware] Protected route check', {
+      pathname,
+      normalizedPathname,
+      hasAccessToken: Boolean(accessToken),
+      hasRefreshToken: Boolean(refreshToken),
+    });
   }
 
   // If we have tokens, try to validate the user
@@ -138,7 +150,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
         // Validate with new token
         user = await validateToken(newTokens.access_token);
         accessToken = newTokens.access_token;
+        if (import.meta.env.DEV) {
+          console.debug('[auth:middleware] Session refreshed', {
+            pathname,
+            refreshSuccess: Boolean(user),
+          });
+        }
       } else {
+        if (import.meta.env.DEV) {
+          console.debug('[auth:middleware] Session refresh failed', { pathname });
+        }
       }
     }
 
@@ -146,6 +167,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
       // Attach user to locals for use in pages
       context.locals.user = user;
     } else {
+      if (import.meta.env.DEV) {
+        console.debug('[auth:middleware] No valid user after token validation', { pathname });
+      }
     }
   }
 

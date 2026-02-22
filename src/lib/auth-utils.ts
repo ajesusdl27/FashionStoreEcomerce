@@ -10,15 +10,9 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string;
  */
 export async function validateToken(accessToken: string): Promise<User | null> {
   try {
-    const client = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
-    });
+    const client = createClient(supabaseUrl, supabaseAnonKey);
 
-    const { data: { user }, error } = await client.auth.getUser();
+    const { data: { user }, error } = await client.auth.getUser(accessToken);
     
     if (error || !user) {
       return null;

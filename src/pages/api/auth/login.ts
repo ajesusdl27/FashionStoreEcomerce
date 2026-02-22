@@ -66,12 +66,22 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const { access_token, refresh_token } = data.session;
+    const forwardedProto = request.headers.get('x-forwarded-proto') || '';
+    const requestProtocol = (() => {
+      try {
+        return new URL(request.url).protocol;
+      } catch {
+        return 'http:';
+      }
+    })();
+    const secureCookies = import.meta.env.PROD &&
+      (requestProtocol === 'https:' || forwardedProto.includes('https'));
 
     // Set cookies with secure options
     cookies.set('sb-access-token', access_token, {
       path: '/',
       httpOnly: true,
-      secure: false, // TEMPORAL: Fuerza false para que funcione tras el proxy de Coolify
+      secure: secureCookies,
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
@@ -79,7 +89,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     cookies.set('sb-refresh-token', refresh_token, {
       path: '/',
       httpOnly: true,
-      secure: false, // TEMPORAL: Fuerza false para que funcione tras el proxy de Coolify
+      secure: secureCookies,
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 30, // 30 days
     });
