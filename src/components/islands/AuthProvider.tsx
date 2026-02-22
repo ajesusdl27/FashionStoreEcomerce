@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 
 interface UserData {
@@ -34,6 +34,8 @@ interface AuthProviderProps {
 export default function AuthProvider({ children, initialUser = null }: AuthProviderProps) {
   const [user, setUser] = useState<UserData | null>(initialUser);
   const [isLoading, setIsLoading] = useState(!initialUser);
+  // Guard para evitar llamadas duplicadas a set-session
+  const sessionSyncedRef = useRef(false);
 
   // Fetch user from server (reads httpOnly cookies)
   const fetchUserFromServer = async (): Promise<UserData | null> => {
@@ -120,7 +122,15 @@ export default function AuthProvider({ children, initialUser = null }: AuthProvi
         }
 
         if (event === 'SIGNED_IN' && session) {
-          // Sync new session to server (for client-side login flows)
+          // Evitar duplicar set-session si ya fue llamado recientemente
+          // (login.ts y AuthForm ya establecen cookies directamente)
+          if (sessionSyncedRef.current) {
+            return;
+          }
+          sessionSyncedRef.current = true;
+          // Reset después de 3s para permitir futuros sign-ins
+          setTimeout(() => { sessionSyncedRef.current = false; }, 3000);
+
           try {
             await fetch('/api/auth/set-session', {
               method: 'POST',

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
 interface AuthFormProps {
@@ -33,12 +33,19 @@ export default function AuthForm({ mode, redirectTo = '/cuenta' }: AuthFormProps
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const submitInFlightRef = useRef(false);
 
   const isRegister = mode === 'register';
   const isAdminLogin = mode === 'admin-login';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (submitInFlightRef.current) {
+      return;
+    }
+
+    submitInFlightRef.current = true;
     setError('');
     setSuccess('');
     setLoading(true);
@@ -89,7 +96,7 @@ export default function AuthForm({ mode, redirectTo = '/cuenta' }: AuthFormProps
           if (response.ok) {
             setSuccess('¡Cuenta creada! Redirigiendo...');
             setTimeout(() => {
-              window.location.href = redirectTo;
+              window.location.replace(redirectTo);
             }, 1500);
           } else {
             setError('Error al establecer la sesión');
@@ -148,13 +155,14 @@ export default function AuthForm({ mode, redirectTo = '/cuenta' }: AuthFormProps
 
         setSuccess('¡Bienvenido! Redirigiendo...');
         setTimeout(() => {
-          window.location.href = result.redirectTo;
+          window.location.replace(result.redirectTo);
         }, 1000);
       }
     } catch (err) {
       setError(`Error de conexión: ${err instanceof Error ? err.message : 'Inténtalo de nuevo'}`);
     } finally {
       setLoading(false);
+      submitInFlightRef.current = false;
     }
   };
 

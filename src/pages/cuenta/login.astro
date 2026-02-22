@@ -2,7 +2,9 @@
 import PublicLayout from "@/layouts/PublicLayout.astro";
 import AuthForm from "@/components/islands/AuthForm";
 
+// La redirección de usuarios autenticados se gestiona en middleware
 const redirectParam = Astro.url.searchParams.get("redirect");
+const safeRedirect = (redirectParam && redirectParam.startsWith('/')) ? redirectParam : '/cuenta';
 ---
 
 <PublicLayout title="Iniciar Sesión - FashionStore">
@@ -19,7 +21,7 @@ const redirectParam = Astro.url.searchParams.get("redirect");
         <AuthForm
           client:load
           mode="login"
-          redirectTo={redirectParam || "/cuenta"}
+          redirectTo={safeRedirect}
         />
 
         <!-- Forgot Password Link -->

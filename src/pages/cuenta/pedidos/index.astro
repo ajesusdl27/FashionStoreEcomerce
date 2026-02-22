@@ -5,12 +5,8 @@ import { formatOrderId } from "@/lib/order-utils";
 import { formatPrice } from "@/lib/formatters";
 import { Package, ChevronRight, ArrowLeft, Filter, ShoppingBag } from "lucide-react";
 
-const user = Astro.locals.user;
-
-// This page is protected by middleware
-if (!user) {
-  return Astro.redirect("/cuenta/login");
-}
+// Protegido por middleware — user está garantizado
+const user = Astro.locals.user!;
 
 // Get filter from URL
 const statusFilter = Astro.url.searchParams.get("status");

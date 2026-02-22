@@ -9,11 +9,8 @@ import { formatPrice } from "@/lib/formatters";
 import { ArrowLeft, Package, MapPin, Mail, Phone, Truck, MessageCircle } from "lucide-react";
 
 const { id } = Astro.params;
-const user = Astro.locals.user;
-
-if (!user) {
-  return Astro.redirect("/cuenta/login");
-}
+// Protegido por middleware — user está garantizado
+const user = Astro.locals.user!;
 
 // Fetch order with items AND verify ownership
 const { data: order, error } = await supabase

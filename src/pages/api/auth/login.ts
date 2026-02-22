@@ -1,5 +1,33 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL as string;
+const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string;
+
+function sanitizeRedirectPath(redirectPath: string | undefined, fallback: string): string {
+  if (!redirectPath || !redirectPath.startsWith('/')) {
+    return fallback;
+  }
+
+  const pathname = redirectPath.split('?')[0] || '/';
+  const normalizedPathname = pathname.length > 1 && pathname.endsWith('/')
+    ? pathname.slice(0, -1)
+    : pathname;
+
+  const blockedTargets = new Set([
+    '/cuenta/login',
+    '/cuenta/registro',
+    '/cuenta/recuperar-password',
+    '/cuenta/reset-password',
+    '/admin/login',
+  ]);
+
+  if (blockedTargets.has(normalizedPathname)) {
+    return fallback;
+  }
+
+  return redirectPath;
+}
 
 // Translation helper for Supabase error messages
 function translateSupabaseError(message: string): string {
@@ -19,7 +47,6 @@ function translateSupabaseError(message: string): string {
 }
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  
   try {
     const contentType = request.headers.get('content-type');
     let email, password, redirectTo;
@@ -36,7 +63,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       redirectTo = formData.get('redirectTo')?.toString() || '/cuenta';
     }
 
-
     if (!email || !password) {
       return new Response(
         JSON.stringify({ error: 'Email y contraseña son requeridos' }),
@@ -44,13 +70,25 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const fallbackRedirect = redirectTo?.startsWith('/admin') ? '/admin' : '/cuenta';
+    const safeRedirectTo = sanitizeRedirectPath(redirectTo, fallbackRedirect);
+
+    // IMPORTANTE: Usar un cliente fresh para signInWithPassword
+    // para NO contaminar el singleton compartido con estado de sesión
+    const freshClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    });
+
+    const { data, error } = await freshClient.auth.signInWithPassword({
       email,
       password,
     });
-    
 
-  if (error) {
+    if (error) {
       const translatedError = translateSupabaseError(error.message);
       return new Response(
         JSON.stringify({ error: translatedError }),
@@ -95,7 +133,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
 
     return new Response(
-      JSON.stringify({ success: true, redirectTo }),
+      JSON.stringify({ success: true, redirectTo: safeRedirectTo }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (err) {

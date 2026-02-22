@@ -5,12 +5,8 @@ import { formatOrderId } from "@/lib/order-utils";
 import { formatPrice } from "@/lib/formatters";
 import { User, Package, LogOut, ChevronRight, ShoppingBag } from "lucide-react";
 
-const user = Astro.locals.user;
-
-// This page is protected by middleware, so user should always exist
-if (!user) {
-  return Astro.redirect("/cuenta/login");
-}
+// Protegido por middleware — user está garantizado
+const user = Astro.locals.user!;
 
 const displayName =
   user.user_metadata?.full_name || user.email?.split("@")[0] || "Usuario";

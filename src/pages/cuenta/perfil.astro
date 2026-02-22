@@ -3,12 +3,8 @@ import PublicLayout from "@/layouts/PublicLayout.astro";
 import ProfileForm from "@/components/islands/ProfileForm";
 import { createAuthenticatedClient } from "@/lib/supabase";
 
-const user = Astro.locals.user;
-
-// This page is protected by middleware
-if (!user) {
-  return Astro.redirect("/cuenta/login");
-}
+// Protegido por middleware — user está garantizado
+const user = Astro.locals.user!;
 
 // Fetch profile data
 const accessToken = Astro.cookies.get("sb-access-token")?.value;

@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
 import { refreshSession, validateToken } from '@/lib/auth-utils';
 
-// Returns current user session info for client-side hydration
-// This allows the client to sync with the httpOnly cookie session
+// Devuelve la sesión actual del usuario para hidratación client-side
+// Permite al cliente sincronizarse con las cookies httpOnly
 export const GET: APIRoute = async ({ cookies }) => {
   const accessToken = cookies.get('sb-access-token')?.value;
   const refreshToken = cookies.get('sb-refresh-token')?.value;
@@ -10,10 +10,7 @@ export const GET: APIRoute = async ({ cookies }) => {
   if (!accessToken && !refreshToken) {
     return new Response(
       JSON.stringify({ user: null }),
-      { 
-        status: 200, 
-        headers: { 'Content-Type': 'application/json' } 
-      }
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   }
 
@@ -44,20 +41,17 @@ export const GET: APIRoute = async ({ cookies }) => {
   }
 
   if (!user) {
-    // Token is invalid, clear the cookies
+    // Token inválido, limpiar cookies
     cookies.delete('sb-access-token', { path: '/' });
     cookies.delete('sb-refresh-token', { path: '/' });
     
     return new Response(
       JSON.stringify({ user: null }),
-      { 
-        status: 200, 
-        headers: { 'Content-Type': 'application/json' } 
-      }
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   }
 
-  // Return user info (without sensitive data)
+  // Devolver info del usuario (sin datos sensibles)
   return new Response(
     JSON.stringify({
       user: {
@@ -66,9 +60,6 @@ export const GET: APIRoute = async ({ cookies }) => {
         user_metadata: user.user_metadata,
       }
     }),
-    { 
-      status: 200, 
-      headers: { 'Content-Type': 'application/json' } 
-    }
+    { status: 200, headers: { 'Content-Type': 'application/json' } }
   );
 };

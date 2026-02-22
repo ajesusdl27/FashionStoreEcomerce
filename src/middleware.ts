@@ -37,10 +37,30 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const applyCacheHeaders = (response: Response): Response => {
     const { pathname } = context.url;
     const contentType = response.headers.get('content-type') || '';
+    const isRedirect = response.status >= 300 && response.status < 400;
+    const normalizedPathname = pathname.length > 1 && pathname.endsWith('/')
+      ? pathname.slice(0, -1)
+      : pathname;
+    const accountPublicRoutes = new Set([
+      '/cuenta/login',
+      '/cuenta/registro',
+      '/cuenta/recuperar-password',
+      '/cuenta/reset-password',
+    ]);
+    const isProtectedAccountRoute = normalizedPathname.startsWith('/cuenta') &&
+      !accountPublicRoutes.has(normalizedPathname);
+    const isProtectedAdminRoute = normalizedPathname.startsWith('/admin') &&
+      normalizedPathname !== '/admin/login';
 
     const isVersionedAsset =
       pathname.startsWith('/_astro/') ||
       /\.(?:js|mjs|css|png|jpg|jpeg|gif|svg|ico|webp|avif|woff|woff2|ttf|eot|map)$/.test(pathname);
+
+    if (isRedirect || isProtectedAccountRoute || isProtectedAdminRoute) {
+      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+      response.headers.set('Pragma', 'no-cache');
+      return response;
+    }
 
     if (pathname.startsWith('/api/')) {
       response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
@@ -108,27 +128,17 @@ export const onRequest = defineMiddleware(async (context, next) => {
     '/cuenta/recuperar-password',
     '/cuenta/reset-password',
   ]);
-  const isAccountRoute = normalizedPathname.startsWith('/cuenta') &&
-    !accountPublicRoutes.has(normalizedPathname);
+  const isAccountPublicRoute = accountPublicRoutes.has(normalizedPathname);
+  const isAccountRoute = normalizedPathname.startsWith('/cuenta') && !isAccountPublicRoute;
 
-  // Log auth checks for protected routes
-  if (import.meta.env.DEV && (isAdminRoute || isAccountRoute)) {
-    console.debug('[auth:middleware] Protected route check', {
-      pathname,
-      normalizedPathname,
-      hasAccessToken: Boolean(accessToken),
-      hasRefreshToken: Boolean(refreshToken),
-    });
-  }
+  // Try to validate/refresh user when any auth token exists
+  if (accessToken || refreshToken) {
+    let user = accessToken ? await validateToken(accessToken) : null;
 
-  // If we have tokens, try to validate the user
-  if (accessToken) {
-    let user = await validateToken(accessToken);
-
-    // If access token is invalid but we have refresh token, try to refresh
+    // If access token is missing/invalid and we have refresh token, try to refresh
     if (!user && refreshToken) {
       const newTokens = await refreshSession(refreshToken);
-      
+
       if (newTokens) {
         // Update cookies with new tokens
         cookies.set('sb-access-token', newTokens.access_token, {
@@ -150,32 +160,43 @@ export const onRequest = defineMiddleware(async (context, next) => {
         // Validate with new token
         user = await validateToken(newTokens.access_token);
         accessToken = newTokens.access_token;
-        if (import.meta.env.DEV) {
-          console.debug('[auth:middleware] Session refreshed', {
-            pathname,
-            refreshSuccess: Boolean(user),
-          });
-        }
-      } else {
-        if (import.meta.env.DEV) {
-          console.debug('[auth:middleware] Session refresh failed', { pathname });
-        }
       }
     }
 
     if (user) {
       // Attach user to locals for use in pages
       context.locals.user = user;
-    } else {
-      if (import.meta.env.DEV) {
-        console.debug('[auth:middleware] No valid user after token validation', { pathname });
-      }
     }
   }
 
-  // Enforce protection for Admin/Account routes
+  // ============================================
+  // REDIRIGIR USUARIOS AUTENTICADOS FUERA DE PÁGINAS DE AUTH
+  // ============================================
+  // Si el usuario está autenticado y visita login/registro, redirigir a /cuenta
+  if (context.locals.user && isAccountPublicRoute) {
+    // Extraer redirect param si existe, con sanitización
+    const redirectParam = context.url.searchParams.get('redirect');
+    let target = '/cuenta';
+
+    if (redirectParam && redirectParam.startsWith('/')) {
+      const rPathname = redirectParam.split('?')[0] || '/';
+      const rNormalized = rPathname.length > 1 && rPathname.endsWith('/')
+        ? rPathname.slice(0, -1)
+        : rPathname;
+
+      // No redirigir de vuelta a páginas de auth (rompe-bucles)
+      if (!accountPublicRoutes.has(rNormalized)) {
+        target = redirectParam;
+      }
+    }
+
+    return applySecurityHeaders(context.redirect(target));
+  }
+
+  // ============================================
+  // PROTECCIÓN DE RUTAS PRIVADAS
+  // ============================================
   if (isAdminRoute || isAccountRoute) {
-    // If no user found (either no tokens or invalid tokens)
     if (!context.locals.user) {
       // Clear invalid cookies if they existed but failed
       if (accessToken || refreshToken) {
@@ -190,7 +211,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     // Admin routes require admin role
     if (isAdminRoute) {
       const isAdmin = context.locals.user.user_metadata?.is_admin === true;
-      
+
       if (!isAdmin) {
         return applySecurityHeaders(context.redirect('/admin/login?error=unauthorized'));
       }
