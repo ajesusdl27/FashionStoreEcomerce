@@ -90,7 +90,7 @@ export async function getMonthlyRevenue(client: SupabaseClient): Promise<Monthly
   const { data, error } = await client
     .from('orders')
     .select('total_amount, refunded_amount')
-    .in('status', ['paid', 'shipped', 'delivered', 'return_completed', 'partially_refunded'])
+    .in('status', ['paid', 'shipped', 'delivered', 'return_completed', 'returned', 'partially_refunded'])
     .gte('created_at', monthStart.toISOString())
     .lte('created_at', monthEnd.toISOString());
 
@@ -113,7 +113,7 @@ export async function getMonthlyRevenue(client: SupabaseClient): Promise<Monthly
   const { data: lastMonthData } = await client
     .from('orders')
     .select('total_amount, refunded_amount')
-    .in('status', ['paid', 'shipped', 'delivered', 'return_completed', 'partially_refunded'])
+    .in('status', ['paid', 'shipped', 'delivered', 'return_completed', 'returned', 'partially_refunded'])
     .gte('created_at', lastMonthStart.toISOString())
     .lte('created_at', lastMonthEnd.toISOString());
 
@@ -173,7 +173,7 @@ export async function getBestSellingProduct(client: SupabaseClient): Promise<Bes
   const { data: orders, error: ordersError } = await client
     .from('orders')
     .select('id')
-    .in('status', ['paid', 'shipped', 'delivered', 'return_completed', 'partially_refunded'])
+    .in('status', ['paid', 'shipped', 'delivered', 'return_completed', 'returned', 'partially_refunded'])
     .gte('created_at', monthStart.toISOString());
 
   if (ordersError) throw ordersError;
@@ -245,7 +245,7 @@ export async function getSalesLast7Days(client: SupabaseClient): Promise<DailySa
   const { data } = await client
     .from('orders')
     .select('total_amount, refunded_amount, created_at')
-    .in('status', ['paid', 'shipped', 'delivered', 'return_completed', 'partially_refunded'])
+    .in('status', ['paid', 'shipped', 'delivered', 'return_completed', 'returned', 'partially_refunded'])
     .gte('created_at', rangeStart.toISOString())
     .lt('created_at', rangeEnd.toISOString());
 

@@ -93,6 +93,7 @@ const statusLabels: Record<string, string> = {
   return_shipped: 'Devolucion enviada',
   return_received: 'Devolucion recibida',
   return_completed: 'Devolucion completada',
+  returned: 'Reembolsado',
   return_rejected: 'Devolucion rechazada',
 };
 
@@ -111,6 +112,7 @@ const statusColors: Record<string, { bg: string; text: string; border: string }>
   return_shipped: { bg: 'bg-indigo-500/20', text: 'text-indigo-400', border: 'border-l-indigo-500' },
   return_received: { bg: 'bg-teal-500/20', text: 'text-teal-400', border: 'border-l-teal-500' },
   return_completed: { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-l-green-500' },
+  returned: { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-l-green-500' },
   return_rejected: { bg: 'bg-rose-500/20', text: 'text-rose-400', border: 'border-l-rose-500' },
 };
 

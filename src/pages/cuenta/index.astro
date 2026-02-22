@@ -66,6 +66,7 @@ const statusBadges: Record<string, StatusBadge> = {
   return_shipped: { badgeClass: 'bg-purple-500/20 text-purple-400', label: 'Dev. Enviada' },
   return_received: { badgeClass: 'bg-cyan-500/20 text-cyan-400', label: 'Dev. Recibida' },
   return_completed: { badgeClass: 'bg-emerald-500/20 text-emerald-400', label: 'Reembolsado' },
+  returned: { badgeClass: 'bg-emerald-500/20 text-emerald-400', label: 'Reembolsado' },
   partially_refunded: { badgeClass: 'bg-amber-500/20 text-amber-400', label: 'Reemb. Parcial' },
 };
 ---
@@ -200,41 +201,45 @@ const statusBadges: Record<string, StatusBadge> = {
 
           {recentOrders && recentOrders.length > 0 ? (
             <div class="space-y-3">
-              {recentOrders.map((order) => (
-                <a
-                  href={`/cuenta/pedidos/${order.id}`}
-                  class="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-transparent hover:border-primary/30 hover:bg-muted/50 transition-all group"
-                >
-                  <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-lg bg-card flex items-center justify-center border border-border">
-                      <Package className="w-5 h-5 text-muted-foreground" />
+              {recentOrders.map((order) => {
+                const badge = statusBadges[order.status as keyof typeof statusBadges];
+
+                return (
+                  <a
+                    href={`/cuenta/pedidos/${order.id}`}
+                    class="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-transparent hover:border-primary/30 hover:bg-muted/50 transition-all group"
+                  >
+                    <div class="flex items-center gap-4">
+                      <div class="w-10 h-10 rounded-lg bg-card flex items-center justify-center border border-border">
+                        <Package className="w-5 h-5 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <p class="font-mono text-sm font-medium group-hover:text-primary transition-colors">
+                          {order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`}
+                        </p>
+                        <p class="text-xs text-muted-foreground">
+                          {formatDate(order.created_at)}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p class="font-mono text-sm font-medium group-hover:text-primary transition-colors">
-                        {order.order_number ? formatOrderId(order.order_number) : `#${order.id.slice(0, 8)}`}
-                      </p>
-                      <p class="text-xs text-muted-foreground">
-                        {formatDate(order.created_at)}
-                      </p>
+                    <div class="flex items-center gap-4">
+                      {badge ? (
+                        <span class={`badge ${badge.badgeClass}`}>
+                          {badge.label}
+                        </span>
+                      ) : (
+                        <span class="badge bg-muted">
+                          {order.status}
+                        </span>
+                      )}
+                      <span class="font-bold">
+                        {formatPrice(order.total_amount)}
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                     </div>
-                  </div>
-                  <div class="flex items-center gap-4">
-                    {Object.keys(statusBadges).includes(order.status) ? (
-                      <span class={`badge ${statusBadges[order.status as keyof typeof statusBadges].badgeClass}`}>
-                        {statusBadges[order.status as keyof typeof statusBadges].label}
-                      </span>
-                    ) : (
-                      <span class="badge bg-muted">
-                        {order.status}
-                      </span>
-                    )}
-                    <span class="font-bold">
-                      {formatPrice(order.total_amount)}
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </div>
-                </a>
-              ))}
+                  </a>
+                );
+              })}
             </div>
           ) : (
             <div class="text-center py-12">

@@ -148,6 +148,7 @@ const statusConfig: Record<string, { label: string; class: string }> = {
   return_shipped: { label: "Dev. Enviada", class: "badge-info" },
   return_received: { label: "Dev. Recibida", class: "badge-info" },
   return_completed: { label: "Reembolsado", class: "badge-success" },
+  returned: { label: "Reembolsado", class: "badge-success" },
   partially_refunded: { label: "Reemb. Parcial", class: "badge-warning" },
 };
 
@@ -172,6 +173,7 @@ const statusLabels: Record<string, string> = {
   cancelled: "Cancelado",
   return_requested: "Dev. Solicitada",
   return_completed: "Reembolsado",
+  returned: "Reembolsado",
   partially_refunded: "Reemb. Parcial",
 };
 
@@ -183,14 +185,20 @@ const statusColors: Record<string, string> = {
   cancelled: "rgba(239, 68, 68, 0.8)",
   return_requested: "rgba(249, 115, 22, 0.8)",
   return_completed: "rgba(168, 85, 247, 0.8)",
+  returned: "rgba(168, 85, 247, 0.8)",
   partially_refunded: "rgba(236, 72, 153, 0.8)",
 };
 
 // Build doughnut data from status distribution (only paid, cancelled, refunded)
 const orderStatuses = extendedMetrics?.orderStatusDistribution || {};
-const doughnutKeys = ["paid", "cancelled", "return_completed"].filter(k => (orderStatuses[k] || 0) > 0);
+const refundedCount = (orderStatuses.return_completed || 0) + (orderStatuses.returned || 0);
+const orderStatusesForCharts = {
+  ...orderStatuses,
+  return_completed: refundedCount,
+};
+const doughnutKeys = ["paid", "cancelled", "return_completed"].filter(k => (orderStatusesForCharts[k] || 0) > 0);
 const doughnutLabels = doughnutKeys.map(s => statusLabels[s] || s);
-const doughnutData = doughnutKeys.map(s => orderStatuses[s] as number);
+const doughnutData = doughnutKeys.map(s => orderStatusesForCharts[s] as number);
 const doughnutColors = doughnutKeys.map(s => statusColors[s] || "rgba(161, 161, 170, 0.8)");
 
 // Revenue by category doughnut

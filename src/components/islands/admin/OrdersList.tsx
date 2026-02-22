@@ -33,7 +33,7 @@ interface OrdersListProps {
   initialStatus: string;
 }
 
-type OrderStatus = 'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled' | 'return_requested' | 'return_approved' | 'return_shipped' | 'return_received' | 'return_completed' | 'partially_refunded';
+type OrderStatus = 'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled' | 'return_requested' | 'return_approved' | 'return_shipped' | 'return_received' | 'return_completed' | 'returned' | 'partially_refunded';
 
 const statusConfig: Record<OrderStatus, { 
   label: string; 
@@ -106,6 +106,13 @@ const statusConfig: Record<OrderStatus, {
     tabColor: 'bg-cyan-500',
   },
   return_completed: {
+    label: 'Reembolsado',
+    bgClass: 'bg-emerald-500/20',
+    textClass: 'text-emerald-500',
+    borderColor: 'border-l-emerald-500',
+    tabColor: 'bg-emerald-500',
+  },
+  returned: {
     label: 'Reembolsado',
     bgClass: 'bg-emerald-500/20',
     textClass: 'text-emerald-500',

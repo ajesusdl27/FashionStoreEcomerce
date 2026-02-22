@@ -34,6 +34,7 @@ const ELIGIBLE_DOCUMENT_STATUSES = [
   'return_shipped',
   'return_received',
   'return_completed',
+  'returned',
   'partially_refunded',
 ];
 

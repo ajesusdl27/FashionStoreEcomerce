@@ -147,7 +147,7 @@ export function generateReturnApprovedHTML(
                   <li><strong>Empaqueta los artículos</strong> de forma segura en su embalaje original si es posible</li>
                   <li><strong>Incluye una nota</strong> con tu número de pedido (${formatOrderId(data.orderNumber)})</li>
                   <li><strong>Envía a la dirección indicada abajo</strong> por la mensajería de tu preferencia</li>
-                  <li><strong>Marca como "Enviado"</strong> en tu cuenta con el número de seguimiento (opcional)</li>
+                  <li><strong>Marca como "Enviado"</strong> en tu cuenta con el número de seguimiento IMPORTANTE</li>
                   <li><strong>Espera nuestra inspección</strong> - Recibirás confirmación cuando llegue (2-5 días)</li>
                   <li><strong>Reembolso procesado</strong> en 1-2 días después de la inspección</li>
                 </ol>

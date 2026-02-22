@@ -37,7 +37,11 @@ let query = supabase
 
 // Apply status filter
 if (statusFilter && statusFilter !== "all") {
-  query = query.eq("status", statusFilter);
+  if (statusFilter === "return_completed" || statusFilter === "returned") {
+    query = query.in("status", ["return_completed", "returned"]);
+  } else {
+    query = query.eq("status", statusFilter);
+  }
 }
 
 const { data: orders } = await query;
@@ -61,6 +65,7 @@ function getStatusBadge(status: string) {
     return_shipped: { class: "bg-purple-500/20 text-purple-400", text: "Dev. Enviada" },
     return_received: { class: "bg-cyan-500/20 text-cyan-400", text: "Dev. Recibida" },
     return_completed: { class: "bg-emerald-500/20 text-emerald-400", text: "Reembolsado" },
+    returned: { class: "bg-emerald-500/20 text-emerald-400", text: "Reembolsado" },
     partially_refunded: { class: "bg-amber-500/20 text-amber-400", text: "Reemb. Parcial" },
   };
   return badges[status] || { class: "bg-muted", text: status };

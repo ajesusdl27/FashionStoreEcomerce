@@ -47,6 +47,7 @@ export const STATUS_CONFIG = {
   return_shipped: { variant: 'info' as const, label: 'Dev. Enviada' },
   return_received: { variant: 'info' as const, label: 'Dev. Recibida' },
   return_completed: { variant: 'success' as const, label: 'Reembolsado' },
+  returned: { variant: 'success' as const, label: 'Reembolsado' },
   partially_refunded: { variant: 'warning' as const, label: 'Reemb. Parcial' },
   
   // Coupons/Promotions

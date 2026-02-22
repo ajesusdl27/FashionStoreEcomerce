@@ -135,6 +135,11 @@ const statusConfig: Record<
     bgClass: "bg-emerald-500/10",
     textClass: "text-emerald-400",
   },
+  returned: {
+    label: "Reembolsado",
+    bgClass: "bg-emerald-500/10",
+    textClass: "text-emerald-400",
+  },
   partially_refunded: {
     label: "Reemb. Parcial",
     bgClass: "bg-amber-500/10",
@@ -171,6 +176,7 @@ const currentStatus = statusConfig[order.status] || statusConfig.pending;
           order.status === "shipped" ? "badge-info" :
           order.status === "delivered" ? "badge-primary" :
           order.status === "cancelled" ? "badge-danger" :
+          order.status === "return_completed" || order.status === "returned" ? "badge-success" :
           "badge-warning"
         } text-sm px-4 py-2`}>
           {currentStatus?.label ?? order.status}

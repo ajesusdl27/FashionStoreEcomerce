@@ -28,7 +28,7 @@ const formatDate = (date: string) => {
 
 // Standard order flow statuses
 const statusOrder = ['pending', 'paid', 'shipped', 'delivered'];
-const returnStatuses = ['return_requested', 'return_approved', 'return_shipped', 'return_received', 'return_completed'];
+const returnStatuses = ['return_requested', 'return_approved', 'return_shipped', 'return_received', 'return_completed', 'returned'];
 
 const statusConfig: Record<string, { icon: typeof Check; label: string; color: string }> = {
   pending: { icon: Clock, label: 'Pendiente', color: 'text-yellow-500' },
@@ -41,6 +41,7 @@ const statusConfig: Record<string, { icon: typeof Check; label: string; color: s
   return_shipped: { icon: Package, label: 'Devolución Enviada', color: 'text-blue-500' },
   return_received: { icon: Check, label: 'Devolución Recibida', color: 'text-blue-500' },
   return_completed: { icon: Check, label: 'Reembolsado', color: 'text-emerald-500' },
+  returned: { icon: Check, label: 'Reembolsado', color: 'text-emerald-500' },
   partially_refunded: { icon: Check, label: 'Reembolso Parcial', color: 'text-amber-500' },
 };
 
