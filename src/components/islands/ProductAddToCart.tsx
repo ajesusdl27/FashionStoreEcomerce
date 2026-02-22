@@ -96,6 +96,7 @@ export default function ProductAddToCart({
         size: selectedVariant.size,
         price,
         imageUrl,
+        availableStock: selectedVariant.stock,
       });
 
       setStatus('success');

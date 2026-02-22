@@ -196,7 +196,7 @@ export default function CartSlideOver({
                       value={item.quantity}
                       onChange={(qty: number) => updateQuantity(item.id, qty)}
                       min={1}
-                      max={10}
+                      max={item.availableStock && item.availableStock > 0 ? item.availableStock : 99}
                     />
                   </div>
                 </li>

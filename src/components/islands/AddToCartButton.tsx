@@ -41,6 +41,7 @@ export default function AddToCartButton({
         size,
         price,
         imageUrl,
+        availableStock: stock,
       });
 
       setStatus('success');

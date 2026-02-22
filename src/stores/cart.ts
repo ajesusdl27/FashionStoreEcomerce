@@ -10,6 +10,7 @@ export interface CartItem {
   price: number;
   imageUrl: string;
   quantity: number;
+  availableStock?: number;
 }
 
 // Persistent cart store
@@ -54,23 +55,46 @@ export function addToCart(item: Omit<CartItem, 'id' | 'quantity'>, quantity = 1)
     (i) => i.productId === item.productId && i.variantId === item.variantId
   );
 
+  const maxAllowed = typeof item.availableStock === 'number' && item.availableStock > 0
+    ? item.availableStock
+    : null;
+
   if (existingIndex >= 0) {
     // Update quantity
     const updated = [...items];
     const existingItem = updated[existingIndex];
     if (existingItem) {
+      const existingMax = typeof existingItem.availableStock === 'number' && existingItem.availableStock > 0
+        ? existingItem.availableStock
+        : null;
+      const resolvedMax = maxAllowed !== null
+        ? (existingMax !== null ? Math.min(existingMax, maxAllowed) : maxAllowed)
+        : existingMax;
+      const nextQuantity = resolvedMax !== null
+        ? Math.min(existingItem.quantity + quantity, resolvedMax)
+        : existingItem.quantity + quantity;
+
       updated[existingIndex] = {
         ...existingItem,
-        quantity: existingItem.quantity + quantity,
+        quantity: nextQuantity,
+        availableStock: resolvedMax ?? existingItem.availableStock,
       };
       $cart.set(updated);
     }
   } else {
+    const initialQuantity = maxAllowed !== null
+      ? Math.min(quantity, maxAllowed)
+      : quantity;
+
+    if (initialQuantity <= 0) {
+      return;
+    }
+
     // Add new item
     const newItem: CartItem = {
       ...item,
       id: `${item.productId}-${item.variantId}`,
-      quantity,
+      quantity: initialQuantity,
     };
     $cart.set([...items, newItem]);
   }
@@ -88,8 +112,16 @@ export function updateQuantity(itemId: string, quantity: number) {
   }
 
   const items = $cart.get();
+  const targetItem = items.find((item) => item.id === itemId);
+  const maxAllowed = targetItem && typeof targetItem.availableStock === 'number' && targetItem.availableStock > 0
+    ? targetItem.availableStock
+    : null;
+  const clampedQuantity = maxAllowed !== null
+    ? Math.min(quantity, maxAllowed)
+    : quantity;
+
   const updated = items.map((item) =>
-    item.id === itemId ? { ...item, quantity } : item
+    item.id === itemId ? { ...item, quantity: clampedQuantity } : item
   );
   $cart.set(updated);
 }
